@@ -3,8 +3,6 @@ import { GameController, type AnySnapshot, type GameMode, type GameResult } from
 import { SoundEngine } from "../audio/SoundEngine";
 import { useFitToViewport } from "../hooks/useFitToViewport";
 
-const BGM_URL = "/audio/bgm-clockwork.mp3";
-
 interface Props {
   mode: GameMode;
   sound: SoundEngine;
@@ -55,12 +53,9 @@ export function GameScreen({
     });
     controllerRef.current = controller;
     controller.start();
-    // プレイ中のみBGMをループ再生し、画面を離れたら止める(D-036)
-    sound.playBgm(BGM_URL);
     return () => {
       controllerRef.current = null;
       controller.dispose();
-      sound.stopBgm();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

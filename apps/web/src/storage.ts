@@ -14,8 +14,6 @@ export type FontScale = 1 | 1.15 | 1.3;
 
 export interface Settings {
   soundOn: boolean;
-  /** プレイ中のBGMループ再生。効果音(soundOn)とは別に切り替えられる */
-  bgmOn: boolean;
   reducedMotion: boolean;
   highContrast: boolean;
   fontScale: FontScale;
@@ -45,7 +43,6 @@ function prefersReducedMotion(): boolean {
 function defaultSettings(): Settings {
   return {
     soundOn: true,
-    bgmOn: true,
     // 仕様書§20: OS側のアニメーション削減設定を初回起動時の既定値に反映する
     reducedMotion: prefersReducedMotion(),
     highContrast: false,

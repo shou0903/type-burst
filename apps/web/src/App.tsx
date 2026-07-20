@@ -39,11 +39,6 @@ export function App(): JSX.Element {
     document.documentElement.classList.toggle("high-contrast", settings.highContrast);
   }, [settings.fontScale, settings.highContrast]);
 
-  // BGMは再生中の音声を即座に止め/再開する必要があるため、単純代入ではなくメソッド経由で切り替える
-  useEffect(() => {
-    sound.setBgmEnabled(settings.bgmOn);
-  }, [sound, settings.bgmOn]);
-
   const updateSettings = (patch: Partial<Settings>): void => {
     setSettings((prev) => {
       const next = { ...prev, ...patch };

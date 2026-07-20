@@ -4,6 +4,7 @@ import type { GameMode, GameResult } from "./game/GameController";
 import { LandingScreen } from "./screens/LandingScreen";
 import { GameScreen } from "./screens/GameScreen";
 import { ResultScreen } from "./screens/ResultScreen";
+import { RankingScreen } from "./screens/RankingScreen";
 import {
   appendResult,
   loadResults,
@@ -23,7 +24,8 @@ type Screen =
       result: GameResult;
       history: StoredResult[];
       duelRecord: DuelRecord | null;
-    };
+    }
+  | { name: "ranking" };
 
 export function App(): JSX.Element {
   const sound = useMemo(() => new SoundEngine(), []);
@@ -68,6 +70,7 @@ export function App(): JSX.Element {
           results={loadResults()}
           onUpdateSettings={updateSettings}
           onStart={startGame}
+          onShowRanking={() => setScreen({ name: "ranking" })}
         />
       );
     case "game":
@@ -92,5 +95,7 @@ export function App(): JSX.Element {
           onBackToTitle={() => setScreen({ name: "landing" })}
         />
       );
+    case "ranking":
+      return <RankingScreen onBack={() => setScreen({ name: "landing" })} />;
   }
 }

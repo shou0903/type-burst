@@ -26,6 +26,7 @@
     "packages/*/src/**/*.ts",
     "packages/*/test/**/*.ts",
     "apps/web/src/**/*.ts",
-    "apps/web/src/**/*.tsx"
+    "apps/web/src/**/*.tsx",
+    "apps/web/api/**/*.ts"
   ]
 }

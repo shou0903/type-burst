@@ -1,7 +1,8 @@
 # DEPLOYMENT
 
-TYPE BLAST はバックエンドを持たない静的サイト(SPA)。ビルド成果物(`apps/web/dist`)を
-配信できるホスティングであればどこでも動く。
+TYPE BLAST は静的サイト(SPA)+ ランキング機能用のVercel Serverless Functionsで構成される
+(D-026)。ゲーム本体はバックエンド不要だが、世界ランキングのみサーバー(`apps/web/api/scores.ts`)
+とデータストア(Vercel KV)を使用する。
 
 ## 現在の本番環境
 
@@ -20,6 +21,30 @@ Output Directory: dist
 
 Vercelはnpm workspacesモノレポの検出が優秀で、Root Directoryを`apps/web`に設定するだけで
 リポジトリルートから正しく依存解決してビルドできる。
+
+### ランキング機能に必要な設定(Vercel KV)
+
+世界ランキング機能(D-026)を動かすには、Vercel KVを有効化してプロジェクトに接続する必要がある。
+
+1. Vercelダッシュボード → 対象プロジェクト → **Storage** タブ
+2. **Create Database** → **KV**(Upstash Redis) を選択
+3. データベース名を入力して作成(例: `type-blast-ranking`)
+4. 作成後の画面で、対象プロジェクト(`type-blast-web`)に **Connect** する
+5. 接続すると `KV_REST_API_URL` / `KV_REST_API_TOKEN` 等の環境変数が自動で追加される
+6. 再デプロイ(masterへの次のpushで自動、または「Redeploy」ボタン)すれば `/api/scores` が動作する
+
+これを行わないと `/api/scores` へのアクセスはエラーになるが、ゲーム本体(サバイバル・CPU対戦)には
+一切影響しない(ランキング画面が「取得できませんでした」と表示されるだけ)。
+
+### 広告(Google AdSense)を有効化する手順
+
+1. https://www.google.com/adsense/ でアカウント作成・サイト審査を申請(運営者自身の対応が必要)
+2. 審査通過後、`apps/web/src/adsConfig.ts` の3つのプレースホルダーを実際の値に書き換える:
+   - `ADSENSE_CLIENT_ID`(`ca-pub-` で始まるパブリッシャーID)
+   - `AD_SLOT_LEFT` / `AD_SLOT_RIGHT`(AdSense管理画面で作成した広告ユニットのスロットID。
+     縦長バナー160×600、または類似サイズを2つ作成する)
+3. commit・pushすれば自動デプロイされる
+4. プレースホルダーのままだと広告は一切読み込まれない(安全側のデフォルト、D-027)
 
 ## 経緯: Cloudflare Pagesを試して断念した理由(D-025)
 

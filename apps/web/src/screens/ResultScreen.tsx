@@ -1,7 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import type { SurvivalSummary } from "@type-blast/game-core";
 import type { GameMode, GameResult } from "../game/GameController";
 import { useFitToViewport } from "../hooks/useFitToViewport";
-import type { DuelRecord, StoredResult } from "../storage";
+import { loadNickname, saveNickname, type DuelRecord, type StoredResult } from "../storage";
+import { submitScore } from "../ranking";
 
 interface Props {
   result: GameResult;
@@ -29,6 +31,8 @@ export function ResultScreen({ result, history, duelRecord, onRetry, onBackToTit
 
   useEffect(() => {
     const handler = (e: KeyboardEvent): void => {
+      // ニックネーム入力中はEnter/Escをショートカットとして奪わない
+      if (e.target instanceof HTMLInputElement) return;
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
         onRetry(retryMode);
@@ -78,6 +82,8 @@ export function ResultScreen({ result, history, duelRecord, onRetry, onBackToTit
         </div>
 
         {hint && <p className="result-hint">{hint}</p>}
+
+        <RankingSubmitBox summary={summary} />
 
         <button className="btn-primary" onClick={() => onRetry(retryMode)} autoFocus>
           もう一戦 <span className="btn-sub">Enter</span>
@@ -131,6 +137,95 @@ export function ResultScreen({ result, history, duelRecord, onRetry, onBackToTit
       </button>
       <button className="btn-secondary" onClick={onBackToTitle}>
         タイトルへ
+      </button>
+    </div>
+  );
+}
+
+type SubmitStatus = "idle" | "submitting" | "done" | "error";
+
+/** サバイバル結果を世界ランキングへ送信する。未入力ならスキップ可能(登録は任意) */
+function RankingSubmitBox({ summary }: { summary: SurvivalSummary }): JSX.Element | null {
+  const savedNickname = loadNickname();
+  const [nickname, setNickname] = useState(savedNickname ?? "");
+  const [status, setStatus] = useState<SubmitStatus>("idle");
+  const [skipped, setSkipped] = useState(false);
+
+  useEffect(() => {
+    if (savedNickname) {
+      setStatus("submitting");
+      submitScore(savedNickname, summary)
+        .then((result) => setStatus(result.ok ? "done" : "error"))
+        .catch(() => setStatus("error"));
+    }
+    // 初回マウント時のみ送信する(summaryは1回分の結果のため依存配列は空でよい)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (skipped) return null;
+
+  if (savedNickname) {
+    return (
+      <div className="ranking-submit-box">
+        {status === "submitting" && (
+          <span className="ranking-submit-status">ランキングに送信中…</span>
+        )}
+        {status === "done" && (
+          <span className="ranking-submit-status">🏆 ランキングに登録しました({savedNickname})</span>
+        )}
+        {status === "error" && (
+          <span className="ranking-submit-status error">
+            ランキングへの送信に失敗しました(スコアは手元に保存済みです)
+          </span>
+        )}
+      </div>
+    );
+  }
+
+  const handleSubmit = (): void => {
+    const trimmed = nickname.trim();
+    if (!trimmed) return;
+    setStatus("submitting");
+    saveNickname(trimmed);
+    submitScore(trimmed, summary)
+      .then((result) => setStatus(result.ok ? "done" : "error"))
+      .catch(() => setStatus("error"));
+  };
+
+  if (status === "done") {
+    return (
+      <div className="ranking-submit-box">
+        <span className="ranking-submit-status">🏆 ランキングに登録しました!</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="ranking-submit-box">
+      <div className="ranking-submit-label">ランキングに登録する(任意・登録不要の方針は維持)</div>
+      <div className="ranking-submit-row">
+        <input
+          className="nickname-input"
+          type="text"
+          placeholder="ニックネーム"
+          maxLength={12}
+          value={nickname}
+          onChange={(e) => setNickname(e.target.value)}
+          disabled={status === "submitting"}
+        />
+        <button
+          className="btn-ranking-submit"
+          onClick={handleSubmit}
+          disabled={status === "submitting" || nickname.trim().length === 0}
+        >
+          登録
+        </button>
+      </div>
+      {status === "error" && (
+        <span className="ranking-submit-status error">送信に失敗しました。もう一度お試しください</span>
+      )}
+      <button className="btn-ranking-skip" onClick={() => setSkipped(true)}>
+        今回はスキップ
       </button>
     </div>
   );

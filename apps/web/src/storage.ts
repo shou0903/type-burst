@@ -3,6 +3,7 @@ import type { CpuDifficulty, DuelSummary, SurvivalSummary } from "@type-blast/ga
 const SETTINGS_KEY = "typeblast.settings.v1";
 const RESULTS_KEY = "typeblast.results.v2";
 const DUEL_RECORD_KEY = "typeblast.duel.v1";
+const NICKNAME_KEY = "typeblast.nickname.v1";
 
 export type FontScale = 1 | 1.15 | 1.3;
 
@@ -123,4 +124,20 @@ export function recordDuel(summary: DuelSummary): DuelRecord {
     // 保存失敗は無視
   }
   return record;
+}
+
+export function loadNickname(): string | null {
+  try {
+    return localStorage.getItem(NICKNAME_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function saveNickname(nickname: string): void {
+  try {
+    localStorage.setItem(NICKNAME_KEY, nickname.trim().slice(0, 12));
+  } catch {
+    // 保存失敗は無視
+  }
 }

@@ -15,6 +15,7 @@ interface Props {
   results: StoredResult[];
   onUpdateSettings: (patch: Partial<Settings>) => void;
   onStart: (mode: GameMode) => void;
+  onShowRanking: () => void;
 }
 
 const DIFFICULTY_LABELS: Record<CpuDifficulty, string> = {
@@ -23,7 +24,13 @@ const DIFFICULTY_LABELS: Record<CpuDifficulty, string> = {
   hard: "つよい",
 };
 
-export function LandingScreen({ settings, results, onUpdateSettings, onStart }: Props): JSX.Element {
+export function LandingScreen({
+  settings,
+  results,
+  onUpdateSettings,
+  onStart,
+  onShowRanking,
+}: Props): JSX.Element {
   const best = bestScore(results);
   const [difficulty, setDifficulty] = useState<CpuDifficulty>("normal");
   const record = loadDuelRecord();
@@ -103,6 +110,10 @@ export function LandingScreen({ settings, results, onUpdateSettings, onStart }: 
           サバイバル ベストスコア: <strong>{best.toLocaleString()}</strong>
         </p>
       )}
+
+      <button className="btn-ranking-link" onClick={onShowRanking}>
+        🏆 世界ランキングを見る
+      </button>
 
       <div className="settings-row">
         <label>

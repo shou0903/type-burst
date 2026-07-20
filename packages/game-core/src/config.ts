@@ -23,16 +23,24 @@ export interface CpuProfile {
 }
 
 /**
- * サバイバル難易度ごとの設定(D-032)。盤面サイズ・出現ロジックは難易度間で
- * 揃え、行上昇の速さのみを変える(初心者でも「同じゲーム」に見えるように)。
+ * サバイバル難易度ごとの設定(D-032, D-033で行上昇速度から文章の長さへ変更)。
+ * 行上昇の速さ(RiseConfig)は難易度に関わらず全員共通にする。
+ * これを難易度ごとに変えてしまうと、易しい難易度では行上昇が十分遅く
+ * 「積み上がらないまま無限に生存してスコアを稼げる」状態になってしまうため
+ * (実際にプレイしたユーザーからの指摘で判明)。
+ * 代わりに、1ブロックあたりに要求される文章の長さ(tierRatio)を変える。
+ * 盤面が積み上がるペースは全難易度で同じまま、易しい難易度は短い文章が
+ * 多く出るため1つのブロックを消すのにかかる時間が短く、結果的に
+ * ついていきやすくなる。行上昇のペースという「終了までの上限」自体は
+ * 難易度に関わらず共通なので、無限にスコアを稼げる問題が起きない。
  * scoreMultiplier は世界ランキングに送信する際にスコアへ掛ける係数。
- * 易しい難易度ほど同じ操作精度でも高スコアが出やすいため、その分だけ
- * ランキング上のスコアを割り引き、難しい難易度は上乗せする。
+ * 易しい難易度は同じ操作精度でも短い文章を多くさばける分スコアが伸びやすい
+ * ため、その分だけランキング上のスコアを割り引き、難しい難易度は上乗せする。
  * 実プレイのデータが無い状態での初期値なので、後で実際のスコア分布を見て
  * 調整する前提の暫定値(apps/web/api/scores.ts 側の定数と値を揃えること)。
  */
 export interface SurvivalDifficultyProfile {
-  rise: RiseConfig;
+  tierRatio: Record<PhraseTier, number>;
   scoreMultiplier: number;
 }
 
@@ -46,6 +54,8 @@ export interface GameConfig {
   countdownMs: number;
   tierRatio: Record<PhraseTier, number>;
   survivalDifficulty: Record<SurvivalDifficulty, SurvivalDifficultyProfile>;
+  /** 行上昇の速さ。サバイバルは難易度に関わらずこの1種類のみを使う(D-033) */
+  survivalRise: RiseConfig;
   duelRise: RiseConfig;
   chain: {
     directClearMin: number;
@@ -111,32 +121,23 @@ export const DEFAULT_CONFIG: GameConfig = {
   tierRatio: { short: 0.2, standard: 0.65, long: 0.15 },
   survivalDifficulty: {
     easy: {
-      rise: {
-        startIntervalMs: 8_000,
-        minIntervalMs: 4_000,
-        accelPerSecondMs: 15,
-        warningMs: 1_800,
-      },
+      tierRatio: { short: 0.6, standard: 0.35, long: 0.05 },
       scoreMultiplier: 0.65,
     },
     normal: {
-      rise: {
-        startIntervalMs: 5_500,
-        minIntervalMs: 2_400,
-        accelPerSecondMs: 25,
-        warningMs: 1_500,
-      },
+      tierRatio: { short: 0.2, standard: 0.65, long: 0.15 },
       scoreMultiplier: 1.0,
     },
     hard: {
-      rise: {
-        startIntervalMs: 4_200,
-        minIntervalMs: 1_700,
-        accelPerSecondMs: 32,
-        warningMs: 1_200,
-      },
+      tierRatio: { short: 0.05, standard: 0.45, long: 0.5 },
       scoreMultiplier: 1.4,
     },
+  },
+  survivalRise: {
+    startIntervalMs: 5_500,
+    minIntervalMs: 2_400,
+    accelPerSecondMs: 25,
+    warningMs: 1_500,
   },
   duelRise: {
     startIntervalMs: 6_000,

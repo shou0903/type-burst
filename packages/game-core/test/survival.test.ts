@@ -350,19 +350,56 @@ describe("レベルアップ(v3)", () => {
   });
 });
 
-describe("難易度(D-032)", () => {
-  it("easy/normal/hardで行上昇の速さが異なる(easyが最も遅く、hardが最も速い)", () => {
+describe("難易度(D-032, D-033)", () => {
+  it("行上昇の速さは難易度に関わらず共通(易しい難易度でも無限に生存できてしまわないように)", () => {
     const easy = new SurvivalGame("diff-easy", PHRASES, GARBAGE_PHRASES, "easy");
     const normal = new SurvivalGame("diff-normal", PHRASES, GARBAGE_PHRASES, "normal");
     const hard = new SurvivalGame("diff-hard", PHRASES, GARBAGE_PHRASES, "hard");
     startPlaying(easy);
     startPlaying(normal);
     startPlaying(hard);
+    easy.advance(20_000);
+    normal.advance(20_000);
+    hard.advance(20_000);
     const easyInterval = easy.getCore().currentRiseInterval();
     const normalInterval = normal.getCore().currentRiseInterval();
     const hardInterval = hard.getCore().currentRiseInterval();
-    expect(easyInterval).toBeGreaterThan(normalInterval);
-    expect(normalInterval).toBeGreaterThan(hardInterval);
+    expect(easyInterval).toBe(normalInterval);
+    expect(normalInterval).toBe(hardInterval);
+  });
+
+  it("easyは短い文章、hardは長い文章が多く出現する(行上昇の速さは変えず、文章の長さで難易度差をつける)", () => {
+    function averageLongRatio(
+      difficulty: "easy" | "normal" | "hard",
+    ): { shortRatio: number; longRatio: number } {
+      const game = new SurvivalGame(`diff-tier-${difficulty}`, PHRASES, GARBAGE_PHRASES, difficulty);
+      const core = game.getCore() as unknown as { blocks: Block[]; dropRow: () => void };
+      let shortCount = 0;
+      let longCount = 0;
+      let total = 0;
+      for (let i = 0; i < 100; i++) {
+        core.dropRow();
+        for (const b of core.blocks) {
+          if (b.kind !== "normal") continue;
+          const phrase = PHRASES.find((p) => p.id === b.phraseId);
+          if (!phrase) continue;
+          total += 1;
+          if (phrase.tier === "short") shortCount += 1;
+          if (phrase.tier === "long") longCount += 1;
+        }
+        core.blocks = [];
+      }
+      return { shortRatio: shortCount / total, longRatio: longCount / total };
+    }
+
+    const easy = averageLongRatio("easy");
+    const normal = averageLongRatio("normal");
+    const hard = averageLongRatio("hard");
+
+    expect(easy.shortRatio).toBeGreaterThan(normal.shortRatio);
+    expect(normal.shortRatio).toBeGreaterThan(hard.shortRatio);
+    expect(hard.longRatio).toBeGreaterThan(normal.longRatio);
+    expect(normal.longRatio).toBeGreaterThan(easy.longRatio);
   });
 
   it("getSummaryが選択した難易度とスコア倍率を返す", () => {

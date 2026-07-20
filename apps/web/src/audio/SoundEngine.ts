@@ -7,6 +7,11 @@ export class SoundEngine {
   private master: GainNode | null = null;
   enabled = true;
 
+  private bgmAudio: HTMLAudioElement | null = null;
+  private bgmSrc: string | null = null;
+  /** 効果音(enabled)とは別に、BGMだけを個別にON/OFFできるようにする */
+  bgmEnabled = true;
+
   /** ユーザー操作イベント内で呼ぶこと */
   unlock(): void {
     if (this.ctx) {
@@ -21,6 +26,33 @@ export class SoundEngine {
     } catch {
       this.ctx = null;
     }
+  }
+
+  /** プレイ中のみBGMをループ再生する(タイトル画面では鳴らさない) */
+  playBgm(src: string): void {
+    if (this.bgmAudio && this.bgmSrc === src) {
+      if (this.bgmEnabled) void this.bgmAudio.play().catch(() => undefined);
+      return;
+    }
+    this.bgmAudio?.pause();
+    const audio = new Audio(src);
+    audio.loop = true;
+    audio.volume = 0.32;
+    this.bgmAudio = audio;
+    this.bgmSrc = src;
+    if (this.bgmEnabled) void audio.play().catch(() => undefined);
+  }
+
+  /** ゲーム画面を離れるときに呼ぶ */
+  stopBgm(): void {
+    this.bgmAudio?.pause();
+  }
+
+  setBgmEnabled(enabled: boolean): void {
+    this.bgmEnabled = enabled;
+    if (!this.bgmAudio) return;
+    if (enabled) void this.bgmAudio.play().catch(() => undefined);
+    else this.bgmAudio.pause();
   }
 
   private now(): number {

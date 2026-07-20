@@ -1,4 +1,4 @@
-import { DuelGame, SurvivalGame } from "@type-burst/game-core";
+import { DuelGame, SurvivalGame, TutorialGame } from "@type-burst/game-core";
 import type {
   CpuDifficulty,
   DuelSnapshot,
@@ -7,6 +7,7 @@ import type {
   SurvivalDifficulty,
   SurvivalSnapshot,
   SurvivalSummary,
+  TutorialSnapshot,
 } from "@type-burst/game-core";
 import { GARBAGE_PHRASES, PHRASES } from "@type-burst/phrase-content";
 import { TypingAutomaton } from "@type-burst/typing-engine";
@@ -20,13 +21,14 @@ import { SoundEngine } from "../audio/SoundEngine";
 
 export type GameMode =
   | { type: "survival"; difficulty: SurvivalDifficulty }
-  | { type: "duel"; difficulty: CpuDifficulty };
+  | { type: "duel"; difficulty: CpuDifficulty }
+  | { type: "tutorial" };
 
 export type GameResult =
   | { mode: "survival"; summary: SurvivalSummary }
   | { mode: "duel"; summary: DuelSummary };
 
-export type AnySnapshot = SurvivalSnapshot | DuelSnapshot;
+export type AnySnapshot = SurvivalSnapshot | DuelSnapshot | TutorialSnapshot;
 
 export interface GameControllerOptions {
   canvas: HTMLCanvasElement;
@@ -46,7 +48,7 @@ export interface GameControllerOptions {
  * ゲームロジックと描画・音・キーボードをつなぐ。ゲームルールはここに書かない。
  */
 export class GameController {
-  private readonly game: SurvivalGame | DuelGame;
+  private readonly game: SurvivalGame | DuelGame | TutorialGame;
   private readonly renderer: BoardRenderer;
   private readonly cpuRenderer: BoardRenderer | null;
   private readonly sound: SoundEngine;
@@ -63,7 +65,9 @@ export class GameController {
     this.game =
       options.mode.type === "survival"
         ? new SurvivalGame(seed, PHRASES, GARBAGE_PHRASES, options.mode.difficulty)
-        : new DuelGame(seed, PHRASES, GARBAGE_PHRASES, options.mode.difficulty);
+        : options.mode.type === "duel"
+          ? new DuelGame(seed, PHRASES, GARBAGE_PHRASES, options.mode.difficulty)
+          : new TutorialGame(PHRASES, GARBAGE_PHRASES);
     this.renderer = new BoardRenderer(options.canvas, MAIN_RENDERER_OPTIONS);
     this.renderer.reducedMotion = options.reducedMotion;
     this.renderer.highContrast = options.highContrast;
@@ -126,7 +130,7 @@ export class GameController {
   }
 
   private endText(snapshot: AnySnapshot): string | null {
-    if (snapshot.phase !== "ended") return null;
+    if (snapshot.mode === "tutorial" || snapshot.phase !== "ended") return null;
     if (snapshot.mode === "survival") return "FINISH!";
     return snapshot.winner === "player" ? "YOU WIN!" : "YOU LOSE…";
   }
@@ -163,6 +167,16 @@ export class GameController {
   private blockPaste = (e: Event): void => {
     e.preventDefault();
   };
+
+  /** チュートリアル専用: 「次へ」ボタンから呼ばれる */
+  advanceTutorialStep(): void {
+    if (this.game instanceof TutorialGame) {
+      this.game.nextStep();
+      // 前のステップのポップアップ演出(ALL CLEAR等)を次のステップへ持ち越さない
+      this.renderer.clearEffects();
+      this.sound.keyTap();
+    }
+  }
 
   /** SurvivalGame は GameEvent[]、DuelGame は TaggedEvent[] を返す */
   private dispatch(events: ReturnType<SurvivalGame["advance"]> | ReturnType<DuelGame["advance"]>): void {

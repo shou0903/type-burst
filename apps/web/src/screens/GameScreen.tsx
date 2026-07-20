@@ -3,6 +3,8 @@ import { GameController, type AnySnapshot, type GameMode, type GameResult } from
 import { SoundEngine } from "../audio/SoundEngine";
 import { useFitToViewport } from "../hooks/useFitToViewport";
 
+const BGM_URL = "/audio/bgm-clockwork.mp3";
+
 interface Props {
   mode: GameMode;
   sound: SoundEngine;
@@ -31,6 +33,7 @@ export function GameScreen({
 }: Props): JSX.Element {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const cpuCanvasRef = useRef<HTMLCanvasElement>(null);
+  const controllerRef = useRef<GameController | null>(null);
   const [snapshot, setSnapshot] = useState<AnySnapshot | null>(null);
   const [imeWarning, setImeWarning] = useState(false);
   const { ref, style } = useFitToViewport<HTMLDivElement>();
@@ -50,8 +53,15 @@ export function GameScreen({
       onFinish,
       onImeDetected: () => setImeWarning(true),
     });
+    controllerRef.current = controller;
     controller.start();
-    return () => controller.dispose();
+    // プレイ中のみBGMをループ再生し、画面を離れたら止める(D-036)
+    sound.playBgm(BGM_URL);
+    return () => {
+      controllerRef.current = null;
+      controller.dispose();
+      sound.stopBgm();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -68,6 +78,37 @@ export function GameScreen({
     <div ref={ref} style={style} className="screen game">
       {imeWarning && (
         <div className="ime-banner">日本語IMEがONのようです。半角英数モードに切り替えてください。</div>
+      )}
+      {snapshot?.mode === "tutorial" && (
+        <div className="tutorial-banner">
+          <div className="tutorial-banner-head">
+            <span className="tutorial-step-counter">
+              {snapshot.stepIndex + 1} / {snapshot.totalSteps}
+            </span>
+            <span className="tutorial-step-title">{snapshot.stepTitle}</span>
+          </div>
+          <p className="tutorial-step-instruction">{snapshot.stepInstruction}</p>
+          <div className="tutorial-banner-actions">
+            {!snapshot.isLastStep && (
+              <button className="btn-secondary tutorial-skip" onClick={onQuit}>
+                スキップ
+              </button>
+            )}
+            <button
+              className="btn-primary tutorial-next"
+              disabled={!snapshot.stepComplete}
+              onClick={() => {
+                if (snapshot.isLastStep) {
+                  onQuit();
+                } else {
+                  controllerRef.current?.advanceTutorialStep();
+                }
+              }}
+            >
+              {snapshot.isLastStep ? "タイトルへ戻る" : "次へ →"}
+            </button>
+          </div>
+        </div>
       )}
       <div className="game-layout">
         <canvas ref={canvasRef} className="board-canvas" />
@@ -154,15 +195,17 @@ export function GameScreen({
             </div>
           </div>
 
-          <div className="hud-block">
-            <div className="hud-label">NEXT ROW</div>
-            <div className="rise-bar">
-              <div
-                className={player?.riseWarningActive ? "rise-fill rise-fill-warning" : "rise-fill"}
-                style={{ width: `${Math.round((player?.risePressure ?? 0) * 100)}%` }}
-              />
+          {mode.type !== "tutorial" && (
+            <div className="hud-block">
+              <div className="hud-label">NEXT ROW</div>
+              <div className="rise-bar">
+                <div
+                  className={player?.riseWarningActive ? "rise-fill rise-fill-warning" : "rise-fill"}
+                  style={{ width: `${Math.round((player?.risePressure ?? 0) * 100)}%` }}
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           {mode.type === "duel" && (
             <div className="hud-block cpu-panel">

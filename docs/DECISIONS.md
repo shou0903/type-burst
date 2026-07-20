@@ -257,3 +257,28 @@
   - ユーザーから提供された正式アイコン画像(`apps/web/public/app icon.png`)から favicon(32px/512px)・apple-touch-icon(180px)・OGP/Twitterカード画像(512px)を生成し、`index.html`に反映。従来の仮のインラインSVG favicon、および「ホスティング確定後に追加」で保留していた`og:image`/`og:url`をここで正式に埋めた。
   - サバイバル難易度の表記をひらがな(のんびり/ふつう/本気)から「初級/中級/上級」へ変更。CPU対戦の難易度表記もひらがな(よわい/ふつう/つよい)から漢字(弱い/普通/強い)へ変更。両者は別々の概念(自分のペース vs 対戦相手の強さ)のため、ラベル体系はそれぞれ独立して管理している。
 - **理由:** ブランドアイコンの正式反映と、表記の分かりやすさ・一貫性向上(ユーザー指示)。
+
+## D-035: インタラクティブなチュートリアル機能の追加
+
+- **日付:** 2026-07-21
+- **内容:** ランディング画面の「遊び方」テキストだけでは初見の操作理解が難しいという課題に対し、実際に手を動かして覚えられるチュートリアルモードを追加した。
+  - `packages/game-core/src/tutorial.ts`: `TutorialGame`クラス。全7ステップ(①基本操作 ②連鎖 ③TYPE BURST ④ボム ⑤プリズム ⑥ALL CLEAR ⑦完了)を、各ステップ専用に組んだ決め打ちの盤面で1つずつ体験させる。実際の`PlayerCore`(本編と全く同じ入力・連鎖・スコア計算ロジック)をそのまま使うため、チュートリアルで見た挙動と本編の挙動が食い違うことがない。
+  - `PlayerCore.loadTutorialBoard()`(新規)で盤面を任意の内容に差し替え可能にした。スコア・ランキングには一切影響しない。
+  - `PlayerCore.pauseRise`(新規フラグ)で行上昇だけを止める。`frozen`は入力自体も止めてしまうため使えず、新設した。
+  - 各ステップの達成判定はゲーム内イベント(`blocksCleared`のchain/cause、`burstFired`、`allClear`)を監視する方式。達成するまで「次へ」は押せない(`nextStep()`内でガード)。
+  - `apps/web/src/game/GameController.ts`: `GameMode`に`{ type: "tutorial" }`を追加。`SurvivalGame`/`DuelGame`と同列で`TutorialGame`を保持し、既存のレンダリング・入力処理パイプラインをそのまま再利用(IME検知やペースト禁止などを重複実装しない)。
+  - `apps/web/src/screens/GameScreen.tsx`: ステップ番号・タイトル・説明文・「次へ/スキップ」ボタンを表示する`tutorial-banner`を追加。行上昇が常に止まっているため、意味を持たない「NEXT ROW」表示はチュートリアル中のみ非表示にした。
+  - ステップ切り替え時に前のステップの演出(ALL CLEARのポップアップ等)が次のステップへ残ってしまう問題があったため、`BoardRenderer.clearEffects()`(新規)でポップアップ・リング・パーティクルをリセットしてから次のステップへ進むようにした。
+  - `packages/game-core/test/tutorial.test.ts`: 全ステップの達成条件(2連鎖・TYPE BURST発動・ボム/プリズムの発動・ALL CLEAR)と、未達成時に`nextStep()`が進まないことを検証。
+- **理由:** 「はじめての方はこちら」を明確に案内し、テキストを読むだけでなく実際に体験させることで、離脱しやすい初回プレイの理解度を高める。
+
+## D-036: プレイ中BGMの追加
+
+- **日付:** 2026-07-21
+- **内容:** プレイ中(サバイバル・CPU対戦・チュートリアル)にループ再生するBGMを追加した。タイトル画面では再生しない(ユーザー要望)。
+  - 曲: "Clockwork Meditation electronic vibes" by NiKneT_Art(Pixabay Content License、Hypnotic/Minimalist/Electronic)。既存の効果音合成(Web Audio API、音源ファイルなし)とは別に、初めて実ファイルの音源を導入した。トレーラー動画で使った曲(MFCC)とは別の曲をあえて選定し、「ゲーム自体を邪魔しないオリジナリティのある曲」というユーザー要望に沿った(アーケード風の定番曲ではなく、ミニマルで持続的に聴いても疲れにくい曲調)。
+  - 元音源は256kbps/5MBだったため、128kbpsへ再エンコードし約2.5MBに圧縮して`apps/web/public/audio/bgm-clockwork.mp3`に配置。
+  - `SoundEngine`(`apps/web/src/audio/SoundEngine.ts`)に`playBgm()`/`stopBgm()`/`setBgmEnabled()`を追加。効果音合成用のAudioContextとは別に、素の`<audio loop>`要素で再生する(BGMは長尺ループのため、Web Audio経由でバッファ管理するより単純で確実)。
+  - 効果音(`soundOn`)とは独立した`bgmOn`設定を追加(`storage.ts`)。ランディング画面に「BGM」チェックボックスを追加。
+  - `GameScreen.tsx`のマウント時に`playBgm()`、アンマウント時に`stopBgm()`を呼び、プレイ中のみ鳴る設計にした。設定変更はApp.tsxの`useEffect`で`setBgmEnabled()`を呼び、再生中でも即座に反映されるようにした(単純なプロパティ代入だと再生中の音声を止められないため)。
+- **理由:** ゲームの雰囲気作りとプレイ体験の向上。効果音とは切り離して個別にON/OFFできるようにし、音楽の好みが分かれても柔軟に対応できるようにした。

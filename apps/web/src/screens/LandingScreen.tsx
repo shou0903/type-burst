@@ -84,6 +84,10 @@ export function LandingScreen({
         </div>
       </div>
 
+      <button className="btn-tutorial-link" onClick={() => onStart({ type: "tutorial" })}>
+        📖 チュートリアルを見る(はじめての方はこちら)
+      </button>
+
       <div className="mode-row">
         <div className="duel-box">
           <button
@@ -148,6 +152,14 @@ export function LandingScreen({
             onChange={(e) => onUpdateSettings({ soundOn: e.target.checked })}
           />
           効果音
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            checked={settings.bgmOn}
+            onChange={(e) => onUpdateSettings({ bgmOn: e.target.checked })}
+          />
+          BGM
         </label>
         <label>
           <input

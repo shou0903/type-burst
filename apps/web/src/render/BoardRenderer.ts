@@ -152,6 +152,19 @@ export class BoardRenderer {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 
+  /**
+   * チュートリアルのステップ切り替え時など、盤面の中身を丸ごと差し替えるタイミングで
+   * 前のステップの余韻(ALL CLEAR等のポップアップ・リング演出)が次のステップへ
+   * 持ち越されないようにするためのリセット。
+   */
+  clearEffects(): void {
+    this.particles = [];
+    this.popups = [];
+    this.rings = [];
+    this.shakeAmp = 0;
+    this.flashAlpha = 0;
+  }
+
   private cellX(col: number): number {
     return this.opts.pad + col * this.opts.cellW;
   }

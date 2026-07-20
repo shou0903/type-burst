@@ -200,6 +200,22 @@ body {
   background: rgba(255, 215, 94, 0.16);
 }
 
+.btn-tutorial-link {
+  background: rgba(111, 192, 255, 0.08);
+  border: 1px solid rgba(111, 192, 255, 0.35);
+  color: #6fc0ff;
+  font-size: 14px;
+  font-weight: bold;
+  border-radius: 10px;
+  padding: 8px 20px;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+
+.btn-tutorial-link:hover {
+  background: rgba(111, 192, 255, 0.16);
+}
+
 .settings-row {
   display: flex;
   gap: 24px;
@@ -310,6 +326,65 @@ body {
   display: flex;
   gap: 24px;
   align-items: flex-start;
+}
+
+.tutorial-banner {
+  width: 100%;
+  max-width: 900px;
+  margin-bottom: 16px;
+  padding: 14px 20px;
+  background: rgba(30, 35, 60, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+}
+
+.tutorial-banner-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.tutorial-step-counter {
+  font-family: Consolas, monospace;
+  font-size: 12px;
+  color: #7d84a3;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  padding: 2px 8px;
+}
+
+.tutorial-step-title {
+  font-weight: 900;
+  font-size: 17px;
+  color: #ffd75e;
+}
+
+.tutorial-step-instruction {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #dfe2ef;
+  margin: 0 0 12px;
+}
+
+.tutorial-banner-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.tutorial-banner-actions .tutorial-next {
+  padding: 8px 20px;
+}
+
+.tutorial-banner-actions .tutorial-next:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.tutorial-banner-actions .tutorial-skip {
+  padding: 8px 16px;
+  font-size: 13px;
 }
 
 .board-canvas {

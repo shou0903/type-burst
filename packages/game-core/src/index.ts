@@ -1,5 +1,6 @@
 export { SurvivalGame } from "./survival";
 export { DuelGame } from "./duel";
+export { TutorialGame, type TutorialSnapshot } from "./tutorial";
 export { PlayerCore } from "./player";
 export {
   DEFAULT_CONFIG,
@@ -36,5 +37,6 @@ export type {
   SurvivalSnapshot,
   SurvivalSummary,
   TaggedEvent,
+  TutorialBlockSpec,
 } from "./types";
 export { ATTRIBUTES } from "./types";

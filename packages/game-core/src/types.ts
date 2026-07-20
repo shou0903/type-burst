@@ -17,6 +17,17 @@ export interface Block {
   col: number;
 }
 
+/** チュートリアルの各ステップで盤面を任意の内容に差し替えるための指定。スコア・ランキングには一切影響しない */
+export interface TutorialBlockSpec {
+  row: number;
+  col: number;
+  attribute: Attribute | null;
+  kind?: BlockKind;
+  phraseId: string;
+  displayText: string;
+  readingKana: string;
+}
+
 export type BlockViewState = "idle" | "candidate" | "locked" | "clearing";
 
 export interface BlockView {

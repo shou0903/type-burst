@@ -19,6 +19,7 @@ import {
   type GameEvent,
   type PlayerSnapshot,
   type PlayerSummary,
+  type TutorialBlockSpec,
 } from "./types";
 
 interface ResolvingState {
@@ -83,6 +84,8 @@ export class PlayerCore {
   private danger = false;
   toppedOut = false;
   frozen = false;
+  /** チュートリアル専用: trueの間は行上昇(dropRow)だけを止める。入力や連鎖の演出は通常通り動く */
+  pauseRise = false;
 
   private events: GameEvent[] = [];
 
@@ -112,6 +115,30 @@ export class PlayerCore {
     return drained;
   }
 
+  /**
+   * チュートリアル専用: 盤面を指定の内容へ丸ごと差し替える。
+   * スコア・ゲージ・連鎖記録はステップ切り替え時にリセットされ、本番のランキングには一切関与しない。
+   */
+  loadTutorialBoard(spec: readonly TutorialBlockSpec[], gauge = 0): void {
+    this.blocks = spec.map((s) => ({
+      id: this.nextBlockId++,
+      kind: s.kind ?? "normal",
+      attribute: s.attribute,
+      phraseId: s.phraseId,
+      displayText: s.displayText,
+      readingKana: s.readingKana,
+      row: s.row,
+      col: s.col,
+    }));
+    this.automatons = new Map();
+    this.candidateIds = null;
+    this.lockedId = null;
+    this.resolving = null;
+    this.toppedOut = false;
+    this.perfectStreak = 0;
+    this.gauge = Math.max(0, Math.min(this.config.special.gaugeMax, gauge));
+  }
+
   // ------------------------------------------------------------------
   // 時間進行
   // ------------------------------------------------------------------
@@ -124,7 +151,7 @@ export class PlayerCore {
       this.advanceResolving(deltaMs);
     } else {
       this.advanceGarbageDrop(deltaMs);
-      if (!this.resolving && !this.frozen && !this.toppedOut) {
+      if (!this.resolving && !this.frozen && !this.toppedOut && !this.pauseRise) {
         this.advanceRise(deltaMs);
       }
     }

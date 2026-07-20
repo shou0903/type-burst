@@ -205,3 +205,13 @@
   - サーバーレス関数のウォームインスタンス間で接続を使い回すよう、Redisクライアントをモジュールスコープでキャッシュしている
 - **理由:** Vercel側のプロダクト変更(KV廃止・Marketplace移行)に追従。ロジック(sorted setでのランキング管理、バリデーション、レート制限)自体は変更していない。
 - **教訓:** Vercelの「公式っぽい名前」の連携でも、REST方式とTCP方式のどちらを提供するかは連携先次第。実際に接続を作り、Environment Variablesの実際の変数名を確認してからコードを合わせる必要がある。
+
+## D-030: Google AdSense 本番設定の完了
+
+- **日付:** 2026-07-20
+- **内容:** D-027で実装しておいた広告枠に、実際のAdSense情報を反映した。
+  - `apps/web/src/adsConfig.ts`: publisher ID(`ca-pub-5471900652537950`)、左右の広告ユニットID(縦長タイプ・レスポンシブ)を設定
+  - `isAdsenseConfigured()`(広告ユニットIDも含めた完全設定判定)と `hasAdsenseClientId()`(publisher IDのみの判定)を分離。サイト所有権確認用メタタグ(`<meta name="google-adsense-account">`)は広告ユニット作成前の審査段階でも表示できるよう、後者だけで判定するようにした
+  - Google推奨の設定に合わせ、`data-ad-format="auto"` / `data-full-width-responsive="true"` を使用(固定160×600ではなく、160px幅コンテナ内でレスポンシブに高さが決まる形式)
+  - `apps/web/public/ads.txt` を追加(`pub-5471900652537950`宣言。収益計上に必須)
+- **理由:** 広告表示に必要な最後のピースを埋めた。ユーザーの同意(ConsentBanner)+ビューポート1450px以上+この設定完了、の3条件が揃って初めて広告が表示される(D-027の安全設計を維持)。

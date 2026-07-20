@@ -31,10 +31,11 @@ function AdSlot({ side, slotId }: { side: "left" | "right"; slotId: string }): J
     <div className={`ad-slot ad-slot-${side}`}>
       <ins
         className="adsbygoogle"
-        style={{ display: "block", width: 160, height: 600 }}
+        style={{ display: "block", width: 160 }}
         data-ad-client={ADSENSE_CLIENT_ID}
         data-ad-slot={slotId}
-        data-full-width-responsive="false"
+        data-ad-format="auto"
+        data-full-width-responsive="true"
       />
     </div>
   );

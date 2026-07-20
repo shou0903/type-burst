@@ -6,8 +6,8 @@
  * 未設定(プレースホルダーのまま)の間は広告を一切読み込まない安全側の実装。
  */
 export const ADSENSE_CLIENT_ID: string = "ca-pub-5471900652537950";
-export const AD_SLOT_LEFT: string = "0000000000";
-export const AD_SLOT_RIGHT: string = "0000000000";
+export const AD_SLOT_LEFT: string = "4097693499";
+export const AD_SLOT_RIGHT: string = "6991450148";
 
 /** 広告ユニット(スロット)も含めて全て設定済みか。実際の広告表示の可否に使う */
 export function isAdsenseConfigured(): boolean {

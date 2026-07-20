@@ -34,6 +34,29 @@ Node version:     20
 4. 上記の設定値を入力してデプロイ
 5. 発行された `*.pages.dev` のURLで動作確認
 
+### 補足: `wrangler.toml` が必要な理由
+
+Cloudflareの新しい統合UI(Workers & Pages)で作成したプロジェクトは、デプロイ時に
+`npx wrangler deploy` を自動実行する場合がある。このリポジトリはnpm workspacesの
+モノレポ構成のため、`wrangler` がリポジトリルートで対象を見失い、以下のエラーで
+失敗することがある。
+
+```
+✘ [ERROR] The Cloudflare application detection logic has been run in the root
+  of a workspace instead of targeting a specific project.
+```
+
+これを防ぐため、リポジトリルートに `wrangler.toml` を置き、Pagesの出力先を明記している。
+
+```toml
+name = "type-blast"
+pages_build_output_dir = "apps/web/dist"
+compatibility_date = "2026-07-20"
+```
+
+このファイルがあれば `wrangler deploy` はモノレポルートでも迷わず
+`apps/web/dist` をPagesとしてデプロイする。
+
 ## 代替: Vercel
 
 DXの滑らかさ(プレビューデプロイ・ダッシュボード)を優先するならこちら。

@@ -44,7 +44,7 @@ body {
   text-shadow: 0 0 24px rgba(110, 140, 255, 0.5);
 }
 
-.logo-blast {
+.logo-burst {
   color: #ff8a70;
   text-shadow: 0 0 24px rgba(255, 110, 80, 0.6);
 }
@@ -284,7 +284,7 @@ body {
   letter-spacing: 3px;
 }
 
-.narrow-guard-blast {
+.narrow-guard-burst {
   color: #ff8a70;
 }
 
@@ -827,7 +827,7 @@ body {
   font-size: 40px;
 }
 
-.ranking-title .logo-blast {
+.ranking-title .logo-burst {
   font-size: 16px;
   vertical-align: middle;
   color: #c3c9e2;

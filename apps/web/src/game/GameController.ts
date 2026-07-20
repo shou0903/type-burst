@@ -1,4 +1,4 @@
-import { DuelGame, SurvivalGame } from "@type-blast/game-core";
+import { DuelGame, SurvivalGame } from "@type-burst/game-core";
 import type {
   CpuDifficulty,
   DuelSnapshot,
@@ -6,9 +6,9 @@ import type {
   GameEvent,
   SurvivalSnapshot,
   SurvivalSummary,
-} from "@type-blast/game-core";
-import { GARBAGE_PHRASES, PHRASES } from "@type-blast/phrase-content";
-import { TypingAutomaton } from "@type-blast/typing-engine";
+} from "@type-burst/game-core";
+import { GARBAGE_PHRASES, PHRASES } from "@type-burst/phrase-content";
+import { TypingAutomaton } from "@type-burst/typing-engine";
 import {
   BoardRenderer,
   MAIN_RENDERER_OPTIONS,

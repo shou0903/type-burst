@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { SurvivalGame, findAutoGroups } from "@type-blast/game-core";
-import type { Attribute, Block, BlockKind, GameEvent, PlayerCore } from "@type-blast/game-core";
-import { GARBAGE_PHRASES, PHRASES } from "@type-blast/phrase-content";
-import { TypingAutomaton } from "@type-blast/typing-engine";
+import { SurvivalGame, findAutoGroups } from "@type-burst/game-core";
+import type { Attribute, Block, BlockKind, GameEvent, PlayerCore } from "@type-burst/game-core";
+import { GARBAGE_PHRASES, PHRASES } from "@type-burst/phrase-content";
+import { TypingAutomaton } from "@type-burst/typing-engine";
 
 function newGame(seed = "test-seed"): SurvivalGame {
   return new SurvivalGame(seed, PHRASES, GARBAGE_PHRASES);

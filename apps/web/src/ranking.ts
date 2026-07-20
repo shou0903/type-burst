@@ -1,4 +1,4 @@
-import type { SurvivalSummary } from "@type-blast/game-core";
+import type { SurvivalSummary } from "@type-burst/game-core";
 
 export interface RankingEntry {
   id: string;

@@ -5,7 +5,7 @@ import type { PhraseSeed } from "./types";
  * Tier 帯域: short 5〜7 / standard 8〜12 / long 13モーラ以上(DECISIONS.md D-003)
  */
 export const PHRASE_SEEDS: readonly PhraseSeed[] = [
-  // ---- 設計書サンプル由来(TYPE_BLAST_Japanese_Phrase_Samples.json) ----
+  // ---- 設計書サンプル由来(TYPE_BURST_Japanese_Phrase_Samples.json) ----
   { id: "daily_0001", displayText: "空が明るくなる", readingKana: "そらがあかるくなる", tier: "standard", category: "日常" },
   { id: "daily_0002", displayText: "音が聞こえる", readingKana: "おとがきこえる", tier: "short", category: "日常" },
   { id: "daily_0003", displayText: "本を読みます", readingKana: "ほんをよみます", tier: "short", category: "日常" },

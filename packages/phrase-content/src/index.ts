@@ -1,4 +1,4 @@
-import { TypingAutomaton, countMora } from "@type-blast/typing-engine";
+import { TypingAutomaton, countMora } from "@type-burst/typing-engine";
 import { GARBAGE_PHRASE_SEEDS, PHRASE_SEEDS } from "./phrases";
 import type { JapanesePhrase, PhraseSeed, PhraseTier } from "./types";
 

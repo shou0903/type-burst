@@ -1,4 +1,4 @@
-import type { CpuDifficulty, DuelSummary, SurvivalSummary } from "@type-blast/game-core";
+import type { CpuDifficulty, DuelSummary, SurvivalSummary } from "@type-burst/game-core";
 
 const SETTINGS_KEY = "typeblast.settings.v1";
 const RESULTS_KEY = "typeblast.results.v2";

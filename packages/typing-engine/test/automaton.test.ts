@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { TypingAutomaton, countMora, segmentKana } from "@type-blast/typing-engine";
+import { TypingAutomaton, countMora, segmentKana } from "@type-burst/typing-engine";
 
 function typeAll(a: TypingAutomaton, keys: string): { accepted: number; rejected: number } {
   let accepted = 0;

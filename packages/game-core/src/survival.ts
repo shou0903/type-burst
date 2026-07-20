@@ -1,4 +1,4 @@
-import type { JapanesePhrase } from "@type-blast/phrase-content";
+import type { JapanesePhrase } from "@type-burst/phrase-content";
 import { DEFAULT_CONFIG, type GameConfig } from "./config";
 import { PlayerCore } from "./player";
 import type { GameEvent, GamePhase, SurvivalSnapshot, SurvivalSummary } from "./types";

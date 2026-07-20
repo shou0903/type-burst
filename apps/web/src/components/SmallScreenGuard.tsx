@@ -28,7 +28,7 @@ export function SmallScreenGuard({ children }: { children: JSX.Element }): JSX.E
   return (
     <div className="narrow-guard">
       <h1 className="narrow-guard-logo">
-        TYPE <span className="narrow-guard-blast">BLAST</span>
+        TYPE <span className="narrow-guard-burst">BURST</span>
       </h1>
       <p className="narrow-guard-message">
         このゲームは物理キーボードでのローマ字入力を前提としています。

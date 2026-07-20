@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { DuelGame } from "@type-blast/game-core";
-import type { Attribute, Block, TaggedEvent } from "@type-blast/game-core";
-import { GARBAGE_PHRASES, PHRASES } from "@type-blast/phrase-content";
-import { TypingAutomaton } from "@type-blast/typing-engine";
+import { DuelGame } from "@type-burst/game-core";
+import type { Attribute, Block, TaggedEvent } from "@type-burst/game-core";
+import { GARBAGE_PHRASES, PHRASES } from "@type-burst/phrase-content";
+import { TypingAutomaton } from "@type-burst/typing-engine";
 
 function newDuel(seed = "duel-seed", difficulty: "easy" | "normal" | "hard" = "easy"): DuelGame {
   return new DuelGame(seed, PHRASES, GARBAGE_PHRASES, difficulty);

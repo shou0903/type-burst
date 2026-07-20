@@ -4,8 +4,8 @@ import {
   findAutoGroups,
   findGroup,
   highestRow,
-} from "@type-blast/game-core";
-import type { Attribute, Block } from "@type-blast/game-core";
+} from "@type-burst/game-core";
+import type { Attribute, Block } from "@type-burst/game-core";
 
 let idCounter = 0;
 function block(row: number, col: number, attribute: Attribute | null): Block {

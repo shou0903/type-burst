@@ -49,7 +49,7 @@ export function RankingScreen({ onBack }: Props): JSX.Element {
   return (
     <div ref={ref} style={style} className="screen ranking">
       <h1 className="logo ranking-title">
-        RANKING <span className="logo-blast">(サバイバル・全期間)</span>
+        RANKING <span className="logo-burst">(サバイバル・全期間)</span>
       </h1>
 
       {state.status === "loading" && <p className="ranking-status">読み込み中…</p>}

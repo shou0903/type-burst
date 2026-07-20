@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { CpuDifficulty } from "@type-blast/game-core";
+import type { CpuDifficulty } from "@type-burst/game-core";
 import type { GameMode } from "../game/GameController";
 import { useFitToViewport } from "../hooks/useFitToViewport";
 import { bestScore, loadDuelRecord, type FontScale, type Settings, type StoredResult } from "../storage";
@@ -50,7 +50,7 @@ export function LandingScreen({
   return (
     <div ref={ref} style={style} className="screen landing">
       <h1 className="logo">
-        TYPE <span className="logo-blast">BLAST</span>
+        TYPE <span className="logo-burst">BURST</span>
       </h1>
       <p className="tagline">日本語を打ってブロックを爆破。連鎖で盤面を吹き飛ばそう。</p>
 

@@ -1,14 +1,30 @@
 # DEPLOYMENT
 
-TYPE BLAST は静的サイト(SPA)+ ランキング機能用のVercel Serverless Functionsで構成される
+TYPE BURST は静的サイト(SPA)+ ランキング機能用のVercel Serverless Functionsで構成される
 (D-026)。ゲーム本体はバックエンド不要だが、世界ランキングのみサーバー(`apps/web/api/scores.ts`)
 とデータストア(Vercel KV)を使用する。
 
 ## 現在の本番環境
 
-- **URL:** https://type-blast-web.vercel.app/
+- **URL:** https://type-burst-web.vercel.app/ (リネーム前は `type-blast-web.vercel.app`)
 - **ホスティング:** Vercel
-- **リポジトリ:** https://github.com/shou0903/type-blast(`master` ブランチへのpushで自動デプロイ)
+- **リポジトリ:** https://github.com/shou0903/type-burst(リネーム前は `shou0903/type-blast`。`master` ブランチへのpushで自動デプロイ)
+
+### リブランド(D-028)に伴うリネーム手順
+
+コード側は全て `type-burst`/`TYPE BURST` に変更済み。以下2つは**ユーザー自身の操作**が必要
+(GitHub/Vercelのアカウント操作は代行できないため)。
+
+1. **GitHubリポジトリ名の変更**
+   - リポジトリ → Settings → 一番上の「Repository name」を `type-burst` に変更 → Rename
+   - ローカルの remote URL 更新: `git remote set-url origin https://github.com/shou0903/type-burst.git`
+   - GitHubは旧URLからのリダイレクトを提供するため、変更直後にpushしても失敗はしない
+2. **Vercelプロジェクト名の変更**
+   - Vercelダッシュボード → 対象プロジェクト → Settings → Project Name を `type-burst-web` に変更
+   - 保存すると公開URLが `https://type-burst-web.vercel.app/` に変わる(旧URLは無効になる)
+   - GitHub連携は自動的に新しいリポジトリ名を追従するため、リポジトリ名変更後の再連携は通常不要
+
+どちらもリネームするまでは旧URL・旧リポジトリ名のままで問題なく動作し続ける(緊急性はない)。
 
 ### Vercel設定値
 
@@ -28,8 +44,8 @@ Vercelはnpm workspacesモノレポの検出が優秀で、Root Directoryを`app
 
 1. Vercelダッシュボード → 対象プロジェクト → **Storage** タブ
 2. **Create Database** → **KV**(Upstash Redis) を選択
-3. データベース名を入力して作成(例: `type-blast-ranking`)
-4. 作成後の画面で、対象プロジェクト(`type-blast-web`)に **Connect** する
+3. データベース名を入力して作成(例: `type-burst-ranking`)
+4. 作成後の画面で、対象プロジェクト(`type-burst-web`)に **Connect** する
 5. 接続すると `KV_REST_API_URL` / `KV_REST_API_TOKEN` 等の環境変数が自動で追加される
 6. 再デプロイ(masterへの次のpushで自動、または「Redeploy」ボタン)すれば `/api/scores` が動作する
 

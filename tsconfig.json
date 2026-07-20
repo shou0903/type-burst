@@ -17,9 +17,9 @@
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
-      "@type-blast/typing-engine": ["packages/typing-engine/src/index.ts"],
-      "@type-blast/game-core": ["packages/game-core/src/index.ts"],
-      "@type-blast/phrase-content": ["packages/phrase-content/src/index.ts"]
+      "@type-burst/typing-engine": ["packages/typing-engine/src/index.ts"],
+      "@type-burst/game-core": ["packages/game-core/src/index.ts"],
+      "@type-burst/phrase-content": ["packages/phrase-content/src/index.ts"]
     }
   },
   "include": [

@@ -1,12 +1,12 @@
-# TYPE BLAST
+# TYPE BURST
 
 日本語が書かれたブロックをローマ字入力で爆破し、同色ブロックの落下連鎖を起こすブラウザゲーム。
 
 > 普通に面白い連鎖パズルを遊んでいたら、結果として日本語タイピングが速くなる。
 
-**🎮 公開中: https://type-blast-web.vercel.app/**
+**🎮 公開中: https://type-burst-web.vercel.app/**
 
-実装の正本は [TYPE_BLAST_Product_Game_Technical_Spec_v1.0.md](TYPE_BLAST_Product_Game_Technical_Spec_v1.0.md)。
+実装の正本は [TYPE_BURST_Product_Game_Technical_Spec_v1.0.md](TYPE_BURST_Product_Game_Technical_Spec_v1.0.md)。
 仕様からの変更・決定事項は [docs/DECISIONS.md](docs/DECISIONS.md) に記録する。
 公開手順は [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) を参照。
 

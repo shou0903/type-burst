@@ -1,5 +1,5 @@
-import { TypingAutomaton } from "@type-blast/typing-engine";
-import type { JapanesePhrase } from "@type-blast/phrase-content";
+import { TypingAutomaton } from "@type-burst/typing-engine";
+import type { JapanesePhrase } from "@type-burst/phrase-content";
 import { findGroup } from "./board";
 import { DEFAULT_CONFIG, type CpuProfile, type GameConfig } from "./config";
 import { PlayerCore } from "./player";

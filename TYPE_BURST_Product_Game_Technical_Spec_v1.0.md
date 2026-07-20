@@ -1,8 +1,8 @@
-# TYPE BLAST
+# TYPE BURST
 ## プロダクト要件・ゲームデザイン・技術設計書
 **Version:** 1.0  
 **Status:** Implementation-ready  
-**Working title:** TYPE BLAST  
+**Working title:** TYPE BURST  
 **対象:** コーディングAI、Webゲームエンジニア、UI/UXデザイナー
 
 ---
@@ -1127,7 +1127,7 @@ Pay to Winは禁止。
 
 # 36. 最終原則
 
-TYPE BLASTの価値は、文字入力そのものではない。
+TYPE BURSTの価値は、文字入力そのものではない。
 
 > 打ち終えた瞬間に爆発し、  
 > ブロックが落ち、  

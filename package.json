@@ -1,5 +1,5 @@
 {
-  "name": "type-blast",
+  "name": "type-burst",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -8,9 +8,9 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "npm --workspace @type-blast/web run dev",
-    "build": "npm --workspace @type-blast/web run build",
-    "preview": "npm --workspace @type-blast/web run preview",
+    "dev": "npm --workspace @type-burst/web run dev",
+    "build": "npm --workspace @type-burst/web run build",
+    "preview": "npm --workspace @type-burst/web run preview",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },

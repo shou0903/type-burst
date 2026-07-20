@@ -4,7 +4,7 @@ import type {
   GameEvent,
   GamePhase,
   PlayerSnapshot,
-} from "@type-blast/game-core";
+} from "@type-burst/game-core";
 
 export const BOARD_COLS = 6;
 export const BOARD_ROWS = 10;

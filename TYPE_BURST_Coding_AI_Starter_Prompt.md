@@ -1,8 +1,8 @@
-# TYPE BLAST — Coding AI Starter Prompt
+# TYPE BURST — Coding AI Starter Prompt
 
-あなたはシニアWebゲームエンジニアとして、ブラウザゲーム「TYPE BLAST」を実装してください。
+あなたはシニアWebゲームエンジニアとして、ブラウザゲーム「TYPE BURST」を実装してください。
 
-`TYPE_BLAST_Product_Game_Technical_Spec_v1.0.md` を実装の正本として扱ってください。
+`TYPE_BURST_Product_Game_Technical_Spec_v1.0.md` を実装の正本として扱ってください。
 
 ## 一文説明
 

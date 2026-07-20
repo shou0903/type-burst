@@ -1,4 +1,4 @@
-import type { PhraseTier } from "@type-blast/phrase-content";
+import type { PhraseTier } from "@type-burst/phrase-content";
 import type { CpuDifficulty } from "./types";
 
 /** 行上昇の設定。経過時間とともに加速する */

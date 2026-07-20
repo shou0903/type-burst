@@ -3,7 +3,7 @@ import {
   GARBAGE_PHRASES,
   PHRASES,
   validatePhrases,
-} from "@type-blast/phrase-content";
+} from "@type-burst/phrase-content";
 
 describe("phrase-content", () => {
   it("検証エラーがない", () => {

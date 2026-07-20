@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { SurvivalSummary } from "@type-blast/game-core";
+import type { SurvivalSummary } from "@type-burst/game-core";
 import type { GameMode, GameResult } from "../game/GameController";
 import { useFitToViewport } from "../hooks/useFitToViewport";
 import { loadNickname, saveNickname, type DuelRecord, type StoredResult } from "../storage";

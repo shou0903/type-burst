@@ -1,0 +1,222 @@
+[
+  {
+    "id": "daily_0001",
+    "displayText": "空が明るくなる",
+    "readingKana": "そらがあかるくなる",
+    "tier": "standard",
+    "category": "日常",
+    "moraCount": 9,
+    "weight": 1,
+    "enabled": true,
+    "source": "original"
+  },
+  {
+    "id": "daily_0002",
+    "displayText": "音が聞こえる",
+    "readingKana": "おとがきこえる",
+    "tier": "short",
+    "category": "日常",
+    "moraCount": 7,
+    "weight": 1,
+    "enabled": true,
+    "source": "original"
+  },
+  {
+    "id": "daily_0003",
+    "displayText": "本を読みます",
+    "readingKana": "ほんをよみます",
+    "tier": "short",
+    "category": "日常",
+    "moraCount": 7,
+    "weight": 1,
+    "enabled": true,
+    "source": "original"
+  },
+  {
+    "id": "work_0001",
+    "displayText": "資料を確認する",
+    "readingKana": "しりょうをかくにんする",
+    "tier": "standard",
+    "category": "仕事",
+    "moraCount": 11,
+    "weight": 1,
+    "enabled": true,
+    "source": "original"
+  },
+  {
+    "id": "work_0002",
+    "displayText": "会議を始めます",
+    "readingKana": "かいぎをはじめます",
+    "tier": "standard",
+    "category": "仕事",
+    "moraCount": 9,
+    "weight": 1,
+    "enabled": true,
+    "source": "original"
+  },
+  {
+    "id": "work_0003",
+    "displayText": "予定を共有する",
+    "readingKana": "よていをきょうゆうする",
+    "tier": "standard",
+    "category": "仕事",
+    "moraCount": 10,
+    "weight": 1,
+    "enabled": true,
+    "source": "original"
+  },
+  {
+    "id": "school_0001",
+    "displayText": "ノートを見直す",
+    "readingKana": "のーとをみなおす",
+    "tier": "standard",
+    "category": "学校",
+    "moraCount": 8,
+    "weight": 1,
+    "enabled": true,
+    "source": "original"
+  },
+  {
+    "id": "school_0002",
+    "displayText": "授業の準備をする",
+    "readingKana": "じゅぎょうのじゅんびをする",
+    "tier": "standard",
+    "category": "学校",
+    "moraCount": 12,
+    "weight": 1,
+    "enabled": true,
+    "source": "original"
+  },
+  {
+    "id": "move_0001",
+    "displayText": "電車が駅に到着した",
+    "readingKana": "でんしゃがえきにとうちゃくした",
+    "tier": "long",
+    "category": "移動",
+    "moraCount": 14,
+    "weight": 1,
+    "enabled": true,
+    "source": "original"
+  },
+  {
+    "id": "move_0002",
+    "displayText": "少し早めに出発する",
+    "readingKana": "すこしはやめにしゅっぱつする",
+    "tier": "long",
+    "category": "移動",
+    "moraCount": 14,
+    "weight": 1,
+    "enabled": true,
+    "source": "original"
+  },
+  {
+    "id": "action_0001",
+    "displayText": "明日の予定を決める",
+    "readingKana": "あしたのよていをきめる",
+    "tier": "standard",
+    "category": "行動",
+    "moraCount": 11,
+    "weight": 1,
+    "enabled": true,
+    "source": "original"
+  },
+  {
+    "id": "action_0002",
+    "displayText": "忘れ物に気をつける",
+    "readingKana": "わすれものにきをつける",
+    "tier": "standard",
+    "category": "行動",
+    "moraCount": 11,
+    "weight": 1,
+    "enabled": true,
+    "source": "original"
+  },
+  {
+    "id": "action_0003",
+    "displayText": "新しい方法を試してみる",
+    "readingKana": "あたらしいほうほうをためしてみる",
+    "tier": "long",
+    "category": "行動",
+    "moraCount": 16,
+    "weight": 1,
+    "enabled": true,
+    "source": "original"
+  },
+  {
+    "id": "positive_0001",
+    "displayText": "落ち着いて入力する",
+    "readingKana": "おちついてにゅうりょくする",
+    "tier": "standard",
+    "category": "前向き",
+    "moraCount": 12,
+    "weight": 1,
+    "enabled": true,
+    "source": "original"
+  },
+  {
+    "id": "positive_0002",
+    "displayText": "最後まで正確に打ち切る",
+    "readingKana": "さいごまでせいかくにうちきる",
+    "tier": "long",
+    "category": "前向き",
+    "moraCount": 14,
+    "weight": 1,
+    "enabled": true,
+    "source": "original"
+  },
+  {
+    "id": "positive_0003",
+    "displayText": "自分のペースで進める",
+    "readingKana": "じぶんのぺーすですすめる",
+    "tier": "standard",
+    "category": "前向き",
+    "moraCount": 12,
+    "weight": 1,
+    "enabled": true,
+    "source": "original"
+  },
+  {
+    "id": "season_0001",
+    "displayText": "春の風が吹いている",
+    "readingKana": "はるのかぜがふいている",
+    "tier": "standard",
+    "category": "季節",
+    "moraCount": 11,
+    "weight": 1,
+    "enabled": true,
+    "source": "original"
+  },
+  {
+    "id": "season_0002",
+    "displayText": "雨の音が静かに続く",
+    "readingKana": "あめのおとがしずかにつづく",
+    "tier": "long",
+    "category": "季節",
+    "moraCount": 13,
+    "weight": 1,
+    "enabled": true,
+    "source": "original"
+  },
+  {
+    "id": "food_0001",
+    "displayText": "温かいご飯を食べる",
+    "readingKana": "あたたかいごはんをたべる",
+    "tier": "long",
+    "category": "食事",
+    "moraCount": 13,
+    "weight": 1,
+    "enabled": true,
+    "source": "original"
+  },
+  {
+    "id": "talk_0001",
+    "displayText": "あとで連絡します",
+    "readingKana": "あとでれんらくします",
+    "tier": "standard",
+    "category": "会話",
+    "moraCount": 9,
+    "weight": 1,
+    "enabled": true,
+    "source": "original"
+  }
+]

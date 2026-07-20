@@ -1,0 +1,134 @@
+import type { JapanesePhrase } from "@type-blast/phrase-content";
+import { DEFAULT_CONFIG, type GameConfig } from "./config";
+import { PlayerCore } from "./player";
+import type { GameEvent, GamePhase, SurvivalSnapshot, SurvivalSummary } from "./types";
+
+/**
+ * サバイバルモード(1人用)。
+ * 時間切れは存在しない。行上昇が徐々に加速し、盤面があふれたら終了。
+ */
+export class SurvivalGame {
+  readonly seed: string;
+  private readonly config: GameConfig;
+  private readonly core: PlayerCore;
+
+  private phase: GamePhase = "countdown";
+  private countdownMsLeft: number;
+  private lastCountdownSecond: number;
+  private elapsedMs = 0;
+  private level = 1;
+  private events: GameEvent[] = [];
+
+  constructor(
+    seed: string,
+    phrases: readonly JapanesePhrase[],
+    garbagePhrases: readonly JapanesePhrase[],
+    config: GameConfig = DEFAULT_CONFIG,
+  ) {
+    this.seed = seed;
+    this.config = config;
+    this.countdownMsLeft = config.countdownMs;
+    this.lastCountdownSecond = Math.ceil(config.countdownMs / 1000);
+    this.core = new PlayerCore(seed, phrases, garbagePhrases, config, config.survivalRise);
+  }
+
+  advance(deltaMs: number): GameEvent[] {
+    if (deltaMs < 0) deltaMs = 0;
+    if (this.phase === "countdown") {
+      this.countdownMsLeft -= deltaMs;
+      const second = Math.max(0, Math.ceil(this.countdownMsLeft / 1000));
+      if (second !== this.lastCountdownSecond) {
+        this.lastCountdownSecond = second;
+        if (second > 0) this.events.push({ type: "countdownTick", secondsLeft: second });
+      }
+      if (this.countdownMsLeft <= 0) {
+        this.phase = "playing";
+        this.events.push({ type: "started" });
+        const leftover = -this.countdownMsLeft;
+        this.countdownMsLeft = 0;
+        if (leftover > 0) this.advancePlaying(leftover);
+      }
+    } else if (this.phase === "playing") {
+      this.advancePlaying(deltaMs);
+    }
+    return this.drain();
+  }
+
+  private advancePlaying(deltaMs: number): void {
+    this.elapsedMs += deltaMs;
+
+    // 30秒ごとのレベルアップ(ボーナス加点)
+    const newLevel = 1 + Math.floor(this.elapsedMs / this.config.survivalLevel.intervalMs);
+    while (this.level < newLevel) {
+      this.level += 1;
+      const bonus = this.level * this.config.survivalLevel.bonusPerLevel;
+      this.core.addScore(bonus);
+      this.events.push({ type: "levelUp", level: this.level, bonus });
+    }
+
+    this.core.advance(deltaMs);
+    this.events.push(...this.core.drainEvents());
+    if (this.core.toppedOut) {
+      this.core.flushResolving();
+      this.core.frozen = true;
+      this.events.push(...this.core.drainEvents());
+      this.phase = "ended";
+      this.events.push({ type: "survivalFinished", summary: this.getSummary() });
+    }
+  }
+
+  feedKey(key: string): GameEvent[] {
+    if (this.phase === "playing") {
+      this.core.feedKey(key);
+      this.events.push(...this.core.drainEvents());
+    }
+    return this.drain();
+  }
+
+  triggerBurst(): GameEvent[] {
+    if (this.phase === "playing") {
+      this.core.triggerBurst();
+      this.events.push(...this.core.drainEvents());
+    }
+    return this.drain();
+  }
+
+  cancelSelection(): GameEvent[] {
+    if (this.phase === "playing") {
+      this.core.cancelSelection();
+      this.events.push(...this.core.drainEvents());
+    }
+    return this.drain();
+  }
+
+  getSnapshot(): SurvivalSnapshot {
+    return {
+      mode: "survival",
+      phase: this.phase,
+      countdownMsLeft: this.countdownMsLeft,
+      elapsedMs: this.elapsedMs,
+      level: this.level,
+      player: this.core.getSnapshot(),
+    };
+  }
+
+  getSummary(): SurvivalSummary {
+    return {
+      ...this.core.getSummary(),
+      seed: this.seed,
+      survivedMs: this.elapsedMs,
+      level: this.level,
+    };
+  }
+
+  /** テスト・デバッグ用 */
+  getCore(): PlayerCore {
+    return this.core;
+  }
+
+  private drain(): GameEvent[] {
+    const drained = this.events;
+    this.events = [];
+    return drained;
+  }
+}

@@ -1,0 +1,176 @@
+/**
+ * かな→ローマ字の対応表。
+ * 各エントリの先頭要素が「標準表記」で、UI のガイド表示に使う。
+ */
+export const KANA_TO_ROMAJI: Record<string, readonly string[]> = {
+  あ: ["a"],
+  い: ["i", "yi"],
+  う: ["u", "wu", "whu"],
+  え: ["e"],
+  お: ["o"],
+  か: ["ka", "ca"],
+  き: ["ki"],
+  く: ["ku", "cu", "qu"],
+  け: ["ke"],
+  こ: ["ko", "co"],
+  さ: ["sa"],
+  し: ["shi", "si", "ci"],
+  す: ["su"],
+  せ: ["se", "ce"],
+  そ: ["so"],
+  た: ["ta"],
+  ち: ["chi", "ti"],
+  つ: ["tsu", "tu"],
+  て: ["te"],
+  と: ["to"],
+  な: ["na"],
+  に: ["ni"],
+  ぬ: ["nu"],
+  ね: ["ne"],
+  の: ["no"],
+  は: ["ha"],
+  ひ: ["hi"],
+  ふ: ["fu", "hu"],
+  へ: ["he"],
+  ほ: ["ho"],
+  ま: ["ma"],
+  み: ["mi"],
+  む: ["mu"],
+  め: ["me"],
+  も: ["mo"],
+  や: ["ya"],
+  ゆ: ["yu"],
+  よ: ["yo"],
+  ら: ["ra"],
+  り: ["ri"],
+  る: ["ru"],
+  れ: ["re"],
+  ろ: ["ro"],
+  わ: ["wa"],
+  ゐ: ["wi"],
+  ゑ: ["we"],
+  を: ["wo"],
+  が: ["ga"],
+  ぎ: ["gi"],
+  ぐ: ["gu"],
+  げ: ["ge"],
+  ご: ["go"],
+  ざ: ["za"],
+  じ: ["ji", "zi"],
+  ず: ["zu"],
+  ぜ: ["ze"],
+  ぞ: ["zo"],
+  だ: ["da"],
+  ぢ: ["di"],
+  づ: ["du"],
+  で: ["de"],
+  ど: ["do"],
+  ば: ["ba"],
+  び: ["bi"],
+  ぶ: ["bu"],
+  べ: ["be"],
+  ぼ: ["bo"],
+  ぱ: ["pa"],
+  ぴ: ["pi"],
+  ぷ: ["pu"],
+  ぺ: ["pe"],
+  ぽ: ["po"],
+  ゔ: ["vu"],
+  ぁ: ["xa", "la"],
+  ぃ: ["xi", "li", "lyi", "xyi"],
+  ぅ: ["xu", "lu"],
+  ぇ: ["xe", "le", "lye", "xye"],
+  ぉ: ["xo", "lo"],
+  ゃ: ["xya", "lya"],
+  ゅ: ["xyu", "lyu"],
+  ょ: ["xyo", "lyo"],
+  ゎ: ["xwa", "lwa"],
+  ー: ["-"],
+  // 拗音・外来音
+  きゃ: ["kya"],
+  きゅ: ["kyu"],
+  きょ: ["kyo"],
+  しゃ: ["sha", "sya"],
+  しゅ: ["shu", "syu"],
+  しょ: ["sho", "syo"],
+  しぇ: ["she", "sye"],
+  ちゃ: ["cha", "tya", "cya"],
+  ちゅ: ["chu", "tyu", "cyu"],
+  ちょ: ["cho", "tyo", "cyo"],
+  ちぇ: ["che", "tye", "cye"],
+  にゃ: ["nya"],
+  にゅ: ["nyu"],
+  にょ: ["nyo"],
+  ひゃ: ["hya"],
+  ひゅ: ["hyu"],
+  ひょ: ["hyo"],
+  みゃ: ["mya"],
+  みゅ: ["myu"],
+  みょ: ["myo"],
+  りゃ: ["rya"],
+  りゅ: ["ryu"],
+  りょ: ["ryo"],
+  ぎゃ: ["gya"],
+  ぎゅ: ["gyu"],
+  ぎょ: ["gyo"],
+  じゃ: ["ja", "jya", "zya"],
+  じゅ: ["ju", "jyu", "zyu"],
+  じょ: ["jo", "jyo", "zyo"],
+  じぇ: ["je", "jye", "zye"],
+  ぢゃ: ["dya"],
+  ぢゅ: ["dyu"],
+  ぢょ: ["dyo"],
+  びゃ: ["bya"],
+  びゅ: ["byu"],
+  びょ: ["byo"],
+  ぴゃ: ["pya"],
+  ぴゅ: ["pyu"],
+  ぴょ: ["pyo"],
+  ふぁ: ["fa"],
+  ふぃ: ["fi"],
+  ふぇ: ["fe"],
+  ふぉ: ["fo"],
+  ふゅ: ["fyu"],
+  てぃ: ["thi"],
+  てゅ: ["thu"],
+  でぃ: ["dhi"],
+  でゅ: ["dhu"],
+  とぅ: ["twu"],
+  どぅ: ["dwu"],
+  うぃ: ["whi"],
+  うぇ: ["whe"],
+  うぉ: ["who"],
+  ゔぁ: ["va"],
+  ゔぃ: ["vi"],
+  ゔぇ: ["ve"],
+  ゔぉ: ["vo"],
+  くぁ: ["qa", "kwa"],
+  ぐぁ: ["gwa"],
+};
+
+/** 促音「っ」を単独で打つ場合の表記 */
+export const SOKUON_ALTERNATIVES: readonly string[] = ["xtu", "ltu", "xtsu", "ltsu"];
+
+/** 「ん」の表記。単独 n が使えるかは文脈で決まる */
+export const N_ALWAYS: readonly string[] = ["nn", "n'", "xn"];
+
+const VOWELS = new Set(["a", "i", "u", "e", "o"]);
+
+export function isVowelChar(ch: string): boolean {
+  return VOWELS.has(ch);
+}
+
+/** カタカナをひらがなへ正規化する。長音記号「ー」はそのまま残す */
+export function normalizeKana(input: string): string {
+  let out = "";
+  for (const ch of input) {
+    const code = ch.codePointAt(0)!;
+    // カタカナ ァ(30A1)〜ヶ(30F6) → ひらがな ぁ(3041)〜
+    if (code >= 0x30a1 && code <= 0x30f6) {
+      out += String.fromCodePoint(code - 0x60);
+    } else {
+      out += ch;
+    }
+  }
+  return out;
+}

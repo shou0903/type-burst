@@ -133,6 +133,8 @@ export class BoardRenderer {
   private firstDraw = true;
   private textCache = new Map<string, TextLayout>();
   reducedMotion = false;
+  highContrast = false;
+  fontScale = 1;
 
   constructor(private readonly canvas: HTMLCanvasElement, opts: RendererOptions) {
     const ctx = canvas.getContext("2d");
@@ -623,18 +625,23 @@ export class BoardRenderer {
       return;
     }
 
-    const gradient = ctx.createLinearGradient(bx, by, bx, by + h);
     if (block.kind === "prism") {
+      const gradient = ctx.createLinearGradient(bx, by, bx, by + h);
       // 4属性の虹グラデーション
       gradient.addColorStop(0, "#ff8a70");
       gradient.addColorStop(0.34, "#ffdf70");
       gradient.addColorStop(0.67, "#5fe8b6");
       gradient.addColorStop(1, "#6fc0ff");
+      ctx.fillStyle = gradient;
+    } else if (this.highContrast) {
+      // グラデーションより単色の方が文字とのコントラストを確保しやすい
+      ctx.fillStyle = style.fill;
     } else {
+      const gradient = ctx.createLinearGradient(bx, by, bx, by + h);
       gradient.addColorStop(0, style.fill);
       gradient.addColorStop(1, style.dark);
+      ctx.fillStyle = gradient;
     }
-    ctx.fillStyle = gradient;
     roundRect(ctx, bx, by, w, h, radius);
     ctx.fill();
 
@@ -654,8 +661,9 @@ export class BoardRenderer {
       ctx.strokeStyle = "rgba(255,255,255,0.8)";
       ctx.lineWidth = 2;
     } else {
-      ctx.strokeStyle = "rgba(255,255,255,0.14)";
-      ctx.lineWidth = 1;
+      // High Contrast: 未選択ブロックの枠も常にはっきり見せる
+      ctx.strokeStyle = this.highContrast ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.14)";
+      ctx.lineWidth = this.highContrast ? 2 : 1;
     }
     roundRect(ctx, bx, by, w, h, radius);
     ctx.stroke();
@@ -665,17 +673,28 @@ export class BoardRenderer {
     this.drawIcon(block, bx + iconR + 5, by + iconR + 5, iconR, style.bright);
 
     if (this.opts.drawText) {
-      ctx.fillStyle = "#f5f7ff";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       const layout = this.layoutText(block.displayText, w - 14);
       ctx.font = `bold ${layout.size}px "Yu Gothic", "Hiragino Sans", "Meiryo", sans-serif`;
+
+      const drawLine = (line: string, ly: number): void => {
+        if (this.highContrast) {
+          // 縁取りでブロック色に関わらず視認性を確保する
+          ctx.lineWidth = Math.max(3, layout.size / 6);
+          ctx.strokeStyle = "rgba(8,10,20,0.9)";
+          ctx.strokeText(line, bx + w / 2, ly, w - 10);
+        }
+        ctx.fillStyle = "#ffffff";
+        ctx.fillText(line, bx + w / 2, ly, w - 10);
+      };
+
       if (layout.lines.length === 1) {
-        ctx.fillText(layout.lines[0]!, bx + w / 2, by + h / 2 + 2, w - 10);
+        drawLine(layout.lines[0]!, by + h / 2 + 2);
       } else {
         const lineGap = layout.size + 3;
-        ctx.fillText(layout.lines[0]!, bx + w / 2, by + h / 2 - lineGap / 2 + 2, w - 10);
-        ctx.fillText(layout.lines[1]!, bx + w / 2, by + h / 2 + lineGap / 2 + 2, w - 10);
+        drawLine(layout.lines[0]!, by + h / 2 - lineGap / 2 + 2);
+        drawLine(layout.lines[1]!, by + h / 2 + lineGap / 2 + 2);
       }
 
       if ((block.state === "locked" || block.state === "candidate") && block.progress > 0) {
@@ -786,8 +805,10 @@ export class BoardRenderer {
       return ctx.measureText(t).width <= maxWidth;
     };
 
+    const maxSize = Math.round(22 * this.fontScale);
+    const minSize = Math.round(14 * this.fontScale);
     let layout: TextLayout | null = null;
-    for (let size = 22; size >= 14; size -= 1) {
+    for (let size = maxSize; size >= minSize; size -= 1) {
       if (fits(text, size)) {
         layout = { size, lines: [text] };
         break;
@@ -797,8 +818,9 @@ export class BoardRenderer {
       // 2行に分割
       const mid = Math.ceil(text.length / 2);
       const lines = [text.slice(0, mid), text.slice(mid)];
-      let size = 18;
-      while (size > 10 && !(fits(lines[0]!, size) && fits(lines[1]!, size))) {
+      let size = Math.round(18 * this.fontScale);
+      const minTwoLine = Math.round(10 * this.fontScale);
+      while (size > minTwoLine && !(fits(lines[0]!, size) && fits(lines[1]!, size))) {
         size -= 1;
       }
       layout = { size, lines };

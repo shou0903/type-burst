@@ -7,6 +7,8 @@ interface Props {
   mode: GameMode;
   sound: SoundEngine;
   reducedMotion: boolean;
+  highContrast: boolean;
+  fontScale: number;
   onFinish: (result: GameResult) => void;
   onQuit: () => void;
 }
@@ -18,7 +20,15 @@ function formatTime(ms: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-export function GameScreen({ mode, sound, reducedMotion, onFinish, onQuit }: Props): JSX.Element {
+export function GameScreen({
+  mode,
+  sound,
+  reducedMotion,
+  highContrast,
+  fontScale,
+  onFinish,
+  onQuit,
+}: Props): JSX.Element {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const cpuCanvasRef = useRef<HTMLCanvasElement>(null);
   const [snapshot, setSnapshot] = useState<AnySnapshot | null>(null);
@@ -34,6 +44,8 @@ export function GameScreen({ mode, sound, reducedMotion, onFinish, onQuit }: Pro
       mode,
       sound,
       reducedMotion,
+      highContrast,
+      fontScale,
       onSnapshot: setSnapshot,
       onFinish,
       onImeDetected: () => setImeWarning(true),

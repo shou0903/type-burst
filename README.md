@@ -6,6 +6,7 @@
 
 実装の正本は [TYPE_BLAST_Product_Game_Technical_Spec_v1.0.md](TYPE_BLAST_Product_Game_Technical_Spec_v1.0.md)。
 仕様からの変更・決定事項は [docs/DECISIONS.md](docs/DECISIONS.md) に記録する。
+公開手順は [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) を参照。
 
 ## 遊び方
 

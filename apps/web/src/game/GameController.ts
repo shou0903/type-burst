@@ -34,6 +34,8 @@ export interface GameControllerOptions {
   mode: GameMode;
   sound: SoundEngine;
   reducedMotion: boolean;
+  highContrast: boolean;
+  fontScale: number;
   onSnapshot: (snapshot: AnySnapshot) => void;
   onFinish: (result: GameResult) => void;
   onImeDetected: () => void;
@@ -63,11 +65,17 @@ export class GameController {
         : new DuelGame(seed, PHRASES, GARBAGE_PHRASES, options.mode.difficulty);
     this.renderer = new BoardRenderer(options.canvas, MAIN_RENDERER_OPTIONS);
     this.renderer.reducedMotion = options.reducedMotion;
+    this.renderer.highContrast = options.highContrast;
+    this.renderer.fontScale = options.fontScale;
     this.cpuRenderer =
       options.cpuCanvas && options.mode.type === "duel"
         ? new BoardRenderer(options.cpuCanvas, MINI_RENDERER_OPTIONS)
         : null;
-    if (this.cpuRenderer) this.cpuRenderer.reducedMotion = options.reducedMotion;
+    if (this.cpuRenderer) {
+      this.cpuRenderer.reducedMotion = options.reducedMotion;
+      this.cpuRenderer.highContrast = options.highContrast;
+      this.cpuRenderer.fontScale = options.fontScale;
+    }
 
     if (import.meta.env.DEV) {
       // 開発時のみ: ブラウザコンソールからの動作検証用

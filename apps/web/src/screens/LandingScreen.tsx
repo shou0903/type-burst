@@ -2,7 +2,13 @@ import { useEffect, useState } from "react";
 import type { CpuDifficulty } from "@type-blast/game-core";
 import type { GameMode } from "../game/GameController";
 import { useFitToViewport } from "../hooks/useFitToViewport";
-import { bestScore, loadDuelRecord, type Settings, type StoredResult } from "../storage";
+import { bestScore, loadDuelRecord, type FontScale, type Settings, type StoredResult } from "../storage";
+
+const FONT_SCALE_LABELS: Array<{ value: FontScale; label: string }> = [
+  { value: 1, label: "標準" },
+  { value: 1.15, label: "大" },
+  { value: 1.3, label: "特大" },
+];
 
 interface Props {
   settings: Settings;
@@ -115,9 +121,40 @@ export function LandingScreen({ settings, results, onUpdateSettings, onStart }: 
           />
           演出を控えめにする
         </label>
+        <label>
+          <input
+            type="checkbox"
+            checked={settings.highContrast}
+            onChange={(e) => onUpdateSettings({ highContrast: e.target.checked })}
+          />
+          High Contrast
+        </label>
+      </div>
+
+      <div className="settings-row font-scale-row">
+        <span className="font-scale-label">文字サイズ</span>
+        {FONT_SCALE_LABELS.map(({ value, label }) => (
+          <button
+            key={value}
+            className={settings.fontScale === value ? "chip chip-active" : "chip"}
+            onClick={() => onUpdateSettings({ fontScale: value })}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       <p className="ime-note">※ 日本語IMEはOFF(半角英数)にしてプレイしてください。登録は不要です。</p>
+
+      <div className="footer-links">
+        <a href="/terms.html" target="_blank" rel="noreferrer">
+          利用規約
+        </a>
+        <span aria-hidden="true">・</span>
+        <a href="/privacy.html" target="_blank" rel="noreferrer">
+          プライバシーポリシー
+        </a>
+      </div>
     </div>
   );
 }

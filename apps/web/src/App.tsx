@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { SoundEngine } from "./audio/SoundEngine";
 import type { GameMode, GameResult } from "./game/GameController";
 import { LandingScreen } from "./screens/LandingScreen";
@@ -31,6 +31,11 @@ export function App(): JSX.Element {
   const [screen, setScreen] = useState<Screen>({ name: "landing" });
 
   sound.enabled = settings.soundOn;
+
+  useEffect(() => {
+    document.documentElement.style.setProperty("--font-scale", String(settings.fontScale));
+    document.documentElement.classList.toggle("high-contrast", settings.highContrast);
+  }, [settings.fontScale, settings.highContrast]);
 
   const updateSettings = (patch: Partial<Settings>): void => {
     setSettings((prev) => {
@@ -71,6 +76,8 @@ export function App(): JSX.Element {
           mode={screen.mode}
           sound={sound}
           reducedMotion={settings.reducedMotion}
+          highContrast={settings.highContrast}
+          fontScale={settings.fontScale}
           onFinish={finishGame}
           onQuit={() => setScreen({ name: "landing" })}
         />

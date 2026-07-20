@@ -4,9 +4,13 @@ const SETTINGS_KEY = "typeblast.settings.v1";
 const RESULTS_KEY = "typeblast.results.v2";
 const DUEL_RECORD_KEY = "typeblast.duel.v1";
 
+export type FontScale = 1 | 1.15 | 1.3;
+
 export interface Settings {
   soundOn: boolean;
   reducedMotion: boolean;
+  highContrast: boolean;
+  fontScale: FontScale;
 }
 
 export interface StoredResult {
@@ -21,7 +25,23 @@ export interface StoredResult {
 
 export type DuelRecord = Record<CpuDifficulty, { wins: number; losses: number }>;
 
-const DEFAULT_SETTINGS: Settings = { soundOn: true, reducedMotion: false };
+function prefersReducedMotion(): boolean {
+  try {
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  } catch {
+    return false;
+  }
+}
+
+function defaultSettings(): Settings {
+  return {
+    soundOn: true,
+    // 仕様書§20: OS側のアニメーション削減設定を初回起動時の既定値に反映する
+    reducedMotion: prefersReducedMotion(),
+    highContrast: false,
+    fontScale: 1,
+  };
+}
 const DEFAULT_DUEL_RECORD: DuelRecord = {
   easy: { wins: 0, losses: 0 },
   normal: { wins: 0, losses: 0 },
@@ -31,10 +51,10 @@ const DEFAULT_DUEL_RECORD: DuelRecord = {
 export function loadSettings(): Settings {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
-    if (!raw) return { ...DEFAULT_SETTINGS };
-    return { ...DEFAULT_SETTINGS, ...(JSON.parse(raw) as Partial<Settings>) };
+    if (!raw) return defaultSettings();
+    return { ...defaultSettings(), ...(JSON.parse(raw) as Partial<Settings>) };
   } catch {
-    return { ...DEFAULT_SETTINGS };
+    return defaultSettings();
   }
 }
 

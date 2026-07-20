@@ -6,6 +6,7 @@
 
 :root {
   color-scheme: dark;
+  --font-scale: 1;
 }
 
 html,
@@ -203,6 +204,87 @@ body {
   color: #7d84a3;
 }
 
+.font-scale-row {
+  align-items: center;
+}
+
+.font-scale-label {
+  font-size: 13px;
+  color: #c3c9e2;
+  margin-right: 4px;
+}
+
+.footer-links {
+  font-size: 12px;
+  color: #7d84a3;
+}
+
+.footer-links a {
+  color: #7d84a3;
+  text-decoration: underline;
+}
+
+.footer-links a:hover {
+  color: #c3c9e2;
+}
+
+/* High Contrast: 半透明の背景・枠線をはっきりさせ、ラベル文字も明るくする */
+:root.high-contrast .hud-block,
+:root.high-contrast .hud-mini,
+:root.high-contrast .result-item,
+:root.high-contrast .howto,
+:root.high-contrast .duel-col {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+:root.high-contrast .hud-label {
+  color: #c3c9e2;
+}
+
+:root.high-contrast .typing-hint,
+:root.high-contrast .ime-note,
+:root.high-contrast .duel-sub {
+  color: #c3c9e2;
+}
+
+:root.high-contrast .chip {
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.narrow-guard {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 24px;
+  text-align: center;
+}
+
+.narrow-guard-logo {
+  font-family: "Arial Black", sans-serif;
+  font-size: 40px;
+  letter-spacing: 3px;
+}
+
+.narrow-guard-blast {
+  color: #ff8a70;
+}
+
+.narrow-guard-message {
+  font-size: 16px;
+  line-height: 1.7;
+  color: #f0f2fa;
+  max-width: 420px;
+}
+
+.narrow-guard-sub {
+  font-size: 13px;
+  color: #7d84a3;
+}
+
 /* ---------- Game ---------- */
 
 .game {
@@ -237,7 +319,7 @@ body {
 }
 
 .hud-label {
-  font-size: 11px;
+  font-size: calc(11px * var(--font-scale));
   letter-spacing: 2px;
   color: #7d84a3;
   margin-bottom: 2px;
@@ -245,13 +327,13 @@ body {
 
 .hud-time {
   font-family: "Arial Black", sans-serif;
-  font-size: 30px;
+  font-size: calc(30px * var(--font-scale));
   line-height: 1.1;
 }
 
 .hud-score {
   font-family: "Arial Black", sans-serif;
-  font-size: 28px;
+  font-size: calc(28px * var(--font-scale));
   color: #ffd75e;
 }
 
@@ -260,20 +342,20 @@ body {
 }
 
 .typing-target {
-  font-size: 24px;
+  font-size: calc(24px * var(--font-scale));
   font-weight: bold;
   margin: 4px 0 8px;
 }
 
 .typing-hint {
   color: #7d84a3;
-  font-size: 16px;
+  font-size: calc(16px * var(--font-scale));
   font-weight: normal;
 }
 
 .typing-romaji {
   font-family: Consolas, monospace;
-  font-size: 21px;
+  font-size: calc(21px * var(--font-scale));
   letter-spacing: 1px;
   word-break: break-all;
 }
@@ -283,12 +365,12 @@ body {
 }
 
 .rest {
-  color: #5a6180;
+  color: #7d84a3;
 }
 
 .hud-chain {
   font-family: "Arial Black", sans-serif;
-  font-size: 24px;
+  font-size: calc(24px * var(--font-scale));
 }
 
 .chain-now {
@@ -297,7 +379,7 @@ body {
 
 .chain-max {
   color: #c3c9e2;
-  font-size: 18px;
+  font-size: calc(18px * var(--font-scale));
 }
 
 .hud-row {
@@ -337,7 +419,7 @@ body {
   text-align: center;
   font-family: "Arial Black", sans-serif;
   color: #ff5a46;
-  font-size: 20px;
+  font-size: calc(20px * var(--font-scale));
   animation: blink 0.5s steps(2) infinite;
 }
 
@@ -355,7 +437,7 @@ body {
 .streak-badge {
   text-align: center;
   font-weight: 900;
-  font-size: 17px;
+  font-size: calc(17px * var(--font-scale));
   color: #ffb054;
   text-shadow: 0 0 12px rgba(255, 176, 84, 0.6);
 }
@@ -398,12 +480,12 @@ body {
 }
 
 .hud-kpm {
-  font-size: 20px;
+  font-size: calc(20px * var(--font-scale));
   font-weight: bold;
 }
 
 .hud-acc {
-  font-size: 14px;
+  font-size: calc(14px * var(--font-scale));
   color: #8ef5c9;
 }
 
@@ -585,7 +667,7 @@ body {
 
 .result-score {
   font-family: "Arial Black", sans-serif;
-  font-size: 64px;
+  font-size: calc(64px * var(--font-scale));
   color: #ffd75e;
   text-shadow: 0 0 30px rgba(255, 215, 94, 0.35);
 }
@@ -633,7 +715,7 @@ body {
 }
 
 .result-value {
-  font-size: 26px;
+  font-size: calc(26px * var(--font-scale));
   font-weight: bold;
 }
 

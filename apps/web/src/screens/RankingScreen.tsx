@@ -4,9 +4,9 @@ import { useFitToViewport } from "../hooks/useFitToViewport";
 import { fetchTopScores, type RankingEntry } from "../ranking";
 
 const SURVIVAL_DIFFICULTY_LABELS: Record<SurvivalDifficulty, string> = {
-  easy: "のんびり",
-  normal: "ふつう",
-  hard: "本気",
+  easy: "初級",
+  normal: "中級",
+  hard: "上級",
 };
 
 interface Props {

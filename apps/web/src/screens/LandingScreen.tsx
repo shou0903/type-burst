@@ -19,15 +19,15 @@ interface Props {
 }
 
 const DIFFICULTY_LABELS: Record<CpuDifficulty, string> = {
-  easy: "よわい",
-  normal: "ふつう",
-  hard: "つよい",
+  easy: "弱い",
+  normal: "普通",
+  hard: "強い",
 };
 
 const SURVIVAL_DIFFICULTY_LABELS: Record<SurvivalDifficulty, string> = {
-  easy: "のんびり",
-  normal: "ふつう",
-  hard: "本気",
+  easy: "初級",
+  normal: "中級",
+  hard: "上級",
 };
 
 export function LandingScreen({

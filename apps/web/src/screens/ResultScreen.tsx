@@ -13,8 +13,8 @@ interface Props {
   onBackToTitle: () => void;
 }
 
-const DIFFICULTY_LABELS = { easy: "よわい", normal: "ふつう", hard: "つよい" } as const;
-const SURVIVAL_DIFFICULTY_LABELS = { easy: "のんびり", normal: "ふつう", hard: "本気" } as const;
+const DIFFICULTY_LABELS = { easy: "弱い", normal: "普通", hard: "強い" } as const;
+const SURVIVAL_DIFFICULTY_LABELS = { easy: "初級", normal: "中級", hard: "上級" } as const;
 
 function formatTime(ms: number): string {
   const total = Math.floor(ms / 1000);

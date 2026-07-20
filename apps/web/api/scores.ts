@@ -1,12 +1,15 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { randomUUID } from "node:crypto";
-import { kv } from "@vercel/kv";
+import Redis from "ioredis";
 
 /**
- * サバイバルモードの全期間累計ランキング(Vercel KV / Redis sorted set)。
+ * サバイバルモードの全期間累計ランキング(Redis sorted set)。
  * クライアントから送られたスコアをそのまま信用する簡易実装(v1)。
  * game-core は決定論的なので、将来的にはSeed+入力ログを送らせてサーバー側で
  * 再シミュレーションし検証する方式へ強化できる(docs/DECISIONS.md 参照)。
+ *
+ * データストアは Vercel Marketplace の Redis 連携(REDIS_URL、TCP接続)。
+ * @vercel/kv(REST方式)ではなく ioredis を使う(D-029)。
  */
 
 const LEADERBOARD_KEY = "leaderboard:survival:alltime";
@@ -27,8 +30,22 @@ interface ScoreEntry {
   survivedMs: number;
   level: number;
   submittedAt: string;
-  // @vercel/kv の hset/hgetall が要求する Record<string, unknown> 制約を満たすため
-  [key: string]: string | number;
+}
+
+// サーバーレス関数のウォームインスタンス間で接続を使い回す(毎回接続を張り直さない)
+let client: Redis | null = null;
+
+function getRedis(): Redis {
+  if (!client) {
+    const url = process.env.REDIS_URL;
+    if (!url) throw new Error("REDIS_URL が設定されていません");
+    client = new Redis(url, {
+      maxRetriesPerRequest: 3,
+      // サーバーレス環境でのコネクション張りっぱなしによる詰まりを避ける
+      connectTimeout: 5000,
+    });
+  }
+  return client;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
@@ -45,33 +62,54 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
 }
 
 async function handleGet(req: VercelRequest, res: VercelResponse): Promise<void> {
+  const redis = getRedis();
   const requested = Number(req.query.limit);
   const limit = Math.min(
     TOP_LIMIT_MAX,
     Number.isFinite(requested) && requested > 0 ? Math.floor(requested) : TOP_LIMIT_DEFAULT,
   );
 
-  const ids = await kv.zrange<string[]>(LEADERBOARD_KEY, 0, limit - 1, { rev: true });
+  const ids = await redis.zrevrange(LEADERBOARD_KEY, 0, limit - 1);
   if (ids.length === 0) {
     res.status(200).json({ entries: [] });
     return;
   }
 
-  const entries = await Promise.all(ids.map((id) => kv.hgetall<ScoreEntry>(`score:${id}`)));
-  const valid = entries.filter((e): e is ScoreEntry => e !== null);
+  const pipeline = redis.pipeline();
+  for (const id of ids) pipeline.hgetall(`score:${id}`);
+  const results = await pipeline.exec();
+
+  const entries: ScoreEntry[] = [];
+  if (results) {
+    for (const [err, raw] of results) {
+      if (err || !raw || Object.keys(raw).length === 0) continue;
+      const h = raw as Record<string, string>;
+      entries.push({
+        id: h.id ?? "",
+        nickname: h.nickname ?? "",
+        score: Number(h.score) || 0,
+        maxChain: Number(h.maxChain) || 0,
+        survivedMs: Number(h.survivedMs) || 0,
+        level: Number(h.level) || 1,
+        submittedAt: h.submittedAt ?? "",
+      });
+    }
+  }
+
   res.setHeader("Cache-Control", "s-maxage=30, stale-while-revalidate=60");
-  res.status(200).json({ entries: valid });
+  res.status(200).json({ entries });
 }
 
 async function handlePost(req: VercelRequest, res: VercelResponse): Promise<void> {
+  const redis = getRedis();
   const ip = getClientIp(req);
   const rateLimitKey = `ratelimit:scores:${ip}`;
-  const recent = await kv.get(rateLimitKey);
+  const recent = await redis.get(rateLimitKey);
   if (recent) {
     res.status(429).json({ error: "Too many requests" });
     return;
   }
-  await kv.set(rateLimitKey, "1", { ex: RATE_LIMIT_WINDOW_SEC });
+  await redis.set(rateLimitKey, "1", "EX", RATE_LIMIT_WINDOW_SEC);
 
   const body = (req.body ?? {}) as Record<string, unknown>;
   const nickname = sanitizeNickname(body.nickname);
@@ -108,22 +146,22 @@ async function handlePost(req: VercelRequest, res: VercelResponse): Promise<void
     submittedAt: new Date().toISOString(),
   };
 
-  await kv.hset(`score:${id}`, entry);
-  await kv.zadd(LEADERBOARD_KEY, { score: entry.score, member: id });
-  await pruneOldEntries();
+  await redis.hset(`score:${id}`, entry as unknown as Record<string, string | number>);
+  await redis.zadd(LEADERBOARD_KEY, entry.score, id);
+  await pruneOldEntries(redis);
 
   res.status(200).json({ ok: true, id });
 }
 
 /** ランキング圏外のエントリが無限に溜まらないよう定期的に間引く */
-async function pruneOldEntries(): Promise<void> {
-  const total = await kv.zcard(LEADERBOARD_KEY);
+async function pruneOldEntries(redis: Redis): Promise<void> {
+  const total = await redis.zcard(LEADERBOARD_KEY);
   if (total <= MAX_RETAINED_ENTRIES) return;
   const excess = total - MAX_RETAINED_ENTRIES;
-  const toRemove = await kv.zrange<string[]>(LEADERBOARD_KEY, 0, excess - 1);
+  const toRemove = await redis.zrange(LEADERBOARD_KEY, 0, excess - 1);
   if (toRemove.length === 0) return;
-  await kv.zrem(LEADERBOARD_KEY, ...toRemove);
-  await Promise.all(toRemove.map((id) => kv.del(`score:${id}`)));
+  await redis.zrem(LEADERBOARD_KEY, ...toRemove);
+  await Promise.all(toRemove.map((id) => redis.del(`score:${id}`)));
 }
 
 function sanitizeNickname(input: unknown): string | null {

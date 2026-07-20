@@ -2,7 +2,7 @@
 
 TYPE BURST は静的サイト(SPA)+ ランキング機能用のVercel Serverless Functionsで構成される
 (D-026)。ゲーム本体はバックエンド不要だが、世界ランキングのみサーバー(`apps/web/api/scores.ts`)
-とデータストア(Vercel KV)を使用する。
+とデータストア(Redis、`ioredis`経由。D-029)を使用する。
 
 ## 現在の本番環境
 
@@ -25,18 +25,26 @@ Output Directory: dist
 Vercelはnpm workspacesモノレポの検出が優秀で、Root Directoryを`apps/web`に設定するだけで
 リポジトリルートから正しく依存解決してビルドできる。
 
-### ランキング機能に必要な設定(Vercel KV)
+### ランキング機能に必要な設定(Redis、D-029)
 
-世界ランキング機能(D-026)を動かすには、Vercel KVを有効化してプロジェクトに接続する必要がある。
+世界ランキング機能(D-026)を動かすには、Redisデータベースを有効化してプロジェクトに接続する必要がある。
+**「Vercel KV」は現在廃止されている**ため、Marketplace経由のRedis連携を使う。
 
 1. Vercelダッシュボード → 対象プロジェクト → **Storage** タブ
-2. **Create Database** → **KV**(Upstash Redis) を選択
-3. データベース名を入力して作成(例: `type-burst-ranking`)
-4. 作成後の画面で、対象プロジェクト(`type-burst-web`)に **Connect** する
-5. 接続すると `KV_REST_API_URL` / `KV_REST_API_TOKEN` 等の環境変数が自動で追加される
-6. 再デプロイ(masterへの次のpushで自動、または「Redeploy」ボタン)すれば `/api/scores` が動作する
+2. **Marketplace Database Providers** の **Redis**("Official Redis Cloud — managed by the creators of Redis")→ **Create**
+3. Terms of Service に同意 → **Configuration and Plan** で Region(例: Tokyo）・**Free — 30 MB** プランを選択
+4. **Confirmation** で内容確認 → **Create**
+5. **Connect a Project** で対象プロジェクト(`type-burst-web`)を選択。
+   **Custom Prefix は空欄にする**(デフォルトの `STORAGE` プレフィックスのままだと変数名が
+   `STORAGE_REDIS_URL` のようになり、コードが期待する `REDIS_URL` と一致しない)
+6. Connect すると環境変数 `REDIS_URL`(TCP接続文字列、Sensitive)が1つ追加される
+7. 再デプロイ(masterへの次のpushで自動、または「Redeploy」ボタン)すれば `/api/scores` が動作する
 
-これを行わないと `/api/scores` へのアクセスはエラーになるが、ゲーム本体(サバイバル・CPU対戦)には
+この連携はREST API方式ではなくTCP接続(`ioredis`ライブラリ経由)。もし将来Vercelの提供方式が
+変わって別の環境変数名になった場合は、`apps/web/api/scores.ts` の `getRedis()` 関数で
+参照している環境変数名を実際の名前に合わせて修正すること。
+
+未設定・接続前は `/api/scores` へのアクセスはエラーになるが、ゲーム本体(サバイバル・CPU対戦)には
 一切影響しない(ランキング画面が「取得できませんでした」と表示されるだけ)。
 
 ### 広告(Google AdSense)を有効化する手順

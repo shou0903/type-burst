@@ -194,3 +194,14 @@
   - 実際の商標・既存アプリとの重複はAIでは検索できないため、ユーザー自身の確認を前提としている
 - **理由:** ユーザーの明示的な要望(検索エンジンでの衝突回避、ブランド差別化)。
 - **完了報告(2026-07-20):** GitHubリポジトリ(`shou0903/type-burst`)・Vercelプロジェクト(`https://type-burst-web.vercel.app/`)ともにユーザーによるリネームが完了。ローカルの git remote も追従済み。
+
+## D-029: ランキングのデータストアを Vercel KV から Redis(ioredis)へ変更
+
+- **日付:** 2026-07-20
+- **内容:** D-026実装当時の `@vercel/kv` はREST API方式(`KV_REST_API_URL`/`KV_REST_API_TOKEN`)を前提としていたが、`@vercel/kv` は現在非推奨。Vercelダッシュボードの Storage タブも「Vercel KV」自体が無くなり、Marketplace経由の連携に変わっていた。
+  - ユーザーが実際に接続したのは Marketplace の「Redis」(Official Redis Cloud連携、Tokyo region・Free 30MBプラン)
+  - この連携が発行する環境変数は `REDIS_URL` 1つのみ(TCP接続文字列、RESTではない)
+  - `@vercel/kv` は使えないため、`apps/web/api/scores.ts` を `ioredis`(標準的なRedis TCPクライアント)を使う実装に書き換えた
+  - サーバーレス関数のウォームインスタンス間で接続を使い回すよう、Redisクライアントをモジュールスコープでキャッシュしている
+- **理由:** Vercel側のプロダクト変更(KV廃止・Marketplace移行)に追従。ロジック(sorted setでのランキング管理、バリデーション、レート制限)自体は変更していない。
+- **教訓:** Vercelの「公式っぽい名前」の連携でも、REST方式とTCP方式のどちらを提供するかは連携先次第。実際に接続を作り、Environment Variablesの実際の変数名を確認してからコードを合わせる必要がある。

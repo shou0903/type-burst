@@ -1,4 +1,9 @@
-import type { CpuDifficulty, DuelSummary, SurvivalSummary } from "@type-burst/game-core";
+import type {
+  CpuDifficulty,
+  DuelSummary,
+  SurvivalDifficulty,
+  SurvivalSummary,
+} from "@type-burst/game-core";
 
 const SETTINGS_KEY = "typeblast.settings.v1";
 const RESULTS_KEY = "typeblast.results.v2";
@@ -22,6 +27,7 @@ export interface StoredResult {
   phraseCount: number;
   survivedMs: number;
   playedAt: string;
+  difficulty: SurvivalDifficulty;
 }
 
 export type DuelRecord = Record<CpuDifficulty, { wins: number; losses: number }>;
@@ -89,6 +95,7 @@ export function appendResult(summary: SurvivalSummary): StoredResult[] {
     phraseCount: summary.phraseCount,
     survivedMs: summary.survivedMs,
     playedAt: new Date().toISOString(),
+    difficulty: summary.difficulty,
   });
   const trimmed = results.slice(0, 10);
   try {
@@ -99,8 +106,16 @@ export function appendResult(summary: SurvivalSummary): StoredResult[] {
   return trimmed;
 }
 
-export function bestScore(results: StoredResult[]): number {
-  return results.reduce((max, r) => Math.max(max, r.score), 0);
+/**
+ * 難易度別の自己ベスト。難易度間はプレイに必要な技術が異なり比較に意味が
+ * ないため、指定難易度の記録だけで集計する(D-032)。
+ * difficulty未設定の旧データ(難易度導入前に保存された記録)は
+ * normalとして扱い、既存ユーザーのベストスコア表示が消えないようにする。
+ */
+export function bestScore(results: StoredResult[], difficulty: SurvivalDifficulty): number {
+  return results
+    .filter((r) => (r.difficulty ?? "normal") === difficulty)
+    .reduce((max, r) => Math.max(max, r.score), 0);
 }
 
 export function loadDuelRecord(): DuelRecord {

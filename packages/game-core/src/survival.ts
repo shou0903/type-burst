@@ -1,15 +1,24 @@
 import type { JapanesePhrase } from "@type-burst/phrase-content";
 import { DEFAULT_CONFIG, type GameConfig } from "./config";
 import { PlayerCore } from "./player";
-import type { GameEvent, GamePhase, SurvivalSnapshot, SurvivalSummary } from "./types";
+import type {
+  GameEvent,
+  GamePhase,
+  SurvivalDifficulty,
+  SurvivalSnapshot,
+  SurvivalSummary,
+} from "./types";
 
 /**
  * サバイバルモード(1人用)。
  * 時間切れは存在しない。行上昇が徐々に加速し、盤面があふれたら終了。
+ * 難易度(D-032)は行上昇の速さのみを変え、盤面サイズ等は揃える。
  */
 export class SurvivalGame {
   readonly seed: string;
+  readonly difficulty: SurvivalDifficulty;
   private readonly config: GameConfig;
+  private readonly scoreMultiplier: number;
   private readonly core: PlayerCore;
 
   private phase: GamePhase = "countdown";
@@ -23,13 +32,17 @@ export class SurvivalGame {
     seed: string,
     phrases: readonly JapanesePhrase[],
     garbagePhrases: readonly JapanesePhrase[],
+    difficulty: SurvivalDifficulty = "normal",
     config: GameConfig = DEFAULT_CONFIG,
   ) {
     this.seed = seed;
+    this.difficulty = difficulty;
     this.config = config;
+    const profile = config.survivalDifficulty[difficulty];
+    this.scoreMultiplier = profile.scoreMultiplier;
     this.countdownMsLeft = config.countdownMs;
     this.lastCountdownSecond = Math.ceil(config.countdownMs / 1000);
-    this.core = new PlayerCore(seed, phrases, garbagePhrases, config, config.survivalRise);
+    this.core = new PlayerCore(seed, phrases, garbagePhrases, config, profile.rise);
   }
 
   advance(deltaMs: number): GameEvent[] {
@@ -118,6 +131,8 @@ export class SurvivalGame {
       seed: this.seed,
       survivedMs: this.elapsedMs,
       level: this.level,
+      difficulty: this.difficulty,
+      scoreMultiplier: this.scoreMultiplier,
     };
   }
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { CpuDifficulty } from "@type-burst/game-core";
+import type { CpuDifficulty, SurvivalDifficulty } from "@type-burst/game-core";
 import type { GameMode } from "../game/GameController";
 import { useFitToViewport } from "../hooks/useFitToViewport";
 import { bestScore, loadDuelRecord, type FontScale, type Settings, type StoredResult } from "../storage";
@@ -24,6 +24,12 @@ const DIFFICULTY_LABELS: Record<CpuDifficulty, string> = {
   hard: "つよい",
 };
 
+const SURVIVAL_DIFFICULTY_LABELS: Record<SurvivalDifficulty, string> = {
+  easy: "のんびり",
+  normal: "ふつう",
+  hard: "本気",
+};
+
 export function LandingScreen({
   settings,
   results,
@@ -31,8 +37,9 @@ export function LandingScreen({
   onStart,
   onShowRanking,
 }: Props): JSX.Element {
-  const best = bestScore(results);
   const [difficulty, setDifficulty] = useState<CpuDifficulty>("normal");
+  const [survivalDifficulty, setSurvivalDifficulty] = useState<SurvivalDifficulty>("normal");
+  const best = bestScore(results, survivalDifficulty);
   const record = loadDuelRecord();
   const { ref, style } = useFitToViewport<HTMLDivElement>();
 
@@ -40,12 +47,12 @@ export function LandingScreen({
     const handler = (e: KeyboardEvent): void => {
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
-        onStart({ type: "survival" });
+        onStart({ type: "survival", difficulty: survivalDifficulty });
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [onStart]);
+  }, [onStart, survivalDifficulty]);
 
   return (
     <div ref={ref} style={style} className="screen landing">
@@ -78,9 +85,26 @@ export function LandingScreen({
       </div>
 
       <div className="mode-row">
-        <button className="btn-primary" onClick={() => onStart({ type: "survival" })} autoFocus>
-          サバイバル <span className="btn-sub">Enter</span>
-        </button>
+        <div className="duel-box">
+          <button
+            className="btn-primary"
+            onClick={() => onStart({ type: "survival", difficulty: survivalDifficulty })}
+            autoFocus
+          >
+            サバイバル <span className="btn-sub">Enter</span>
+          </button>
+          <div className="difficulty-row">
+            {(Object.keys(SURVIVAL_DIFFICULTY_LABELS) as SurvivalDifficulty[]).map((d) => (
+              <button
+                key={d}
+                className={d === survivalDifficulty ? "chip chip-active" : "chip"}
+                onClick={() => setSurvivalDifficulty(d)}
+              >
+                {SURVIVAL_DIFFICULTY_LABELS[d]}
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="duel-box">
           <button
             className="btn-duel"
@@ -107,7 +131,8 @@ export function LandingScreen({
 
       {best > 0 && (
         <p className="best-score">
-          サバイバル ベストスコア: <strong>{best.toLocaleString()}</strong>
+          サバイバル({SURVIVAL_DIFFICULTY_LABELS[survivalDifficulty]}) ベストスコア:{" "}
+          <strong>{best.toLocaleString()}</strong>
         </p>
       )}
 

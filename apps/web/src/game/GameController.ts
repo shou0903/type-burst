@@ -4,6 +4,7 @@ import type {
   DuelSnapshot,
   DuelSummary,
   GameEvent,
+  SurvivalDifficulty,
   SurvivalSnapshot,
   SurvivalSummary,
 } from "@type-burst/game-core";
@@ -18,7 +19,7 @@ import {
 import { SoundEngine } from "../audio/SoundEngine";
 
 export type GameMode =
-  | { type: "survival" }
+  | { type: "survival"; difficulty: SurvivalDifficulty }
   | { type: "duel"; difficulty: CpuDifficulty };
 
 export type GameResult =
@@ -61,7 +62,7 @@ export class GameController {
     const seed = `${options.mode.type}-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
     this.game =
       options.mode.type === "survival"
-        ? new SurvivalGame(seed, PHRASES, GARBAGE_PHRASES)
+        ? new SurvivalGame(seed, PHRASES, GARBAGE_PHRASES, options.mode.difficulty)
         : new DuelGame(seed, PHRASES, GARBAGE_PHRASES, options.mode.difficulty);
     this.renderer = new BoardRenderer(options.canvas, MAIN_RENDERER_OPTIONS);
     this.renderer.reducedMotion = options.reducedMotion;

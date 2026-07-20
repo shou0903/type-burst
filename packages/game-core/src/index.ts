@@ -1,7 +1,13 @@
 export { SurvivalGame } from "./survival";
 export { DuelGame } from "./duel";
 export { PlayerCore } from "./player";
-export { DEFAULT_CONFIG, type CpuProfile, type GameConfig, type RiseConfig } from "./config";
+export {
+  DEFAULT_CONFIG,
+  type CpuProfile,
+  type GameConfig,
+  type RiseConfig,
+  type SurvivalDifficultyProfile,
+} from "./config";
 export { Prng } from "./prng";
 export {
   applyGravity,
@@ -26,6 +32,7 @@ export type {
   GamePhase,
   PlayerSnapshot,
   PlayerSummary,
+  SurvivalDifficulty,
   SurvivalSnapshot,
   SurvivalSummary,
   TaggedEvent,

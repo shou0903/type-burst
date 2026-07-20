@@ -88,9 +88,13 @@ export function GameScreen({
             </div>
           </div>
 
-          {player && player.perfectStreak >= 2 && (
-            <div className="streak-badge">🔥 PERFECT ×{player.perfectStreak}</div>
-          )}
+          <div
+            className={`streak-badge badge-reserved${
+              player && player.perfectStreak >= 2 ? "" : " badge-hidden"
+            }`}
+          >
+            🔥 PERFECT ×{player?.perfectStreak ?? 0}
+          </div>
 
           <div className="hud-block hud-typing">
             <div className="hud-label">INPUT</div>
@@ -164,9 +168,13 @@ export function GameScreen({
             <div className="hud-block cpu-panel">
               <div className="hud-label">
                 CPU{" "}
-                {snapshot?.mode === "duel" && snapshot.cpu.incomingGarbage > 0 && (
-                  <span className="cpu-incoming">▼{snapshot.cpu.incomingGarbage}</span>
-                )}
+                <span
+                  className={`cpu-incoming badge-reserved${
+                    snapshot?.mode === "duel" && snapshot.cpu.incomingGarbage > 0 ? "" : " badge-hidden"
+                  }`}
+                >
+                  ▼{snapshot?.mode === "duel" ? snapshot.cpu.incomingGarbage : 0}
+                </span>
               </div>
               <canvas ref={cpuCanvasRef} className="cpu-canvas" />
               <div className="cpu-score">
@@ -174,11 +182,19 @@ export function GameScreen({
               </div>
             </div>
           )}
-          {snapshot?.mode === "duel" && player && player.incomingGarbage > 0 && (
-            <div className="incoming-badge">妨害接近 ▼{player.incomingGarbage}</div>
+          {mode.type === "duel" && (
+            <div
+              className={`incoming-badge badge-reserved${
+                snapshot?.mode === "duel" && player && player.incomingGarbage > 0 ? "" : " badge-hidden"
+              }`}
+            >
+              妨害接近 ▼{snapshot?.mode === "duel" && player ? player.incomingGarbage : 0}
+            </div>
           )}
 
-          {player?.danger && <div className="danger-badge">DANGER!</div>}
+          <div className={`danger-badge badge-reserved${player?.danger ? "" : " badge-hidden"}`}>
+            DANGER!
+          </div>
 
           <div className="key-help">Enter: バースト / Esc・BS: 選択キャンセル</div>
 

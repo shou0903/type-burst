@@ -350,6 +350,37 @@ describe("レベルアップ(v3)", () => {
   });
 });
 
+describe("難易度(D-032)", () => {
+  it("easy/normal/hardで行上昇の速さが異なる(easyが最も遅く、hardが最も速い)", () => {
+    const easy = new SurvivalGame("diff-easy", PHRASES, GARBAGE_PHRASES, "easy");
+    const normal = new SurvivalGame("diff-normal", PHRASES, GARBAGE_PHRASES, "normal");
+    const hard = new SurvivalGame("diff-hard", PHRASES, GARBAGE_PHRASES, "hard");
+    startPlaying(easy);
+    startPlaying(normal);
+    startPlaying(hard);
+    const easyInterval = easy.getCore().currentRiseInterval();
+    const normalInterval = normal.getCore().currentRiseInterval();
+    const hardInterval = hard.getCore().currentRiseInterval();
+    expect(easyInterval).toBeGreaterThan(normalInterval);
+    expect(normalInterval).toBeGreaterThan(hardInterval);
+  });
+
+  it("getSummaryが選択した難易度とスコア倍率を返す", () => {
+    const game = new SurvivalGame("diff-summary", PHRASES, GARBAGE_PHRASES, "hard");
+    startPlaying(game);
+    const summary = game.getSummary();
+    expect(summary.difficulty).toBe("hard");
+    expect(summary.scoreMultiplier).toBeGreaterThan(1);
+  });
+
+  it("難易度未指定時はnormal相当で動作する(後方互換)", () => {
+    const game = new SurvivalGame("diff-default", PHRASES, GARBAGE_PHRASES);
+    startPlaying(game);
+    expect(game.getSummary().difficulty).toBe("normal");
+    expect(game.getSummary().scoreMultiplier).toBe(1);
+  });
+});
+
 describe("決定論", () => {
   it("同じSeedと同じ操作列から同じ結果になる", () => {
     const script = "shiryouwokakuninsuruhonwoyomimasuasupiko";

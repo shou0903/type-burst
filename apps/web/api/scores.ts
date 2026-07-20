@@ -22,14 +22,38 @@ const MAX_PLAUSIBLE_SURVIVED_MS = 6 * 60 * 60 * 1000; // 6時間
 const RATE_LIMIT_WINDOW_SEC = 5;
 const NICKNAME_MAX_LENGTH = 12;
 
+type SurvivalDifficulty = "easy" | "normal" | "hard";
+
+/**
+ * 難易度間の公平性のためのスコア補正係数(D-032)。
+ * 易しい難易度は行上昇が遅く同じ操作精度でも高スコアが出やすいため、
+ * ランキング反映時にこの係数を掛けて割り引く/上乗せする。
+ * packages/game-core/src/config.ts の survivalDifficulty[*].scoreMultiplier と
+ * 必ず同じ値を保つこと(このサーバーレス関数は軽量化のため game-core を
+ * importせず、値をここに複製している)。
+ */
+const SCORE_MULTIPLIER: Record<SurvivalDifficulty, number> = {
+  easy: 0.65,
+  normal: 1.0,
+  hard: 1.4,
+};
+
 interface ScoreEntry {
   id: string;
   nickname: string;
+  /** 難易度補正後のスコア。ランキングの並び順(zadd)に使う値 */
   score: number;
+  /** 補正前の素点 */
+  rawScore: number;
+  difficulty: SurvivalDifficulty;
   maxChain: number;
   survivedMs: number;
   level: number;
   submittedAt: string;
+}
+
+function isSurvivalDifficulty(value: unknown): value is SurvivalDifficulty {
+  return value === "easy" || value === "normal" || value === "hard";
 }
 
 // サーバーレス関数のウォームインスタンス間で接続を使い回す(毎回接続を張り直さない)
@@ -88,6 +112,8 @@ async function handleGet(req: VercelRequest, res: VercelResponse): Promise<void>
         id: h.id ?? "",
         nickname: h.nickname ?? "",
         score: Number(h.score) || 0,
+        rawScore: Number(h.rawScore) || Number(h.score) || 0,
+        difficulty: isSurvivalDifficulty(h.difficulty) ? h.difficulty : "normal",
         maxChain: Number(h.maxChain) || 0,
         survivedMs: Number(h.survivedMs) || 0,
         level: Number(h.level) || 1,
@@ -113,16 +139,19 @@ async function handlePost(req: VercelRequest, res: VercelResponse): Promise<void
 
   const body = (req.body ?? {}) as Record<string, unknown>;
   const nickname = sanitizeNickname(body.nickname);
-  const score = Number(body.score);
+  const rawScore = Number(body.score);
   const maxChain = Number(body.maxChain);
   const survivedMs = Number(body.survivedMs);
   const level = Number(body.level);
+  const difficulty: SurvivalDifficulty = isSurvivalDifficulty(body.difficulty)
+    ? body.difficulty
+    : "normal";
 
   if (!nickname) {
     res.status(400).json({ error: "Invalid nickname" });
     return;
   }
-  if (!Number.isFinite(score) || score <= 0 || score > MAX_PLAUSIBLE_SCORE) {
+  if (!Number.isFinite(rawScore) || rawScore <= 0 || rawScore > MAX_PLAUSIBLE_SCORE) {
     res.status(400).json({ error: "Invalid score" });
     return;
   }
@@ -136,10 +165,13 @@ async function handlePost(req: VercelRequest, res: VercelResponse): Promise<void
   }
 
   const id = randomUUID();
+  const adjustedScore = Math.round(Math.floor(rawScore) * SCORE_MULTIPLIER[difficulty]);
   const entry: ScoreEntry = {
     id,
     nickname,
-    score: Math.floor(score),
+    score: adjustedScore,
+    rawScore: Math.floor(rawScore),
+    difficulty,
     maxChain: Math.floor(maxChain),
     survivedMs: Math.floor(survivedMs),
     level: Number.isFinite(level) && level > 0 ? Math.floor(level) : 1,

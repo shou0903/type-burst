@@ -14,6 +14,7 @@ interface Props {
 }
 
 const DIFFICULTY_LABELS = { easy: "よわい", normal: "ふつう", hard: "つよい" } as const;
+const SURVIVAL_DIFFICULTY_LABELS = { easy: "のんびり", normal: "ふつう", hard: "本気" } as const;
 
 function formatTime(ms: number): string {
   const total = Math.floor(ms / 1000);
@@ -26,7 +27,7 @@ export function ResultScreen({ result, history, duelRecord, onRetry, onBackToTit
   const { ref, style } = useFitToViewport<HTMLDivElement>();
   const retryMode: GameMode =
     result.mode === "survival"
-      ? { type: "survival" }
+      ? { type: "survival", difficulty: result.summary.difficulty }
       : { type: "duel", difficulty: result.summary.difficulty };
 
   useEffect(() => {
@@ -47,8 +48,11 @@ export function ResultScreen({ result, history, duelRecord, onRetry, onBackToTit
 
   if (result.mode === "survival") {
     const summary = result.summary;
-    const previous = history[1];
-    const best = history.reduce((max, r) => Math.max(max, r.score), 0);
+    const sameDifficultyHistory = history.filter(
+      (r) => (r.difficulty ?? "normal") === summary.difficulty,
+    );
+    const previous = sameDifficultyHistory[1];
+    const best = sameDifficultyHistory.reduce((max, r) => Math.max(max, r.score), 0);
     const isBest = summary.score >= best && summary.score > 0;
     const delta = previous ? summary.score - previous.score : null;
     const hint = buildHint(summary.accuracy, summary.maxChain, summary.kpm, summary.phraseCount);
@@ -57,7 +61,12 @@ export function ResultScreen({ result, history, duelRecord, onRetry, onBackToTit
 
     return (
       <div ref={ref} style={style} className="screen result">
-        <h2 className="result-title">SURVIVAL RESULT</h2>
+        <h2 className="result-title">
+          SURVIVAL RESULT{" "}
+          <span className="duel-sub result-difficulty">
+            {SURVIVAL_DIFFICULTY_LABELS[summary.difficulty]}
+          </span>
+        </h2>
 
         <div className="result-score-wrap">
           <div className={`rank-badge rank-${rank.replace("+", "plus")}`}>{rank}</div>

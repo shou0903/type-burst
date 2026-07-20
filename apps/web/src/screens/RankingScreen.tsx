@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
+import type { SurvivalDifficulty } from "@type-burst/game-core";
 import { useFitToViewport } from "../hooks/useFitToViewport";
 import { fetchTopScores, type RankingEntry } from "../ranking";
+
+const SURVIVAL_DIFFICULTY_LABELS: Record<SurvivalDifficulty, string> = {
+  easy: "のんびり",
+  normal: "ふつう",
+  hard: "本気",
+};
 
 interface Props {
   onBack: () => void;
@@ -68,6 +75,7 @@ export function RankingScreen({ onBack }: Props): JSX.Element {
               <tr>
                 <th>#</th>
                 <th>ニックネーム</th>
+                <th>難易度</th>
                 <th>スコア</th>
                 <th>最大連鎖</th>
                 <th>生存時間</th>
@@ -78,6 +86,11 @@ export function RankingScreen({ onBack }: Props): JSX.Element {
                 <tr key={entry.id} className={i < 3 ? `ranking-top ranking-top-${i + 1}` : undefined}>
                   <td>{i + 1}</td>
                   <td className="ranking-nickname">{entry.nickname}</td>
+                  <td>
+                    <span className="ranking-difficulty-chip">
+                      {SURVIVAL_DIFFICULTY_LABELS[entry.difficulty]}
+                    </span>
+                  </td>
                   <td>{entry.score.toLocaleString()}</td>
                   <td>{entry.maxChain}</td>
                   <td>{formatTime(entry.survivedMs)}</td>

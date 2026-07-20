@@ -148,6 +148,9 @@ export interface SurvivalSummary extends PlayerSummary {
   seed: string;
   survivedMs: number;
   level: number;
+  difficulty: SurvivalDifficulty;
+  /** ランキング送信時にscoreへ掛ける係数(表示用。実際の計算はサーバー側で行う) */
+  scoreMultiplier: number;
 }
 
 export interface DuelSummary {
@@ -160,3 +163,4 @@ export interface DuelSummary {
 }
 
 export type CpuDifficulty = "easy" | "normal" | "hard";
+export type SurvivalDifficulty = "easy" | "normal" | "hard";

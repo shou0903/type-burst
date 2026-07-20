@@ -1,5 +1,5 @@
 import type { PhraseTier } from "@type-burst/phrase-content";
-import type { CpuDifficulty } from "./types";
+import type { CpuDifficulty, SurvivalDifficulty } from "./types";
 
 /** 行上昇の設定。経過時間とともに加速する */
 export interface RiseConfig {
@@ -22,6 +22,20 @@ export interface CpuProfile {
   burstDelayMs: number;
 }
 
+/**
+ * サバイバル難易度ごとの設定(D-032)。盤面サイズ・出現ロジックは難易度間で
+ * 揃え、行上昇の速さのみを変える(初心者でも「同じゲーム」に見えるように)。
+ * scoreMultiplier は世界ランキングに送信する際にスコアへ掛ける係数。
+ * 易しい難易度ほど同じ操作精度でも高スコアが出やすいため、その分だけ
+ * ランキング上のスコアを割り引き、難しい難易度は上乗せする。
+ * 実プレイのデータが無い状態での初期値なので、後で実際のスコア分布を見て
+ * 調整する前提の暫定値(apps/web/api/scores.ts 側の定数と値を揃えること)。
+ */
+export interface SurvivalDifficultyProfile {
+  rise: RiseConfig;
+  scoreMultiplier: number;
+}
+
 /** 全チューニング値。ハードコード禁止(設計書 §32) */
 export interface GameConfig {
   columns: number;
@@ -31,7 +45,7 @@ export interface GameConfig {
   initialRows: number;
   countdownMs: number;
   tierRatio: Record<PhraseTier, number>;
-  survivalRise: RiseConfig;
+  survivalDifficulty: Record<SurvivalDifficulty, SurvivalDifficultyProfile>;
   duelRise: RiseConfig;
   chain: {
     directClearMin: number;
@@ -95,11 +109,34 @@ export const DEFAULT_CONFIG: GameConfig = {
   initialRows: 6,
   countdownMs: 3_000,
   tierRatio: { short: 0.2, standard: 0.65, long: 0.15 },
-  survivalRise: {
-    startIntervalMs: 5_500,
-    minIntervalMs: 2_400,
-    accelPerSecondMs: 25,
-    warningMs: 1_500,
+  survivalDifficulty: {
+    easy: {
+      rise: {
+        startIntervalMs: 8_000,
+        minIntervalMs: 4_000,
+        accelPerSecondMs: 15,
+        warningMs: 1_800,
+      },
+      scoreMultiplier: 0.65,
+    },
+    normal: {
+      rise: {
+        startIntervalMs: 5_500,
+        minIntervalMs: 2_400,
+        accelPerSecondMs: 25,
+        warningMs: 1_500,
+      },
+      scoreMultiplier: 1.0,
+    },
+    hard: {
+      rise: {
+        startIntervalMs: 4_200,
+        minIntervalMs: 1_700,
+        accelPerSecondMs: 32,
+        warningMs: 1_200,
+      },
+      scoreMultiplier: 1.4,
+    },
   },
   duelRise: {
     startIntervalMs: 6_000,

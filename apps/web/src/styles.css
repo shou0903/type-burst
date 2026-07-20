@@ -438,6 +438,18 @@ body {
   animation: blink 0.5s steps(2) infinite;
 }
 
+/*
+ * バッジ類は表示/非表示をvisibilityで切り替える(DOMから着脱しない)。
+ * CPU対戦中に妨害の送受信でこれらが頻繁にON/OFFすると、要素をDOMから
+ * 着脱する実装では画面全体の自然な高さ(scrollHeight)が変化し、
+ * useFitToViewportのResizeObserverが反応してボード全体の拡大縮小が
+ * 繰り返し発生してしまう(D-031)。常に同じ領域を確保したまま
+ * visibility:hiddenで見た目だけ隠すことで、この揺れを防ぐ。
+ */
+.badge-reserved.badge-hidden {
+  visibility: hidden;
+}
+
 .level-chip {
   margin-left: 8px;
   background: #2b3355;
@@ -674,6 +686,14 @@ body {
   letter-spacing: 3px;
 }
 
+.result-difficulty {
+  font-family: initial;
+  font-size: 16px;
+  letter-spacing: 0;
+  color: #7d84a3;
+  vertical-align: middle;
+}
+
 .result-score-wrap {
   display: flex;
   align-items: baseline;
@@ -848,7 +868,18 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
   width: 100%;
-  max-width: 640px;
+  max-width: 720px;
+}
+
+.ranking-difficulty-chip {
+  display: inline-block;
+  font-size: 11px;
+  color: #c3c9e2;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+  padding: 2px 10px;
+  white-space: nowrap;
 }
 
 .ranking-table {

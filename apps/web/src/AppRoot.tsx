@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { App } from "./App";
-import { ADSENSE_CLIENT_ID, isAdsenseConfigured } from "./adsConfig";
+import { ADSENSE_CLIENT_ID, hasAdsenseClientId } from "./adsConfig";
 import { AdSlots } from "./components/AdSlots";
 import { ConsentBanner, loadConsent, type ConsentState } from "./components/ConsentBanner";
 import { SmallScreenGuard } from "./components/SmallScreenGuard";
@@ -12,7 +12,7 @@ export function AppRoot(): JSX.Element {
   useEffect(() => {
     // AdSenseのサイト所有権確認用メタタグ。Cookieを一切使わない静的な宣言なので
     // 同意バナーとは無関係に、設定済みなら常に出しておく(審査に必要なため)。
-    if (!isAdsenseConfigured()) return;
+    if (!hasAdsenseClientId()) return;
     if (document.querySelector('meta[name="google-adsense-account"]')) return;
     const meta = document.createElement("meta");
     meta.name = "google-adsense-account";

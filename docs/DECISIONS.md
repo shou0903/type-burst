@@ -155,3 +155,11 @@
   - `KeyboardEvent.isComposing`(IME検出): 全モダンブラウザ対応
 - **理由:** 実機を用意できない制約下で、根拠のない「動作確認済み」を主張しないため、検証済み範囲(Chromium系・本セッションで多数回実施)と未検証範囲(Firefox・Safari実機)を明確に分けて記録する。
 - **推奨:** 公開前に Firefox・Safari(可能なら実iPad/Mac含む)での簡易な手動確認を1回行うこと。特に IME 検出まわりの挙動と、Safari の音声再生解禁タイミングを重点確認。
+
+## D-025: ホスティングをCloudflare PagesからVercelへ変更
+
+- **日付:** 2026-07-20
+- **内容:** 当初推奨した Cloudflare Pages(D-024以前の推奨)は、npm workspacesモノレポとの組み合わせで3段階連続の障害(wranglerのワークスペース検出エラー→APIトークン権限不足→ビルドトークン自体の内部不具合)に遭遇し、最後の問題はCloudflare側のUIが提示する修正手順を試しても解消しなかった。原因究明を打ち切り、Vercelへ切り替えたところ即座に成功した。
+- **理由:** ローカルビルドは常に成功しており、こちら側の設定・コードに問題がないことは検証済みだった。Cloudflareの新しい「Workers Builds」統合パイプラインがモノレポ構成に対して現状脆弱と判断し、時間を浪費するより実績のあるVercelへ切り替える判断をした。
+- **現在の本番URL:** https://type-blast-web.vercel.app/(詳細は docs/DEPLOYMENT.md)
+- **今後:** Cloudflareの帯域無制限という利点を活かしたい場合は、`docs/DEPLOYMENT.md` の「経緯」セクションを参照のうえ再挑戦する。`wrangler.toml` はリポジトリに残置しているが現在未使用。

@@ -50,6 +50,28 @@ export const PHRASE_SEEDS: readonly PhraseSeed[] = [
   { id: "word_0039", displayText: "春", readingKana: "はる", tier: "micro", category: "単語" },
   { id: "word_0040", displayText: "夏", readingKana: "なつ", tier: "micro", category: "単語" },
 
+  // ---- 追加分(MICRO 3, D-043: 単語をさらに拡充) ----
+  { id: "word_0041", displayText: "秋", readingKana: "あき", tier: "micro", category: "単語" },
+  { id: "word_0042", displayText: "冬", readingKana: "ふゆ", tier: "micro", category: "単語" },
+  { id: "word_0043", displayText: "森", readingKana: "もり", tier: "micro", category: "単語" },
+  { id: "word_0044", displayText: "石", readingKana: "いし", tier: "micro", category: "単語" },
+  { id: "word_0045", displayText: "土", readingKana: "つち", tier: "micro", category: "単語" },
+  { id: "word_0046", displayText: "家", readingKana: "いえ", tier: "micro", category: "単語" },
+  { id: "word_0047", displayText: "庭", readingKana: "にわ", tier: "micro", category: "単語" },
+  { id: "word_0048", displayText: "池", readingKana: "いけ", tier: "micro", category: "単語" },
+  { id: "word_0049", displayText: "橋", readingKana: "はし", tier: "micro", category: "単語" },
+  { id: "word_0050", displayText: "駅", readingKana: "えき", tier: "micro", category: "単語" },
+  { id: "word_0051", displayText: "道", readingKana: "みち", tier: "micro", category: "単語" },
+  { id: "word_0052", displayText: "店", readingKana: "みせ", tier: "micro", category: "単語" },
+  { id: "word_0053", displayText: "服", readingKana: "ふく", tier: "micro", category: "単語" },
+  { id: "word_0054", displayText: "皿", readingKana: "さら", tier: "micro", category: "単語" },
+  { id: "word_0055", displayText: "針", readingKana: "はり", tier: "micro", category: "単語" },
+  { id: "word_0056", displayText: "缶", readingKana: "かん", tier: "micro", category: "単語" },
+  { id: "word_0057", displayText: "袋", readingKana: "ふくろ", tier: "micro", category: "単語" },
+  { id: "word_0058", displayText: "布団", readingKana: "ふとん", tier: "micro", category: "単語" },
+  { id: "word_0059", displayText: "銀行", readingKana: "ぎんこう", tier: "micro", category: "単語" },
+  { id: "word_0060", displayText: "公園", readingKana: "こうえん", tier: "micro", category: "単語" },
+
   // ---- 設計書サンプル由来(TYPE_BURST_Japanese_Phrase_Samples.json) ----
   { id: "daily_0001", displayText: "空が明るくなる", readingKana: "そらがあかるくなる", tier: "standard", category: "日常" },
   { id: "daily_0002", displayText: "音が聞こえる", readingKana: "おとがきこえる", tier: "short", category: "日常" },
@@ -99,6 +121,23 @@ export const PHRASE_SEEDS: readonly PhraseSeed[] = [
   { id: "action_0008", displayText: "手を伸ばす", readingKana: "てをのばす", tier: "short", category: "行動" },
   { id: "daily_0011", displayText: "目を閉じる", readingKana: "めをとじる", tier: "short", category: "日常" },
 
+  // ---- 追加分(SHORT 3, D-043) ----
+  { id: "season_0014", displayText: "雪が降る", readingKana: "ゆきがふる", tier: "short", category: "季節" },
+  { id: "daily_0014", displayText: "鍵をかける", readingKana: "かぎをかける", tier: "short", category: "日常" },
+  { id: "action_0011", displayText: "窓を閉める", readingKana: "まどをしめる", tier: "short", category: "行動" },
+  { id: "work_0011", displayText: "会議に出る", readingKana: "かいぎにでる", tier: "short", category: "仕事" },
+  { id: "move_0011", displayText: "橋を渡る", readingKana: "はしをわたる", tier: "short", category: "移動" },
+  { id: "talk_0007", displayText: "挨拶をする", readingKana: "あいさつをする", tier: "short", category: "会話" },
+  { id: "school_0012", displayText: "宿題をする", readingKana: "しゅくだいをする", tier: "short", category: "学校" },
+  { id: "food_0010", displayText: "パンを焼く", readingKana: "ぱんをやく", tier: "short", category: "食事" },
+  { id: "positive_0012", displayText: "笑顔になる", readingKana: "えがおになる", tier: "short", category: "前向き" },
+  { id: "daily_0015", displayText: "鏡を見る", readingKana: "かがみをみる", tier: "short", category: "日常" },
+  { id: "action_0012", displayText: "皿を洗う", readingKana: "さらをあらう", tier: "short", category: "行動" },
+  { id: "season_0015", displayText: "星が光る", readingKana: "ほしがひかる", tier: "short", category: "季節" },
+  { id: "move_0012", displayText: "駅に着く", readingKana: "えきにつく", tier: "short", category: "移動" },
+  { id: "work_0012", displayText: "資料を配る", readingKana: "しりょうをくばる", tier: "short", category: "仕事" },
+  { id: "talk_0008", displayText: "名前を呼ぶ", readingKana: "なまえをよぶ", tier: "short", category: "会話" },
+
   // ---- 追加分(STANDARD) ----
   { id: "daily_0005", displayText: "今日は早く帰ります", readingKana: "きょうははやくかえります", tier: "standard", category: "日常" },
   { id: "daily_0006", displayText: "窓を開けて風を通す", readingKana: "まどをあけてかぜをとおす", tier: "standard", category: "日常" },
@@ -134,6 +173,23 @@ export const PHRASE_SEEDS: readonly PhraseSeed[] = [
   { id: "food_0008", displayText: "お茶を用意する", readingKana: "おちゃをよういする", tier: "standard", category: "食事" },
   { id: "work_0009", displayText: "予定を確認する", readingKana: "よていをかくにんする", tier: "standard", category: "仕事" },
 
+  // ---- 追加分(STANDARD 3, D-043) ----
+  { id: "daily_0016", displayText: "朝早く目を覚ます", readingKana: "あさはやくめをさます", tier: "standard", category: "日常" },
+  { id: "work_0013", displayText: "会議室に集まる", readingKana: "かいぎしつにあつまる", tier: "standard", category: "仕事" },
+  { id: "school_0013", displayText: "黒板の字を写す", readingKana: "こくばんのじをうつす", tier: "standard", category: "学校" },
+  { id: "move_0013", displayText: "バス停で友達と会う", readingKana: "ばすていでともだちとあう", tier: "standard", category: "移動" },
+  { id: "food_0011", displayText: "野菜をよく洗う", readingKana: "やさいをよくあらう", tier: "standard", category: "食事" },
+  { id: "action_0013", displayText: "荷物を棚に置く", readingKana: "にもつをたなにおく", tier: "standard", category: "行動" },
+  { id: "season_0016", displayText: "秋の空を見上げる", readingKana: "あきのそらをみあげる", tier: "standard", category: "季節" },
+  { id: "positive_0013", displayText: "焦らず進める", readingKana: "あせらずすすめる", tier: "standard", category: "前向き" },
+  { id: "talk_0009", displayText: "相手の話を聞く", readingKana: "あいてのはなしをきく", tier: "standard", category: "会話" },
+  { id: "work_0014", displayText: "書類にサインする", readingKana: "しょるいにさいんする", tier: "standard", category: "仕事" },
+  { id: "daily_0017", displayText: "洗濯物を畳む", readingKana: "せんたくものをたたむ", tier: "standard", category: "日常" },
+  { id: "school_0014", displayText: "先生に質問する", readingKana: "せんせいにしつもんする", tier: "standard", category: "学校" },
+  { id: "food_0012", displayText: "果物を切って食べる", readingKana: "くだものをきってたべる", tier: "standard", category: "食事" },
+  { id: "move_0014", displayText: "信号が青に変わる", readingKana: "しんごうがあおにかわる", tier: "standard", category: "移動" },
+  { id: "season_0017", displayText: "冬の朝は空気が澄む", readingKana: "ふゆのあさはくうきがすむ", tier: "standard", category: "季節" },
+
   // ---- 追加分(LONG) ----
   { id: "action_0006", displayText: "新しい方法をみんなで試してみる", readingKana: "あたらしいほうほうをみんなでためしてみる", tier: "long", category: "行動" },
   { id: "daily_0008", displayText: "今日は少し早めに寝ようと思う", readingKana: "きょうはすこしはやめにねようとおもう", tier: "long", category: "日常" },
@@ -156,6 +212,18 @@ export const PHRASE_SEEDS: readonly PhraseSeed[] = [
   { id: "school_0011", displayText: "静かな図書室で集中して勉強する", readingKana: "しずかなとしょしつでしゅうちゅうしてべんきょうする", tier: "long", category: "学校" },
   { id: "season_0013", displayText: "冷たい風が窓の隙間から入ってくる", readingKana: "つめたいかぜがまどのすきまからはいってくる", tier: "long", category: "季節" },
   { id: "work_0010", displayText: "会議室に資料をすべて運んでおく", readingKana: "かいぎしつにしりょうをすべてはこんでおく", tier: "long", category: "仕事" },
+
+  // ---- 追加分(LONG 3, D-043) ----
+  { id: "move_0015", displayText: "電車が遅れて少し焦った", readingKana: "でんしゃがおくれてすこしあせった", tier: "long", category: "移動" },
+  { id: "season_0018", displayText: "夏の夜に虫の声を聞く", readingKana: "なつのよるにむしのこえをきく", tier: "long", category: "季節" },
+  { id: "work_0015", displayText: "新しい企画について話し合う", readingKana: "あたらしいきかくについてはなしあう", tier: "long", category: "仕事" },
+  { id: "positive_0014", displayText: "失敗しても諦めずにもう一度挑戦する", readingKana: "しっぱいしてもあきらめずにもういちどちょうせんする", tier: "long", category: "前向き" },
+  { id: "daily_0018", displayText: "掃除をしたら部屋が広く感じた", readingKana: "そうじをしたらへやがひろくかんじた", tier: "long", category: "日常" },
+  { id: "school_0015", displayText: "難しい問題を友達と一緒に解く", readingKana: "むずかしいもんだいをともだちといっしょにとく", tier: "long", category: "学校" },
+  { id: "food_0013", displayText: "家族みんなで晩ごはんを食べる", readingKana: "かぞくみんなでばんごはんをたべる", tier: "long", category: "食事" },
+  { id: "move_0016", displayText: "目的地までもう少しで到着する", readingKana: "もくてきちまでもうすこしでとうちゃくする", tier: "long", category: "移動" },
+  { id: "season_0019", displayText: "涼しい風が部屋の中を通り抜ける", readingKana: "すずしいかぜがへやのなかをとおりぬける", tier: "long", category: "季節" },
+  { id: "positive_0015", displayText: "毎日少しずつ上達していく", readingKana: "まいにちすこしずつじょうたつしていく", tier: "long", category: "前向き" },
 ];
 
 /**

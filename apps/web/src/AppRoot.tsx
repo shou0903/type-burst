@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Analytics } from "@vercel/analytics/react";
 import { App } from "./App";
 import { ADSENSE_CLIENT_ID, hasAdsenseClientId } from "./adsConfig";
 import { AdSlots } from "./components/AdSlots";
@@ -26,6 +27,8 @@ export function AppRoot(): JSX.Element {
         <AdSlots consent={consent} />
         <App />
         <ConsentBanner onChange={setConsent} />
+        {/* Cookie不使用・個人を特定しない集計のみのため同意バナーとは無関係に常時計測(D-037) */}
+        <Analytics />
       </>
     </SmallScreenGuard>
   );

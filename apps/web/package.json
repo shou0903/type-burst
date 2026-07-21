@@ -12,6 +12,7 @@
     "@type-burst/game-core": "*",
     "@type-burst/phrase-content": "*",
     "@type-burst/typing-engine": "*",
+    "@vercel/analytics": "^2.0.1",
     "ioredis": "^5.4.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"

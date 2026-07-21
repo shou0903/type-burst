@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
+import type { TypingAnalysis } from "@type-burst/game-core";
 import { SoundEngine } from "./audio/SoundEngine";
 import type { GameMode, GameResult } from "./game/GameController";
 import { LandingScreen } from "./screens/LandingScreen";
 import { GameScreen } from "./screens/GameScreen";
 import { ResultScreen } from "./screens/ResultScreen";
 import { RankingScreen } from "./screens/RankingScreen";
+import { AnalysisScreen } from "./screens/AnalysisScreen";
 import {
   appendResult,
   loadResults,
@@ -16,15 +18,18 @@ import {
   type StoredResult,
 } from "./storage";
 
+type ResultScreenState = {
+  name: "result";
+  result: GameResult;
+  history: StoredResult[];
+  duelRecord: DuelRecord | null;
+};
+
 type Screen =
   | { name: "landing" }
   | { name: "game"; mode: GameMode }
-  | {
-      name: "result";
-      result: GameResult;
-      history: StoredResult[];
-      duelRecord: DuelRecord | null;
-    }
+  | ResultScreenState
+  | { name: "analysis"; analysis: TypingAnalysis; back: ResultScreenState }
   | { name: "ranking" };
 
 export function App(): JSX.Element {
@@ -85,7 +90,8 @@ export function App(): JSX.Element {
           onQuit={() => setScreen({ name: "landing" })}
         />
       );
-    case "result":
+    case "result": {
+      const resultScreen = screen;
       return (
         <ResultScreen
           result={screen.result}
@@ -93,8 +99,12 @@ export function App(): JSX.Element {
           duelRecord={screen.duelRecord}
           onRetry={(mode) => startGame(mode)}
           onBackToTitle={() => setScreen({ name: "landing" })}
+          onShowAnalysis={(analysis) => setScreen({ name: "analysis", analysis, back: resultScreen })}
         />
       );
+    }
+    case "analysis":
+      return <AnalysisScreen analysis={screen.analysis} onBack={() => setScreen(screen.back)} />;
     case "ranking":
       return <RankingScreen onBack={() => setScreen({ name: "landing" })} />;
   }

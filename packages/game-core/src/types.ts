@@ -142,6 +142,32 @@ export interface DuelSnapshot {
   winner: "player" | "cpu" | null;
 }
 
+/** 1つの物理キーについての打鍵統計(タイピング分析用) */
+export interface KeyStat {
+  /** 押されたキー(a-z, '-' など) */
+  key: string;
+  correct: number;
+  incorrect: number;
+  /** incorrect / (correct + incorrect) */
+  missRate: number;
+  /** このキーを正解として打鍵した際の、直前の正解キーからの平均間隔(ms) */
+  avgIntervalMs: number;
+}
+
+/** プレイ後のタイピング分析(D-048) */
+export interface TypingAnalysis {
+  totalKeystrokes: number;
+  correctKeystrokes: number;
+  incorrectKeystrokes: number;
+  accuracy: number;
+  /** 正解キー間の平均間隔(ms)。値が小さいほど速い */
+  averageIntervalMs: number;
+  /** 実際に押されたキーごとの統計(キー昇順) */
+  keyStats: KeyStat[];
+  /** ミス率・平均間隔をもとに苦手と判定した上位キー(試行回数が少なすぎるキーは除外) */
+  weakKeys: KeyStat[];
+}
+
 export interface PlayerSummary {
   score: number;
   maxChain: number;
@@ -153,6 +179,7 @@ export interface PlayerSummary {
   incorrectKeyCount: number;
   garbageSent: number;
   burstCount: number;
+  analysis: TypingAnalysis;
 }
 
 export interface SurvivalSummary extends PlayerSummary {

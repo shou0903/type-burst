@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { SurvivalSummary } from "@type-burst/game-core";
+import type { SurvivalSummary, TypingAnalysis } from "@type-burst/game-core";
 import type { GameMode, GameResult } from "../game/GameController";
 import { useFitToViewport } from "../hooks/useFitToViewport";
 import { loadNickname, saveNickname, type DuelRecord, type StoredResult } from "../storage";
@@ -11,6 +11,7 @@ interface Props {
   duelRecord: DuelRecord | null;
   onRetry: (mode: GameMode) => void;
   onBackToTitle: () => void;
+  onShowAnalysis: (analysis: TypingAnalysis) => void;
 }
 
 const DIFFICULTY_LABELS = { easy: "弱い", normal: "普通", hard: "強い" } as const;
@@ -23,7 +24,14 @@ function formatTime(ms: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-export function ResultScreen({ result, history, duelRecord, onRetry, onBackToTitle }: Props): JSX.Element {
+export function ResultScreen({
+  result,
+  history,
+  duelRecord,
+  onRetry,
+  onBackToTitle,
+  onShowAnalysis,
+}: Props): JSX.Element {
   const { ref, style } = useFitToViewport<HTMLDivElement>();
   const retryMode: GameMode =
     result.mode === "survival"
@@ -97,6 +105,9 @@ export function ResultScreen({ result, history, duelRecord, onRetry, onBackToTit
         <button className="btn-primary" onClick={() => onRetry(retryMode)} autoFocus>
           もう一戦 <span className="btn-sub">Enter</span>
         </button>
+        <button className="btn-secondary" onClick={() => onShowAnalysis(summary.analysis)}>
+          タイピング分析を見る
+        </button>
         <button className="btn-secondary" onClick={onBackToTitle}>
           タイトルへ
         </button>
@@ -144,6 +155,9 @@ export function ResultScreen({ result, history, duelRecord, onRetry, onBackToTit
       <button className="btn-primary" onClick={() => onRetry(retryMode)} autoFocus>
         再戦 <span className="btn-sub">Enter</span>
       </button>
+      <button className="btn-secondary" onClick={() => onShowAnalysis(summary.player.analysis)}>
+        タイピング分析を見る
+      </button>
       <button className="btn-secondary" onClick={onBackToTitle}>
         タイトルへ
       </button>
@@ -155,10 +169,11 @@ type SubmitStatus = "idle" | "submitting" | "done" | "error";
 
 /** サバイバル結果を世界ランキングへ送信する。未入力ならスキップ可能(登録は任意) */
 function RankingSubmitBox({ summary }: { summary: SurvivalSummary }): JSX.Element | null {
-  const savedNickname = loadNickname();
+  const [savedNickname, setSavedNickname] = useState(loadNickname());
   const [nickname, setNickname] = useState(savedNickname ?? "");
   const [status, setStatus] = useState<SubmitStatus>("idle");
   const [skipped, setSkipped] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   useEffect(() => {
     if (savedNickname) {
@@ -173,7 +188,49 @@ function RankingSubmitBox({ summary }: { summary: SurvivalSummary }): JSX.Elemen
 
   if (skipped) return null;
 
+  const handleRename = (): void => {
+    const trimmed = nickname.trim();
+    if (!trimmed) return;
+    saveNickname(trimmed);
+    setSavedNickname(trimmed);
+    setEditing(false);
+  };
+
   if (savedNickname) {
+    if (editing) {
+      return (
+        <div className="ranking-submit-box">
+          <div className="ranking-submit-label">ニックネームを変更(次回以降の登録に反映されます)</div>
+          <div className="ranking-submit-row">
+            <input
+              className="nickname-input"
+              type="text"
+              placeholder="ニックネーム"
+              maxLength={12}
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+              autoFocus
+            />
+            <button
+              className="btn-ranking-submit"
+              onClick={handleRename}
+              disabled={nickname.trim().length === 0}
+            >
+              変更
+            </button>
+          </div>
+          <button
+            className="btn-ranking-skip"
+            onClick={() => {
+              setNickname(savedNickname);
+              setEditing(false);
+            }}
+          >
+            キャンセル
+          </button>
+        </div>
+      );
+    }
     return (
       <div className="ranking-submit-box">
         {status === "submitting" && (
@@ -187,6 +244,9 @@ function RankingSubmitBox({ summary }: { summary: SurvivalSummary }): JSX.Elemen
             ランキングへの送信に失敗しました(スコアは手元に保存済みです)
           </span>
         )}
+        <button className="btn-nickname-edit" onClick={() => setEditing(true)}>
+          ニックネームを変更
+        </button>
       </div>
     );
   }
@@ -196,18 +256,11 @@ function RankingSubmitBox({ summary }: { summary: SurvivalSummary }): JSX.Elemen
     if (!trimmed) return;
     setStatus("submitting");
     saveNickname(trimmed);
+    setSavedNickname(trimmed);
     submitScore(trimmed, summary)
       .then((result) => setStatus(result.ok ? "done" : "error"))
       .catch(() => setStatus("error"));
   };
-
-  if (status === "done") {
-    return (
-      <div className="ranking-submit-box">
-        <span className="ranking-submit-status">🏆 ランキングに登録しました!</span>
-      </div>
-    );
-  }
 
   return (
     <div className="ranking-submit-box">

@@ -31,6 +31,7 @@ export type {
   DuelSummary,
   GameEvent,
   GamePhase,
+  KeyStat,
   PlayerSnapshot,
   PlayerSummary,
   SurvivalDifficulty,
@@ -38,5 +39,6 @@ export type {
   SurvivalSummary,
   TaggedEvent,
   TutorialBlockSpec,
+  TypingAnalysis,
 } from "./types";
 export { ATTRIBUTES } from "./types";

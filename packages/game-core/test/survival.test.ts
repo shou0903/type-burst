@@ -447,3 +447,63 @@ describe("決定論", () => {
     expect(run()).toBe(run());
   });
 });
+
+describe("タイピング分析(D-048)", () => {
+  it("正しい打鍵とミスを記録し、キーごとのミス率を計算する", () => {
+    const game = newGame("analysis-1");
+    startPlaying(game);
+    const trigger = block(1, 0, "fire", 2);
+    setBoard(game, [trigger]);
+    const romaji = new TypingAutomaton(trigger.readingKana).getCanonicalRomaji();
+    const firstKey = romaji.charAt(0);
+    const wrongKey = firstKey === "z" ? "q" : "z";
+
+    game.feedKey(wrongKey);
+    for (const key of romaji) game.feedKey(key);
+
+    const analysis = game.getSummary().analysis;
+    expect(analysis.totalKeystrokes).toBe(romaji.length + 1);
+    expect(analysis.correctKeystrokes).toBe(romaji.length);
+    expect(analysis.incorrectKeystrokes).toBe(1);
+    expect(analysis.accuracy).toBeCloseTo(romaji.length / (romaji.length + 1));
+
+    const wrongStat = analysis.keyStats.find((k) => k.key === wrongKey);
+    expect(wrongStat).toBeDefined();
+    expect(wrongStat!.incorrect).toBe(1);
+    expect(wrongStat!.missRate).toBe(1);
+  });
+
+  it("正解キー間の平均間隔(打鍵ペース)を計算する", () => {
+    const game = newGame("analysis-2");
+    startPlaying(game);
+    const trigger = block(1, 0, "fire", 3);
+    setBoard(game, [trigger]);
+    const romaji = new TypingAutomaton(trigger.readingKana).getCanonicalRomaji();
+
+    for (const key of romaji) {
+      game.advance(100);
+      game.feedKey(key);
+    }
+
+    const analysis = game.getSummary().analysis;
+    expect(analysis.averageIntervalMs).toBeGreaterThan(0);
+    expect(analysis.averageIntervalMs).toBeCloseTo(100, -1);
+  });
+
+  it("試行回数が少ないキーはweakKeysの対象から除外される", () => {
+    const game = newGame("analysis-3");
+    startPlaying(game);
+    const trigger = block(1, 0, "fire", 4);
+    setBoard(game, [trigger]);
+    const romaji = new TypingAutomaton(trigger.readingKana).getCanonicalRomaji();
+    const firstKey = romaji.charAt(0);
+    const wrongKey = firstKey === "z" ? "q" : "z";
+
+    // 1回だけミスさせる(閾値未満なのでweakKeysには出ない想定)
+    game.feedKey(wrongKey);
+    for (const key of romaji) game.feedKey(key);
+
+    const analysis = game.getSummary().analysis;
+    expect(analysis.weakKeys.find((k) => k.key === wrongKey)).toBeUndefined();
+  });
+});

@@ -17,9 +17,11 @@ import {
   type ClearCause,
   type ClearedBlockInfo,
   type GameEvent,
+  type KeyStat,
   type PlayerSnapshot,
   type PlayerSummary,
   type TutorialBlockSpec,
+  type TypingAnalysis,
 } from "./types";
 
 interface ResolvingState {
@@ -72,6 +74,8 @@ export class PlayerCore {
 
   private correctKeys = 0;
   private wrongKeys = 0;
+  /** タイピング分析用の打鍵ログ(D-048) */
+  private keyLog: { key: string; correct: boolean; atMs: number }[] = [];
   private phraseCount = 0;
   private perfectPhraseCount = 0;
   private perfectStreak = 0;
@@ -227,9 +231,11 @@ export class PlayerCore {
     if (!result.accepted) {
       this.wrongKeys += 1;
       this.phraseAttemptMissed = true;
+      this.logKey(key, false);
       this.emit({ type: "keyRejected" });
       return;
     }
+    this.logKey(key, true);
     this.acceptKey();
     if (result.completed) {
       this.completePhrase(block);
@@ -260,6 +266,7 @@ export class PlayerCore {
     if (accepted.length === 0) {
       this.wrongKeys += 1;
       this.phraseAttemptMissed = true;
+      this.logKey(key, false);
       this.resetSelection();
       this.emit({ type: "keyRejected" });
       this.emit({ type: "selectionReset" });
@@ -267,6 +274,7 @@ export class PlayerCore {
     }
 
     this.candidateIds = new Set(accepted);
+    this.logKey(key, true);
     this.acceptKey();
 
     if (completedBlock) {
@@ -283,6 +291,11 @@ export class PlayerCore {
     this.correctKeys += 1;
     this.score += this.config.score.perCorrectKey;
     this.emit({ type: "keyAccepted" });
+  }
+
+  /** タイピング分析用に1打鍵を記録する(D-048) */
+  private logKey(key: string, correct: boolean): void {
+    this.keyLog.push({ key, correct, atMs: this.elapsedMs });
   }
 
   private ensureAutomaton(block: Block): TypingAutomaton {
@@ -907,6 +920,66 @@ export class PlayerCore {
       incorrectKeyCount: this.wrongKeys,
       garbageSent: this.garbageSentTotal,
       burstCount: this.burstCount,
+      analysis: this.computeAnalysis(),
+    };
+  }
+
+  /**
+   * 打鍵ログからタイピング分析を集計する(D-048)。
+   * キーごとのミス率・平均打鍵間隔を計算し、苦手なキーを抽出する。
+   */
+  private computeAnalysis(): TypingAnalysis {
+    const total = this.keyLog.length;
+    const correct = this.keyLog.filter((e) => e.correct).length;
+    const incorrect = total - correct;
+
+    const correctIntervals: number[] = [];
+    let prevCorrectAt: number | null = null;
+
+    const perKey = new Map<string, { correct: number; incorrect: number; intervals: number[] }>();
+    for (const e of this.keyLog) {
+      const stat = perKey.get(e.key) ?? { correct: 0, incorrect: 0, intervals: [] };
+      if (e.correct) {
+        stat.correct += 1;
+        if (prevCorrectAt !== null) {
+          const interval = e.atMs - prevCorrectAt;
+          stat.intervals.push(interval);
+          correctIntervals.push(interval);
+        }
+        prevCorrectAt = e.atMs;
+      } else {
+        stat.incorrect += 1;
+      }
+      perKey.set(e.key, stat);
+    }
+
+    const average = (values: number[]): number =>
+      values.length === 0 ? 0 : values.reduce((a, b) => a + b, 0) / values.length;
+
+    const keyStats: KeyStat[] = [...perKey.entries()]
+      .map(([key, s]) => ({
+        key,
+        correct: s.correct,
+        incorrect: s.incorrect,
+        missRate: s.correct + s.incorrect === 0 ? 0 : s.incorrect / (s.correct + s.incorrect),
+        avgIntervalMs: average(s.intervals),
+      }))
+      .sort((a, b) => a.key.localeCompare(b.key));
+
+    const MIN_ATTEMPTS_FOR_WEAK = 3;
+    const weakKeys = [...keyStats]
+      .filter((k) => k.correct + k.incorrect >= MIN_ATTEMPTS_FOR_WEAK)
+      .sort((a, b) => b.missRate - a.missRate || b.avgIntervalMs - a.avgIntervalMs)
+      .slice(0, 8);
+
+    return {
+      totalKeystrokes: total,
+      correctKeystrokes: correct,
+      incorrectKeystrokes: incorrect,
+      accuracy: total === 0 ? 1 : correct / total,
+      averageIntervalMs: average(correctIntervals),
+      keyStats,
+      weakKeys,
     };
   }
 

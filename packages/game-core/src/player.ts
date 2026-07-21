@@ -792,8 +792,9 @@ export class PlayerCore {
   private pickTier(): PhraseTier {
     const ratio = this.config.tierRatio;
     const r = this.rng.next();
-    if (r < ratio.short) return "short";
-    if (r < ratio.short + ratio.standard) return "standard";
+    if (r < ratio.micro) return "micro";
+    if (r < ratio.micro + ratio.short) return "short";
+    if (r < ratio.micro + ratio.short + ratio.standard) return "standard";
     return "long";
   }
 

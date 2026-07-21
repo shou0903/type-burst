@@ -4,8 +4,9 @@ import type { JapanesePhrase, PhraseSeed, PhraseTier } from "./types";
 
 export type { JapanesePhrase, PhraseTier } from "./types";
 
-/** Tier のモーラ帯域(DECISIONS.md D-003) */
+/** Tier のモーラ帯域(DECISIONS.md D-003, D-040でmicroを追加) */
 export const TIER_MORA_RANGE: Record<PhraseTier, { min: number; max: number }> = {
+  micro: { min: 2, max: 4 },
   short: { min: 4, max: 7 },
   standard: { min: 8, max: 12 },
   long: { min: 13, max: 26 },

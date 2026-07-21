@@ -1,4 +1,4 @@
-export type PhraseTier = "short" | "standard" | "long";
+export type PhraseTier = "micro" | "short" | "standard" | "long";
 
 export interface JapanesePhrase {
   id: string;

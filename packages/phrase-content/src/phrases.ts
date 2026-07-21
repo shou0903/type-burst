@@ -2,9 +2,36 @@ import type { PhraseSeed } from "./types";
 
 /**
  * 標準問題。全て自作の自然な日本語(CONTENT_GUIDELINES.md 参照)。
- * Tier 帯域: short 5〜7 / standard 8〜12 / long 13モーラ以上(DECISIONS.md D-003)
+ * Tier 帯域: micro 2〜4 / short 5〜7 / standard 8〜12 / long 13モーラ以上
+ * (DECISIONS.md D-003, D-040でmicroを追加)
  */
 export const PHRASE_SEEDS: readonly PhraseSeed[] = [
+  // ---- 追加分(MICRO, D-040: 寿司打を参考にした単語レベルの短さ) ----
+  { id: "word_0001", displayText: "犬", readingKana: "いぬ", tier: "micro", category: "単語" },
+  { id: "word_0002", displayText: "猫", readingKana: "ねこ", tier: "micro", category: "単語" },
+  { id: "word_0003", displayText: "花", readingKana: "はな", tier: "micro", category: "単語" },
+  { id: "word_0004", displayText: "空", readingKana: "そら", tier: "micro", category: "単語" },
+  { id: "word_0005", displayText: "海", readingKana: "うみ", tier: "micro", category: "単語" },
+  { id: "word_0006", displayText: "山", readingKana: "やま", tier: "micro", category: "単語" },
+  { id: "word_0007", displayText: "星", readingKana: "ほし", tier: "micro", category: "単語" },
+  { id: "word_0008", displayText: "月", readingKana: "つき", tier: "micro", category: "単語" },
+  { id: "word_0009", displayText: "水", readingKana: "みず", tier: "micro", category: "単語" },
+  { id: "word_0010", displayText: "雲", readingKana: "くも", tier: "micro", category: "単語" },
+  { id: "word_0011", displayText: "風", readingKana: "かぜ", tier: "micro", category: "単語" },
+  { id: "word_0012", displayText: "雨", readingKana: "あめ", tier: "micro", category: "単語" },
+  { id: "word_0013", displayText: "雪", readingKana: "ゆき", tier: "micro", category: "単語" },
+  { id: "word_0014", displayText: "鳥", readingKana: "とり", tier: "micro", category: "単語" },
+  { id: "word_0015", displayText: "魚", readingKana: "さかな", tier: "micro", category: "単語" },
+  { id: "word_0016", displayText: "車", readingKana: "くるま", tier: "micro", category: "単語" },
+  { id: "word_0017", displayText: "電話", readingKana: "でんわ", tier: "micro", category: "単語" },
+  { id: "word_0018", displayText: "時計", readingKana: "とけい", tier: "micro", category: "単語" },
+  { id: "word_0019", displayText: "桜", readingKana: "さくら", tier: "micro", category: "単語" },
+  { id: "word_0020", displayText: "財布", readingKana: "さいふ", tier: "micro", category: "単語" },
+  { id: "word_0021", displayText: "音楽", readingKana: "おんがく", tier: "micro", category: "単語" },
+  { id: "word_0022", displayText: "携帯", readingKana: "けいたい", tier: "micro", category: "単語" },
+  { id: "word_0023", displayText: "鉛筆", readingKana: "えんぴつ", tier: "micro", category: "単語" },
+  { id: "word_0024", displayText: "教室", readingKana: "きょうしつ", tier: "micro", category: "単語" },
+
   // ---- 設計書サンプル由来(TYPE_BURST_Japanese_Phrase_Samples.json) ----
   { id: "daily_0001", displayText: "空が明るくなる", readingKana: "そらがあかるくなる", tier: "standard", category: "日常" },
   { id: "daily_0002", displayText: "音が聞こえる", readingKana: "おとがきこえる", tier: "short", category: "日常" },

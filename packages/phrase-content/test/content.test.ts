@@ -17,7 +17,7 @@ describe("phrase-content", () => {
   });
 
   it("各 Tier に問題が存在する", () => {
-    for (const tier of ["short", "standard", "long"] as const) {
+    for (const tier of ["micro", "short", "standard", "long"] as const) {
       expect(PHRASES.filter((p) => p.tier === tier).length).toBeGreaterThanOrEqual(8);
     }
   });

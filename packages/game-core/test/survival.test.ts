@@ -350,7 +350,7 @@ describe("レベルアップ(v3)", () => {
   });
 });
 
-describe("難易度(D-032, D-033, D-039)", () => {
+describe("難易度(D-032, D-033, D-039, D-040)", () => {
   it("行上昇の速さは難易度に関わらず共通(易しい難易度でも無限に生存できてしまわないように)", () => {
     const easy = new SurvivalGame("diff-easy", PHRASES, GARBAGE_PHRASES, "easy");
     const normal = new SurvivalGame("diff-normal", PHRASES, GARBAGE_PHRASES, "normal");
@@ -368,10 +368,10 @@ describe("難易度(D-032, D-033, D-039)", () => {
     expect(normalInterval).toBe(hardInterval);
   });
 
-  it("easyはほぼ全てshort tierの文章になる(D-039: 1ブロックあたりの打鍵数を大きく減らす)", () => {
-    const game = new SurvivalGame("diff-easy-short", PHRASES, GARBAGE_PHRASES, "easy");
+  it("easyはほぼ全てmicro tier(単語レベル)の文章になる(D-040: 寿司打を参考にした短さ)", () => {
+    const game = new SurvivalGame("diff-easy-micro", PHRASES, GARBAGE_PHRASES, "easy");
     const core = game.getCore() as unknown as { blocks: Block[]; dropRow: () => void };
-    let shortCount = 0;
+    let microCount = 0;
     let total = 0;
     for (let i = 0; i < 100; i++) {
       core.dropRow();
@@ -380,21 +380,20 @@ describe("難易度(D-032, D-033, D-039)", () => {
         const phrase = PHRASES.find((p) => p.id === b.phraseId);
         if (!phrase) continue;
         total += 1;
-        if (phrase.tier === "short") shortCount += 1;
+        if (phrase.tier === "micro") microCount += 1;
       }
       core.blocks = [];
     }
-    expect(shortCount / total).toBeGreaterThan(0.85);
+    expect(microCount / total).toBeGreaterThan(0.6);
   });
 
   it("easyは短い文章、hardは長い文章が多く出現する(行上昇の速さは変えず、文章の長さで難易度差をつける)", () => {
-    function averageLongRatio(
-      difficulty: "easy" | "normal" | "hard",
-    ): { shortRatio: number; longRatio: number } {
+    const tierWeight: Record<string, number> = { micro: 1, short: 2, standard: 3, long: 4 };
+
+    function averageTierWeight(difficulty: "easy" | "normal" | "hard"): number {
       const game = new SurvivalGame(`diff-tier-${difficulty}`, PHRASES, GARBAGE_PHRASES, difficulty);
       const core = game.getCore() as unknown as { blocks: Block[]; dropRow: () => void };
-      let shortCount = 0;
-      let longCount = 0;
+      let weightSum = 0;
       let total = 0;
       for (let i = 0; i < 100; i++) {
         core.dropRow();
@@ -403,22 +402,20 @@ describe("難易度(D-032, D-033, D-039)", () => {
           const phrase = PHRASES.find((p) => p.id === b.phraseId);
           if (!phrase) continue;
           total += 1;
-          if (phrase.tier === "short") shortCount += 1;
-          if (phrase.tier === "long") longCount += 1;
+          weightSum += tierWeight[phrase.tier] ?? 0;
         }
         core.blocks = [];
       }
-      return { shortRatio: shortCount / total, longRatio: longCount / total };
+      return weightSum / total;
     }
 
-    const easy = averageLongRatio("easy");
-    const normal = averageLongRatio("normal");
-    const hard = averageLongRatio("hard");
+    const easy = averageTierWeight("easy");
+    const normal = averageTierWeight("normal");
+    const hard = averageTierWeight("hard");
 
-    expect(easy.shortRatio).toBeGreaterThan(normal.shortRatio);
-    expect(normal.shortRatio).toBeGreaterThan(hard.shortRatio);
-    expect(hard.longRatio).toBeGreaterThan(normal.longRatio);
-    expect(normal.longRatio).toBeGreaterThan(easy.longRatio);
+    // 平均的な文章の長さ(tierの重み)は easy < normal < hard の順になる
+    expect(easy).toBeLessThan(normal);
+    expect(normal).toBeLessThan(hard);
   });
 
   it("getSummaryが選択した難易度とスコア倍率を返す", () => {

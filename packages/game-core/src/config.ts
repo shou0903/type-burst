@@ -33,7 +33,10 @@ export interface CpuProfile {
  * 難易度は1ブロックあたりに要求される文章の長さ(tierRatio)だけで変える。
  * D-033で一度この方式にしたが、easyのtierRatioがまだ標準/長文を一定割合含んで
  * いたため「初級でも文章が長すぎて時間が足りない」という指摘を受けた(D-039)。
- * そこでeasyはほぼ全てshort tierの文章のみになるようtierRatioを大きく寄せた。
+ * D-039でeasyをほぼ全てshort tierの文章のみに寄せたが、shortでも「文」である
+ * 以上5〜7モーラはあり、ユーザーから「寿司打を参考にしてほしい、3〜4文字くらいの
+ * もっと短い単語」という指摘を受けた(D-040)。そこで文単位ではなく単語単位の
+ * 新tier「micro」(2〜4モーラ、名詞1語)を新設し、easyはmicroが中心になるようにした。
  *
  * scoreMultiplier は世界ランキングに送信する際にスコアへ掛ける係数。
  * 実プレイのデータが無い状態での初期値なので、後で実際のスコア分布を見て
@@ -118,19 +121,19 @@ export const DEFAULT_CONFIG: GameConfig = {
   dangerRow: 8,
   initialRows: 6,
   countdownMs: 3_000,
-  tierRatio: { short: 0.2, standard: 0.65, long: 0.15 },
+  tierRatio: { micro: 0, short: 0.2, standard: 0.65, long: 0.15 },
   survivalDifficulty: {
     easy: {
-      // ほぼ全てshort tierの文章のみにして、1ブロックあたりの打鍵数を大きく減らす(D-039)
-      tierRatio: { short: 0.95, standard: 0.05, long: 0 },
-      scoreMultiplier: 0.5,
+      // 寿司打を参考にした単語レベルの短さ(micro)を中心にする(D-040)
+      tierRatio: { micro: 0.75, short: 0.2, standard: 0.05, long: 0 },
+      scoreMultiplier: 0.45,
     },
     normal: {
-      tierRatio: { short: 0.2, standard: 0.65, long: 0.15 },
+      tierRatio: { micro: 0, short: 0.2, standard: 0.65, long: 0.15 },
       scoreMultiplier: 1.0,
     },
     hard: {
-      tierRatio: { short: 0.05, standard: 0.45, long: 0.5 },
+      tierRatio: { micro: 0, short: 0.05, standard: 0.45, long: 0.5 },
       scoreMultiplier: 1.4,
     },
   },

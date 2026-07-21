@@ -25,15 +25,16 @@ const NICKNAME_MAX_LENGTH = 12;
 type SurvivalDifficulty = "easy" | "normal" | "hard";
 
 /**
- * 難易度間の公平性のためのスコア補正係数(D-032)。
- * 易しい難易度は行上昇が遅く同じ操作精度でも高スコアが出やすいため、
- * ランキング反映時にこの係数を掛けて割り引く/上乗せする。
+ * 難易度間の公平性のためのスコア補正係数(D-032, D-033, D-039)。
+ * 易しい難易度は短い文章が多く同じ操作精度でも高スコアが出やすいため、
+ * ランキング反映時にこの係数を掛けて割り引く/上乗せする(行上昇の速さ自体は
+ * 全難易度共通)。
  * packages/game-core/src/config.ts の survivalDifficulty[*].scoreMultiplier と
  * 必ず同じ値を保つこと(このサーバーレス関数は軽量化のため game-core を
  * importせず、値をここに複製している)。
  */
 const SCORE_MULTIPLIER: Record<SurvivalDifficulty, number> = {
-  easy: 0.6,
+  easy: 0.5,
   normal: 1.0,
   hard: 1.4,
 };

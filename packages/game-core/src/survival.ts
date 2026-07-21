@@ -12,7 +12,7 @@ import type {
 /**
  * サバイバルモード(1人用)。
  * 時間切れは存在しない。行上昇が徐々に加速し、盤面があふれたら終了。
- * 難易度(D-032, D-033)は1ブロックあたりの文章の長さ(tierRatio)のみを変え、
+ * 難易度(D-032, D-033, D-039)は1ブロックあたりの文章の長さ(tierRatio)のみを変え、
  * 行上昇の速さ・盤面サイズは全難易度共通にする(理由はconfig.tsのコメント参照)。
  */
 export class SurvivalGame {
@@ -43,9 +43,9 @@ export class SurvivalGame {
     this.scoreMultiplier = profile.scoreMultiplier;
     this.countdownMsLeft = config.countdownMs;
     this.lastCountdownSecond = Math.ceil(config.countdownMs / 1000);
-    // 行上昇の速さ・文章の長さ配分の両方を難易度ごとに変える(D-038、詳細はconfig.tsのコメント参照)
+    // 行上昇(config.survivalRise)は共通のまま、文章の長さ配分だけ難易度で変える(D-033, D-039)
     const effectiveConfig: GameConfig = { ...config, tierRatio: profile.tierRatio };
-    this.core = new PlayerCore(seed, phrases, garbagePhrases, effectiveConfig, profile.rise);
+    this.core = new PlayerCore(seed, phrases, garbagePhrases, effectiveConfig, config.survivalRise);
   }
 
   advance(deltaMs: number): GameEvent[] {

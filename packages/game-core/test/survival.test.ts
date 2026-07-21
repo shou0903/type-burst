@@ -350,32 +350,41 @@ describe("レベルアップ(v3)", () => {
   });
 });
 
-describe("難易度(D-032, D-033, D-038)", () => {
-  it("開始直後はeasyの方が行上昇に大きな余裕がある(D-038: 初心者の序盤救済)", () => {
+describe("難易度(D-032, D-033, D-039)", () => {
+  it("行上昇の速さは難易度に関わらず共通(易しい難易度でも無限に生存できてしまわないように)", () => {
     const easy = new SurvivalGame("diff-easy", PHRASES, GARBAGE_PHRASES, "easy");
     const normal = new SurvivalGame("diff-normal", PHRASES, GARBAGE_PHRASES, "normal");
     const hard = new SurvivalGame("diff-hard", PHRASES, GARBAGE_PHRASES, "hard");
     startPlaying(easy);
     startPlaying(normal);
     startPlaying(hard);
+    easy.advance(20_000);
+    normal.advance(20_000);
+    hard.advance(20_000);
     const easyInterval = easy.getCore().currentRiseInterval();
     const normalInterval = normal.getCore().currentRiseInterval();
     const hardInterval = hard.getCore().currentRiseInterval();
-    // easyは序盤、normalの1.5倍以上の猶予がある(初心者が操作に慣れる時間を確保)
-    expect(easyInterval).toBeGreaterThan(normalInterval * 1.5);
-    expect(normalInterval).toBeGreaterThan(hardInterval);
+    expect(easyInterval).toBe(normalInterval);
+    expect(normalInterval).toBe(hardInterval);
   });
 
-  it("長時間経過後の最短間隔(floor)はeasyとnormalで差が小さい(無限に有利であり続けないように)", () => {
-    const easy = new SurvivalGame("diff-easy-long", PHRASES, GARBAGE_PHRASES, "easy");
-    const normal = new SurvivalGame("diff-normal-long", PHRASES, GARBAGE_PHRASES, "normal");
-    startPlaying(easy);
-    startPlaying(normal);
-    easy.advance(1_000_000);
-    normal.advance(1_000_000);
-    const easyFloor = easy.getCore().currentRiseInterval();
-    const normalFloor = normal.getCore().currentRiseInterval();
-    expect(easyFloor - normalFloor).toBeLessThanOrEqual(500);
+  it("easyはほぼ全てshort tierの文章になる(D-039: 1ブロックあたりの打鍵数を大きく減らす)", () => {
+    const game = new SurvivalGame("diff-easy-short", PHRASES, GARBAGE_PHRASES, "easy");
+    const core = game.getCore() as unknown as { blocks: Block[]; dropRow: () => void };
+    let shortCount = 0;
+    let total = 0;
+    for (let i = 0; i < 100; i++) {
+      core.dropRow();
+      for (const b of core.blocks) {
+        if (b.kind !== "normal") continue;
+        const phrase = PHRASES.find((p) => p.id === b.phraseId);
+        if (!phrase) continue;
+        total += 1;
+        if (phrase.tier === "short") shortCount += 1;
+      }
+      core.blocks = [];
+    }
+    expect(shortCount / total).toBeGreaterThan(0.85);
   });
 
   it("easyは短い文章、hardは長い文章が多く出現する(行上昇の速さは変えず、文章の長さで難易度差をつける)", () => {

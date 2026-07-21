@@ -32,6 +32,24 @@ export const PHRASE_SEEDS: readonly PhraseSeed[] = [
   { id: "word_0023", displayText: "鉛筆", readingKana: "えんぴつ", tier: "micro", category: "単語" },
   { id: "word_0024", displayText: "教室", readingKana: "きょうしつ", tier: "micro", category: "単語" },
 
+  // ---- 追加分(MICRO 2, D-042: 単語をさらに追加) ----
+  { id: "word_0025", displayText: "本", readingKana: "ほん", tier: "micro", category: "単語" },
+  { id: "word_0026", displayText: "傘", readingKana: "かさ", tier: "micro", category: "単語" },
+  { id: "word_0027", displayText: "机", readingKana: "つくえ", tier: "micro", category: "単語" },
+  { id: "word_0028", displayText: "窓", readingKana: "まど", tier: "micro", category: "単語" },
+  { id: "word_0029", displayText: "鍵", readingKana: "かぎ", tier: "micro", category: "単語" },
+  { id: "word_0030", displayText: "靴", readingKana: "くつ", tier: "micro", category: "単語" },
+  { id: "word_0031", displayText: "帽子", readingKana: "ぼうし", tier: "micro", category: "単語" },
+  { id: "word_0032", displayText: "手紙", readingKana: "てがみ", tier: "micro", category: "単語" },
+  { id: "word_0033", displayText: "眼鏡", readingKana: "めがね", tier: "micro", category: "単語" },
+  { id: "word_0034", displayText: "果物", readingKana: "くだもの", tier: "micro", category: "単語" },
+  { id: "word_0035", displayText: "野菜", readingKana: "やさい", tier: "micro", category: "単語" },
+  { id: "word_0036", displayText: "卵", readingKana: "たまご", tier: "micro", category: "単語" },
+  { id: "word_0037", displayText: "氷", readingKana: "こおり", tier: "micro", category: "単語" },
+  { id: "word_0038", displayText: "虹", readingKana: "にじ", tier: "micro", category: "単語" },
+  { id: "word_0039", displayText: "春", readingKana: "はる", tier: "micro", category: "単語" },
+  { id: "word_0040", displayText: "夏", readingKana: "なつ", tier: "micro", category: "単語" },
+
   // ---- 設計書サンプル由来(TYPE_BURST_Japanese_Phrase_Samples.json) ----
   { id: "daily_0001", displayText: "空が明るくなる", readingKana: "そらがあかるくなる", tier: "standard", category: "日常" },
   { id: "daily_0002", displayText: "音が聞こえる", readingKana: "おとがきこえる", tier: "short", category: "日常" },
@@ -64,6 +82,23 @@ export const PHRASE_SEEDS: readonly PhraseSeed[] = [
   { id: "talk_0002", displayText: "夢を語る", readingKana: "ゆめをかたる", tier: "short", category: "会話" },
   { id: "school_0003", displayText: "席に着く", readingKana: "せきにつく", tier: "short", category: "学校" },
 
+  // ---- 追加分(SHORT 2, D-042) ----
+  { id: "season_0007", displayText: "風が吹く", readingKana: "かぜがふく", tier: "short", category: "季節" },
+  { id: "season_0008", displayText: "花が咲く", readingKana: "はながさく", tier: "short", category: "季節" },
+  { id: "daily_0009", displayText: "目が覚める", readingKana: "めがさめる", tier: "short", category: "日常" },
+  { id: "school_0007", displayText: "席を立つ", readingKana: "せきをたつ", tier: "short", category: "学校" },
+  { id: "daily_0010", displayText: "本を閉じる", readingKana: "ほんをとじる", tier: "short", category: "日常" },
+  { id: "talk_0004", displayText: "電話に出る", readingKana: "でんわにでる", tier: "short", category: "会話" },
+  { id: "work_0007", displayText: "荷物を運ぶ", readingKana: "にもつをはこぶ", tier: "short", category: "仕事" },
+  { id: "action_0007", displayText: "靴を履く", readingKana: "くつをはく", tier: "short", category: "行動" },
+  { id: "season_0009", displayText: "傘を差す", readingKana: "かさをさす", tier: "short", category: "季節" },
+  { id: "school_0008", displayText: "席に座る", readingKana: "せきにすわる", tier: "short", category: "学校" },
+  { id: "move_0007", displayText: "電車を待つ", readingKana: "でんしゃをまつ", tier: "short", category: "移動" },
+  { id: "talk_0005", displayText: "笑顔で話す", readingKana: "えがおではなす", tier: "short", category: "会話" },
+  { id: "positive_0008", displayText: "空を見上げる", readingKana: "そらをみあげる", tier: "short", category: "前向き" },
+  { id: "action_0008", displayText: "手を伸ばす", readingKana: "てをのばす", tier: "short", category: "行動" },
+  { id: "daily_0011", displayText: "目を閉じる", readingKana: "めをとじる", tier: "short", category: "日常" },
+
   // ---- 追加分(STANDARD) ----
   { id: "daily_0005", displayText: "今日は早く帰ります", readingKana: "きょうははやくかえります", tier: "standard", category: "日常" },
   { id: "daily_0006", displayText: "窓を開けて風を通す", readingKana: "まどをあけてかぜをとおす", tier: "standard", category: "日常" },
@@ -82,6 +117,23 @@ export const PHRASE_SEEDS: readonly PhraseSeed[] = [
   { id: "season_0005", displayText: "夜空の星を眺める", readingKana: "よぞらのほしをながめる", tier: "standard", category: "季節" },
   { id: "positive_0005", displayText: "小さな一歩を重ねる", readingKana: "ちいさないっぽをかさねる", tier: "standard", category: "前向き" },
 
+  // ---- 追加分(STANDARD 2, D-042) ----
+  { id: "food_0006", displayText: "朝ごはんを食べる", readingKana: "あさごはんをたべる", tier: "standard", category: "食事" },
+  { id: "daily_0012", displayText: "新しい靴を買う", readingKana: "あたらしいくつをかう", tier: "standard", category: "日常" },
+  { id: "talk_0006", displayText: "友達に手紙を書く", readingKana: "ともだちにてがみをかく", tier: "standard", category: "会話" },
+  { id: "daily_0013", displayText: "明日の天気を調べる", readingKana: "あしたのてんきをしらべる", tier: "standard", category: "日常" },
+  { id: "action_0009", displayText: "部屋の掃除を終える", readingKana: "へやのそうじをおえる", tier: "standard", category: "行動" },
+  { id: "move_0008", displayText: "会社まで自転車で行く", readingKana: "かいしゃまでじてんしゃでいく", tier: "standard", category: "移動" },
+  { id: "food_0007", displayText: "冷たい水を飲み干す", readingKana: "つめたいみずをのみほす", tier: "standard", category: "食事" },
+  { id: "action_0010", displayText: "週末に映画を見る", readingKana: "しゅうまつにえいがをみる", tier: "standard", category: "行動" },
+  { id: "school_0009", displayText: "図書館で静かに読む", readingKana: "としょかんでしずかによむ", tier: "standard", category: "学校" },
+  { id: "work_0008", displayText: "仕事の合間に休む", readingKana: "しごとのあいまにやすむ", tier: "standard", category: "仕事" },
+  { id: "season_0010", displayText: "夕方に散歩をする", readingKana: "ゆうがたにさんぽをする", tier: "standard", category: "季節" },
+  { id: "school_0010", displayText: "単語を覚える", readingKana: "たんごをおぼえる", tier: "standard", category: "学校" },
+  { id: "season_0011", displayText: "静かな夜に星を見る", readingKana: "しずかなよるにほしをみる", tier: "standard", category: "季節" },
+  { id: "food_0008", displayText: "お茶を用意する", readingKana: "おちゃをよういする", tier: "standard", category: "食事" },
+  { id: "work_0009", displayText: "予定を確認する", readingKana: "よていをかくにんする", tier: "standard", category: "仕事" },
+
   // ---- 追加分(LONG) ----
   { id: "action_0006", displayText: "新しい方法をみんなで試してみる", readingKana: "あたらしいほうほうをみんなでためしてみる", tier: "long", category: "行動" },
   { id: "daily_0008", displayText: "今日は少し早めに寝ようと思う", readingKana: "きょうはすこしはやめにねようとおもう", tier: "long", category: "日常" },
@@ -92,6 +144,18 @@ export const PHRASE_SEEDS: readonly PhraseSeed[] = [
   { id: "positive_0006", displayText: "練習を続ければ必ず速くなる", readingKana: "れんしゅうをつづければかならずはやくなる", tier: "long", category: "前向き" },
   { id: "school_0006", displayText: "授業の内容を友達と確認する", readingKana: "じゅぎょうのないようをともだちとかくにんする", tier: "long", category: "学校" },
   { id: "positive_0007", displayText: "静かな朝に本を開く", readingKana: "しずかなあさにほんをひらく", tier: "long", category: "前向き" },
+
+  // ---- 追加分(LONG 2, D-042) ----
+  { id: "positive_0009", displayText: "休みの日はゆっくり体を休める", readingKana: "やすみのひはゆっくりからだをやすめる", tier: "long", category: "前向き" },
+  { id: "move_0009", displayText: "電車の窓から夕日を眺める", readingKana: "でんしゃのまどからゆうひをながめる", tier: "long", category: "移動" },
+  { id: "positive_0010", displayText: "忙しい一日の終わりに深呼吸する", readingKana: "いそがしいいちにちのおわりにしんこきゅうする", tier: "long", category: "前向き" },
+  { id: "season_0012", displayText: "雨の日でも傘をさして出かける", readingKana: "あめのひでもかさをさしてでかける", tier: "long", category: "季節" },
+  { id: "positive_0011", displayText: "新しい仕事にも少しずつ慣れてきた", readingKana: "あたらしいしごとにもすこしずつなれてきた", tier: "long", category: "前向き" },
+  { id: "move_0010", displayText: "駅前の広場でみんなで待ち合わせる", readingKana: "えきまえのひろばでみんなでまちあわせる", tier: "long", category: "移動" },
+  { id: "food_0009", displayText: "台所で夕食の準備を始める", readingKana: "だいどころでゆうしょくのじゅんびをはじめる", tier: "long", category: "食事" },
+  { id: "school_0011", displayText: "静かな図書室で集中して勉強する", readingKana: "しずかなとしょしつでしゅうちゅうしてべんきょうする", tier: "long", category: "学校" },
+  { id: "season_0013", displayText: "冷たい風が窓の隙間から入ってくる", readingKana: "つめたいかぜがまどのすきまからはいってくる", tier: "long", category: "季節" },
+  { id: "work_0010", displayText: "会議室に資料をすべて運んでおく", readingKana: "かいぎしつにしりょうをすべてはこんでおく", tier: "long", category: "仕事" },
 ];
 
 /**

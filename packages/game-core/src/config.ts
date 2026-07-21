@@ -23,7 +23,7 @@ export interface CpuProfile {
 }
 
 /**
- * サバイバル難易度ごとの設定(D-032, D-033, D-039, D-040, D-041)。
+ * サバイバル難易度ごとの設定(D-032, D-033, D-039, D-040, D-041, D-042)。
  *
  * 行上昇の速さ(RiseConfig)は難易度に関わらず全員共通にする(ユーザーからの
  * 明確な指示: 「降ってくる時間はどれも同じで」)。これを難易度ごとに変えてしまうと、
@@ -46,6 +46,15 @@ export interface CpuProfile {
  *
  * ランキングはD-041で難易度別に分離したため、scoreMultiplierによる
  * スコア補正(D-032)は不要になり廃止した。
+ *
+ * D-042: 「もっと単語を追加してほしい」「初級・中級・上級の差をもっと明確に」
+ * との要望を受け、phrase-content全体の語彙数を大幅に拡充(85件→141件)し、
+ * かつ各難易度が主に使うtierの範囲がなるべく重ならないよう再設計した。
+ * 以前はnormal(standard 65%)とhard(standard 45%)がどちらも同じstandard
+ * プールに大きく依存しており、体感差が薄れていた。新設計ではeasy=単語主体
+ * (micro+short)、normal=短文〜標準文主体(short+standard中心)、
+ * hard=標準文〜長文主体(standardは控えめ、long中心)と、主要な語彙帯を
+ * ずらすことで三段階の違いをより明確にした。
  */
 export interface SurvivalDifficultyProfile {
   tierRatio: Record<PhraseTier, number>;
@@ -127,15 +136,18 @@ export const DEFAULT_CONFIG: GameConfig = {
   countdownMs: 3_000,
   tierRatio: { micro: 0, short: 0.2, standard: 0.65, long: 0.15 },
   survivalDifficulty: {
+    // 三段階の体感差がはっきり分かるよう、tier構成の重なりを減らした(D-042)。
+    // easy=ほぼ単語のみ、normal=短文〜標準文中心、hard=標準文〜長文中心、というように
+    // 主に使うtierの範囲そのものをずらし、「同じstandard文がnormalにもhardにも
+    // 大量に出る」ことで難易度差が感じにくくなっていた問題を解消した。
     easy: {
-      // 寿司打を参考にした単語レベルの短さ(micro)を中心にする(D-040)
-      tierRatio: { micro: 0.75, short: 0.2, standard: 0.05, long: 0 },
+      tierRatio: { micro: 0.8, short: 0.2, standard: 0, long: 0 },
     },
     normal: {
-      tierRatio: { micro: 0, short: 0.2, standard: 0.65, long: 0.15 },
+      tierRatio: { micro: 0, short: 0.35, standard: 0.55, long: 0.1 },
     },
     hard: {
-      tierRatio: { micro: 0, short: 0.05, standard: 0.45, long: 0.5 },
+      tierRatio: { micro: 0, short: 0, standard: 0.25, long: 0.75 },
     },
   },
   survivalRise: {

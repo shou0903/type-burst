@@ -3,10 +3,7 @@ import type { SurvivalDifficulty, SurvivalSummary } from "@type-burst/game-core"
 export interface RankingEntry {
   id: string;
   nickname: string;
-  /** 難易度補正後のスコア(ランキングの並び順に使われる値) */
   score: number;
-  /** 補正前の素点(参考表示用) */
-  rawScore: number;
   difficulty: SurvivalDifficulty;
   maxChain: number;
   survivedMs: number;
@@ -43,8 +40,11 @@ export async function submitScore(
   }
 }
 
-export async function fetchTopScores(limit = 100): Promise<RankingEntry[]> {
-  const res = await fetch(`/api/scores?limit=${limit}`);
+export async function fetchTopScores(
+  difficulty: SurvivalDifficulty,
+  limit = 100,
+): Promise<RankingEntry[]> {
+  const res = await fetch(`/api/scores?difficulty=${difficulty}&limit=${limit}`);
   if (!res.ok) throw new Error(`ランキング取得に失敗しました(${res.status})`);
   const data = (await res.json()) as { entries: RankingEntry[] };
   return data.entries;

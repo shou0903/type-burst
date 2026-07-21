@@ -418,19 +418,16 @@ describe("難易度(D-032, D-033, D-039, D-040)", () => {
     expect(normal).toBeLessThan(hard);
   });
 
-  it("getSummaryが選択した難易度とスコア倍率を返す", () => {
+  it("getSummaryが選択した難易度を返す", () => {
     const game = new SurvivalGame("diff-summary", PHRASES, GARBAGE_PHRASES, "hard");
     startPlaying(game);
-    const summary = game.getSummary();
-    expect(summary.difficulty).toBe("hard");
-    expect(summary.scoreMultiplier).toBeGreaterThan(1);
+    expect(game.getSummary().difficulty).toBe("hard");
   });
 
   it("難易度未指定時はnormal相当で動作する(後方互換)", () => {
     const game = new SurvivalGame("diff-default", PHRASES, GARBAGE_PHRASES);
     startPlaying(game);
     expect(game.getSummary().difficulty).toBe("normal");
-    expect(game.getSummary().scoreMultiplier).toBe(1);
   });
 });
 

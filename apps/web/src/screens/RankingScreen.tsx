@@ -9,6 +9,8 @@ const SURVIVAL_DIFFICULTY_LABELS: Record<SurvivalDifficulty, string> = {
   hard: "上級",
 };
 
+const DIFFICULTY_ORDER: readonly SurvivalDifficulty[] = ["easy", "normal", "hard"];
+
 interface Props {
   onBack: () => void;
 }
@@ -27,11 +29,13 @@ function formatTime(ms: number): string {
 
 export function RankingScreen({ onBack }: Props): JSX.Element {
   const { ref, style } = useFitToViewport<HTMLDivElement>();
+  const [difficulty, setDifficulty] = useState<SurvivalDifficulty>("normal");
   const [state, setState] = useState<LoadState>({ status: "loading" });
 
   useEffect(() => {
     let cancelled = false;
-    fetchTopScores(100)
+    setState({ status: "loading" });
+    fetchTopScores(difficulty, 100)
       .then((entries) => {
         if (!cancelled) setState({ status: "loaded", entries });
       })
@@ -43,7 +47,7 @@ export function RankingScreen({ onBack }: Props): JSX.Element {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [difficulty]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent): void => {
@@ -58,6 +62,18 @@ export function RankingScreen({ onBack }: Props): JSX.Element {
       <h1 className="logo ranking-title">
         RANKING <span className="logo-burst">(サバイバル・全期間)</span>
       </h1>
+
+      <div className="difficulty-row">
+        {DIFFICULTY_ORDER.map((d) => (
+          <button
+            key={d}
+            className={d === difficulty ? "chip chip-active" : "chip"}
+            onClick={() => setDifficulty(d)}
+          >
+            {SURVIVAL_DIFFICULTY_LABELS[d]}
+          </button>
+        ))}
+      </div>
 
       {state.status === "loading" && <p className="ranking-status">読み込み中…</p>}
       {state.status === "error" && (
@@ -75,7 +91,6 @@ export function RankingScreen({ onBack }: Props): JSX.Element {
               <tr>
                 <th>#</th>
                 <th>ニックネーム</th>
-                <th>難易度</th>
                 <th>スコア</th>
                 <th>最大連鎖</th>
                 <th>生存時間</th>
@@ -86,11 +101,6 @@ export function RankingScreen({ onBack }: Props): JSX.Element {
                 <tr key={entry.id} className={i < 3 ? `ranking-top ranking-top-${i + 1}` : undefined}>
                   <td>{i + 1}</td>
                   <td className="ranking-nickname">{entry.nickname}</td>
-                  <td>
-                    <span className="ranking-difficulty-chip">
-                      {SURVIVAL_DIFFICULTY_LABELS[entry.difficulty]}
-                    </span>
-                  </td>
                   <td>{entry.score.toLocaleString()}</td>
                   <td>{entry.maxChain}</td>
                   <td>{formatTime(entry.survivedMs)}</td>

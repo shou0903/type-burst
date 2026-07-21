@@ -23,7 +23,7 @@ export interface CpuProfile {
 }
 
 /**
- * サバイバル難易度ごとの設定(D-032, D-033, D-039)。
+ * サバイバル難易度ごとの設定(D-032, D-033, D-039, D-040, D-041)。
  *
  * 行上昇の速さ(RiseConfig)は難易度に関わらず全員共通にする(ユーザーからの
  * 明確な指示: 「降ってくる時間はどれも同じで」)。これを難易度ごとに変えてしまうと、
@@ -38,13 +38,17 @@ export interface CpuProfile {
  * もっと短い単語」という指摘を受けた(D-040)。そこで文単位ではなく単語単位の
  * 新tier「micro」(2〜4モーラ、名詞1語)を新設し、easyはmicroが中心になるようにした。
  *
- * scoreMultiplier は世界ランキングに送信する際にスコアへ掛ける係数。
- * 実プレイのデータが無い状態での初期値なので、後で実際のスコア分布を見て
- * 調整する前提の暫定値(apps/web/api/scores.ts 側の定数と値を揃えること)。
+ * D-041: easyがmicro中心になった結果、行上昇の最終的な最短間隔(floor)が
+ * 緩すぎて「初級だと一生できてしまう(実質無限に生存できる)」問題が発生した。
+ * 難易度間で共通の`survivalRise`のfloorを大きく引き下げることで対応した
+ * (floorは全難易度共通のパラメータなので、これを調整してもユーザーが指定した
+ * 「難易度間で行上昇速度を変えない」制約には抵触しない)。
+ *
+ * ランキングはD-041で難易度別に分離したため、scoreMultiplierによる
+ * スコア補正(D-032)は不要になり廃止した。
  */
 export interface SurvivalDifficultyProfile {
   tierRatio: Record<PhraseTier, number>;
-  scoreMultiplier: number;
 }
 
 /** 全チューニング値。ハードコード禁止(設計書 §32) */
@@ -126,22 +130,21 @@ export const DEFAULT_CONFIG: GameConfig = {
     easy: {
       // 寿司打を参考にした単語レベルの短さ(micro)を中心にする(D-040)
       tierRatio: { micro: 0.75, short: 0.2, standard: 0.05, long: 0 },
-      scoreMultiplier: 0.45,
     },
     normal: {
       tierRatio: { micro: 0, short: 0.2, standard: 0.65, long: 0.15 },
-      scoreMultiplier: 1.0,
     },
     hard: {
       tierRatio: { micro: 0, short: 0.05, standard: 0.45, long: 0.5 },
-      scoreMultiplier: 1.4,
     },
   },
   survivalRise: {
     startIntervalMs: 5_500,
-    minIntervalMs: 2_400,
-    accelPerSecondMs: 25,
-    warningMs: 1_500,
+    // floorをD-040時点の2400msから1200msへ引き下げ、micro中心のeasyでも
+    // 長時間プレイすれば必ず盤面が積み上がり終了するようにした(D-041)
+    minIntervalMs: 1_200,
+    accelPerSecondMs: 30,
+    warningMs: 900,
   },
   duelRise: {
     startIntervalMs: 6_000,

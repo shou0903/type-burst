@@ -10,9 +10,14 @@ import Redis from "ioredis";
  *
  * データストアは Vercel Marketplace の Redis 連携(REDIS_URL、TCP接続)。
  * @vercel/kv(REST方式)ではなく ioredis を使う(D-029)。
+ *
+ * ランキングは難易度ごとに完全に分離する(D-041)。以前はスコア補正係数
+ * (SCORE_MULTIPLIER)で1本のランキングに正規化していたが、ユーザーから
+ * 「ランキングは難易度別に分けたほうがいい」との指摘を受け、正規化ではなく
+ * 難易度ごとに別々のsorted setへ分離する方式に変更した。
  */
 
-const LEADERBOARD_KEY = "leaderboard:survival:alltime";
+const LEADERBOARD_KEY_PREFIX = "leaderboard:survival:alltime";
 const MAX_RETAINED_ENTRIES = 500;
 const TOP_LIMIT_DEFAULT = 100;
 const TOP_LIMIT_MAX = 100;
@@ -24,28 +29,14 @@ const NICKNAME_MAX_LENGTH = 12;
 
 type SurvivalDifficulty = "easy" | "normal" | "hard";
 
-/**
- * 難易度間の公平性のためのスコア補正係数(D-032, D-033, D-039, D-040)。
- * 易しい難易度は短い文章が多く同じ操作精度でも高スコアが出やすいため、
- * ランキング反映時にこの係数を掛けて割り引く/上乗せする(行上昇の速さ自体は
- * 全難易度共通)。
- * packages/game-core/src/config.ts の survivalDifficulty[*].scoreMultiplier と
- * 必ず同じ値を保つこと(このサーバーレス関数は軽量化のため game-core を
- * importせず、値をここに複製している)。
- */
-const SCORE_MULTIPLIER: Record<SurvivalDifficulty, number> = {
-  easy: 0.45,
-  normal: 1.0,
-  hard: 1.4,
-};
+function leaderboardKey(difficulty: SurvivalDifficulty): string {
+  return `${LEADERBOARD_KEY_PREFIX}:${difficulty}`;
+}
 
 interface ScoreEntry {
   id: string;
   nickname: string;
-  /** 難易度補正後のスコア。ランキングの並び順(zadd)に使う値 */
   score: number;
-  /** 補正前の素点 */
-  rawScore: number;
   difficulty: SurvivalDifficulty;
   maxChain: number;
   survivedMs: number;
@@ -88,13 +79,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
 
 async function handleGet(req: VercelRequest, res: VercelResponse): Promise<void> {
   const redis = getRedis();
+  const difficulty: SurvivalDifficulty = isSurvivalDifficulty(req.query.difficulty)
+    ? req.query.difficulty
+    : "normal";
   const requested = Number(req.query.limit);
   const limit = Math.min(
     TOP_LIMIT_MAX,
     Number.isFinite(requested) && requested > 0 ? Math.floor(requested) : TOP_LIMIT_DEFAULT,
   );
 
-  const ids = await redis.zrevrange(LEADERBOARD_KEY, 0, limit - 1);
+  const ids = await redis.zrevrange(leaderboardKey(difficulty), 0, limit - 1);
   if (ids.length === 0) {
     res.status(200).json({ entries: [] });
     return;
@@ -113,7 +107,6 @@ async function handleGet(req: VercelRequest, res: VercelResponse): Promise<void>
         id: h.id ?? "",
         nickname: h.nickname ?? "",
         score: Number(h.score) || 0,
-        rawScore: Number(h.rawScore) || Number(h.score) || 0,
         difficulty: isSurvivalDifficulty(h.difficulty) ? h.difficulty : "normal",
         maxChain: Number(h.maxChain) || 0,
         survivedMs: Number(h.survivedMs) || 0,
@@ -140,7 +133,7 @@ async function handlePost(req: VercelRequest, res: VercelResponse): Promise<void
 
   const body = (req.body ?? {}) as Record<string, unknown>;
   const nickname = sanitizeNickname(body.nickname);
-  const rawScore = Number(body.score);
+  const score = Number(body.score);
   const maxChain = Number(body.maxChain);
   const survivedMs = Number(body.survivedMs);
   const level = Number(body.level);
@@ -152,7 +145,7 @@ async function handlePost(req: VercelRequest, res: VercelResponse): Promise<void
     res.status(400).json({ error: "Invalid nickname" });
     return;
   }
-  if (!Number.isFinite(rawScore) || rawScore <= 0 || rawScore > MAX_PLAUSIBLE_SCORE) {
+  if (!Number.isFinite(score) || score <= 0 || score > MAX_PLAUSIBLE_SCORE) {
     res.status(400).json({ error: "Invalid score" });
     return;
   }
@@ -166,12 +159,10 @@ async function handlePost(req: VercelRequest, res: VercelResponse): Promise<void
   }
 
   const id = randomUUID();
-  const adjustedScore = Math.round(Math.floor(rawScore) * SCORE_MULTIPLIER[difficulty]);
   const entry: ScoreEntry = {
     id,
     nickname,
-    score: adjustedScore,
-    rawScore: Math.floor(rawScore),
+    score: Math.floor(score),
     difficulty,
     maxChain: Math.floor(maxChain),
     survivedMs: Math.floor(survivedMs),
@@ -179,21 +170,22 @@ async function handlePost(req: VercelRequest, res: VercelResponse): Promise<void
     submittedAt: new Date().toISOString(),
   };
 
+  const key = leaderboardKey(difficulty);
   await redis.hset(`score:${id}`, entry as unknown as Record<string, string | number>);
-  await redis.zadd(LEADERBOARD_KEY, entry.score, id);
-  await pruneOldEntries(redis);
+  await redis.zadd(key, entry.score, id);
+  await pruneOldEntries(redis, key);
 
   res.status(200).json({ ok: true, id });
 }
 
 /** ランキング圏外のエントリが無限に溜まらないよう定期的に間引く */
-async function pruneOldEntries(redis: Redis): Promise<void> {
-  const total = await redis.zcard(LEADERBOARD_KEY);
+async function pruneOldEntries(redis: Redis, key: string): Promise<void> {
+  const total = await redis.zcard(key);
   if (total <= MAX_RETAINED_ENTRIES) return;
   const excess = total - MAX_RETAINED_ENTRIES;
-  const toRemove = await redis.zrange(LEADERBOARD_KEY, 0, excess - 1);
+  const toRemove = await redis.zrange(key, 0, excess - 1);
   if (toRemove.length === 0) return;
-  await redis.zrem(LEADERBOARD_KEY, ...toRemove);
+  await redis.zrem(key, ...toRemove);
   await Promise.all(toRemove.map((id) => redis.del(`score:${id}`)));
 }
 

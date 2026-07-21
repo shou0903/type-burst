@@ -11,7 +11,7 @@ interface Props {
   duelRecord: DuelRecord | null;
   onRetry: (mode: GameMode) => void;
   onBackToTitle: () => void;
-  onShowAnalysis: (analysis: TypingAnalysis) => void;
+  onShowAnalysis: (analysis: TypingAnalysis, recentHistory: StoredResult[]) => void;
 }
 
 const DIFFICULTY_LABELS = { easy: "弱い", normal: "普通", hard: "強い" } as const;
@@ -105,7 +105,10 @@ export function ResultScreen({
         <button className="btn-primary" onClick={() => onRetry(retryMode)} autoFocus>
           もう一戦 <span className="btn-sub">Enter</span>
         </button>
-        <button className="btn-secondary" onClick={() => onShowAnalysis(summary.analysis)}>
+        <button
+          className="btn-secondary"
+          onClick={() => onShowAnalysis(summary.analysis, sameDifficultyHistory)}
+        >
           タイピング分析を見る
         </button>
         <button className="btn-secondary" onClick={onBackToTitle}>
@@ -155,7 +158,7 @@ export function ResultScreen({
       <button className="btn-primary" onClick={() => onRetry(retryMode)} autoFocus>
         再戦 <span className="btn-sub">Enter</span>
       </button>
-      <button className="btn-secondary" onClick={() => onShowAnalysis(summary.player.analysis)}>
+      <button className="btn-secondary" onClick={() => onShowAnalysis(summary.player.analysis, [])}>
         タイピング分析を見る
       </button>
       <button className="btn-secondary" onClick={onBackToTitle}>

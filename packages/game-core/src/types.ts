@@ -154,7 +154,31 @@ export interface KeyStat {
   avgIntervalMs: number;
 }
 
-/** プレイ後のタイピング分析(D-048) */
+/** プレイ時間の前半/後半など、区間ごとの打鍵統計 */
+export interface PaceSegment {
+  keystrokes: number;
+  accuracy: number;
+  avgIntervalMs: number;
+}
+
+/** 左右の手ごとの打鍵統計 */
+export interface HandStat {
+  hand: "left" | "right";
+  correct: number;
+  incorrect: number;
+  missRate: number;
+}
+
+/** 指ごとの打鍵統計(D-049: どの指が苦手かを示す) */
+export interface FingerStat {
+  finger: string;
+  label: string;
+  correct: number;
+  incorrect: number;
+  missRate: number;
+}
+
+/** プレイ後のタイピング分析(D-048, D-049) */
 export interface TypingAnalysis {
   totalKeystrokes: number;
   correctKeystrokes: number;
@@ -166,6 +190,13 @@ export interface TypingAnalysis {
   keyStats: KeyStat[];
   /** ミス率・平均間隔をもとに苦手と判定した上位キー(試行回数が少なすぎるキーは除外) */
   weakKeys: KeyStat[];
+  /** プレイ時間の前半・後半の打鍵統計(疲れ・急ぎによる崩れを検出する) */
+  firstHalf: PaceSegment;
+  secondHalf: PaceSegment;
+  /** 左右の手ごとのミス率 */
+  handStats: HandStat[];
+  /** 指ごとのミス率(押したことのある指のみ) */
+  fingerStats: FingerStat[];
 }
 
 export interface PlayerSummary {

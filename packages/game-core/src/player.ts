@@ -16,8 +16,11 @@ import {
   type BlockView,
   type ClearCause,
   type ClearedBlockInfo,
+  type FingerStat,
   type GameEvent,
+  type HandStat,
   type KeyStat,
+  type PaceSegment,
   type PlayerSnapshot,
   type PlayerSummary,
   type TutorialBlockSpec,
@@ -45,6 +48,56 @@ interface IncomingGarbage {
 }
 
 const KEY_PATTERN = /^[a-z'-]$/;
+
+/** タッチタイピングの標準的な運指(D-049: 指ごとの苦手分析用) */
+const FINGER_OF_KEY: Record<string, string> = {
+  q: "left-pinky",
+  a: "left-pinky",
+  z: "left-pinky",
+  w: "left-ring",
+  s: "left-ring",
+  x: "left-ring",
+  e: "left-middle",
+  d: "left-middle",
+  c: "left-middle",
+  r: "left-index",
+  f: "left-index",
+  v: "left-index",
+  t: "left-index",
+  g: "left-index",
+  b: "left-index",
+  y: "right-index",
+  h: "right-index",
+  n: "right-index",
+  u: "right-index",
+  j: "right-index",
+  m: "right-index",
+  i: "right-middle",
+  k: "right-middle",
+  o: "right-ring",
+  l: "right-ring",
+  p: "right-pinky",
+  "-": "right-pinky",
+};
+
+const FINGER_LABELS: Record<string, string> = {
+  "left-pinky": "左手小指",
+  "left-ring": "左手薬指",
+  "left-middle": "左手中指",
+  "left-index": "左手人差し指",
+  "right-index": "右手人差し指",
+  "right-middle": "右手中指",
+  "right-ring": "右手薬指",
+  "right-pinky": "右手小指",
+};
+
+const FINGER_ORDER = Object.keys(FINGER_LABELS);
+
+function handOfKey(key: string): "left" | "right" | null {
+  const finger = FINGER_OF_KEY[key];
+  if (!finger) return null;
+  return finger.startsWith("left") ? "left" : "right";
+}
 
 /**
  * 1プレイヤー分の盤面・入力・連鎖・ゲージ・妨害の権威状態。
@@ -968,9 +1021,65 @@ export class PlayerCore {
 
     const MIN_ATTEMPTS_FOR_WEAK = 3;
     const weakKeys = [...keyStats]
-      .filter((k) => k.correct + k.incorrect >= MIN_ATTEMPTS_FOR_WEAK)
+      .filter((k) => k.correct + k.incorrect >= MIN_ATTEMPTS_FOR_WEAK && k.incorrect > 0)
       .sort((a, b) => b.missRate - a.missRate || b.avgIntervalMs - a.avgIntervalMs)
       .slice(0, 8);
+
+    // 前半/後半(D-049): 経過時間の中間点で打鍵ログを二分し、疲れ・急ぎによる崩れを検出する
+    const segment = (events: readonly { key: string; correct: boolean; atMs: number }[]): PaceSegment => {
+      const segCorrect = events.filter((e) => e.correct);
+      const segIntervals: number[] = [];
+      for (let i = 1; i < segCorrect.length; i++) {
+        segIntervals.push(segCorrect[i]!.atMs - segCorrect[i - 1]!.atMs);
+      }
+      return {
+        keystrokes: events.length,
+        accuracy: events.length === 0 ? 1 : segCorrect.length / events.length,
+        avgIntervalMs: average(segIntervals),
+      };
+    };
+    const allTimes = this.keyLog.map((e) => e.atMs);
+    const minMs = allTimes.length === 0 ? 0 : Math.min(...allTimes);
+    const maxMs = allTimes.length === 0 ? 0 : Math.max(...allTimes);
+    const midMs = (minMs + maxMs) / 2;
+    const firstHalf = segment(this.keyLog.filter((e) => e.atMs <= midMs));
+    const secondHalf = segment(this.keyLog.filter((e) => e.atMs > midMs));
+
+    // 手・指ごとの集計(D-049: 個別キーより上位の単位で苦手を示す)
+    const handAgg = new Map<"left" | "right", { correct: number; incorrect: number }>();
+    const fingerAgg = new Map<string, { correct: number; incorrect: number }>();
+    for (const k of keyStats) {
+      const hand = handOfKey(k.key);
+      if (hand) {
+        const h = handAgg.get(hand) ?? { correct: 0, incorrect: 0 };
+        h.correct += k.correct;
+        h.incorrect += k.incorrect;
+        handAgg.set(hand, h);
+      }
+      const finger = FINGER_OF_KEY[k.key];
+      if (finger) {
+        const f = fingerAgg.get(finger) ?? { correct: 0, incorrect: 0 };
+        f.correct += k.correct;
+        f.incorrect += k.incorrect;
+        fingerAgg.set(finger, f);
+      }
+    }
+    const handStats: HandStat[] = (["left", "right"] as const).map((hand) => {
+      const h = handAgg.get(hand) ?? { correct: 0, incorrect: 0 };
+      const attempts = h.correct + h.incorrect;
+      return { hand, correct: h.correct, incorrect: h.incorrect, missRate: attempts === 0 ? 0 : h.incorrect / attempts };
+    });
+    const fingerStats: FingerStat[] = FINGER_ORDER.map((finger) => {
+      const f = fingerAgg.get(finger) ?? { correct: 0, incorrect: 0 };
+      const attempts = f.correct + f.incorrect;
+      return {
+        finger,
+        label: FINGER_LABELS[finger]!,
+        correct: f.correct,
+        incorrect: f.incorrect,
+        missRate: attempts === 0 ? 0 : f.incorrect / attempts,
+      };
+    });
 
     return {
       totalKeystrokes: total,
@@ -980,6 +1089,10 @@ export class PlayerCore {
       averageIntervalMs: average(correctIntervals),
       keyStats,
       weakKeys,
+      firstHalf,
+      secondHalf,
+      handStats,
+      fingerStats,
     };
   }
 

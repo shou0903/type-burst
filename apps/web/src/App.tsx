@@ -29,7 +29,12 @@ type Screen =
   | { name: "landing" }
   | { name: "game"; mode: GameMode }
   | ResultScreenState
-  | { name: "analysis"; analysis: TypingAnalysis; back: ResultScreenState }
+  | {
+      name: "analysis";
+      analysis: TypingAnalysis;
+      recentHistory: StoredResult[];
+      back: ResultScreenState;
+    }
   | { name: "ranking" };
 
 export function App(): JSX.Element {
@@ -99,12 +104,20 @@ export function App(): JSX.Element {
           duelRecord={screen.duelRecord}
           onRetry={(mode) => startGame(mode)}
           onBackToTitle={() => setScreen({ name: "landing" })}
-          onShowAnalysis={(analysis) => setScreen({ name: "analysis", analysis, back: resultScreen })}
+          onShowAnalysis={(analysis, recentHistory) =>
+            setScreen({ name: "analysis", analysis, recentHistory, back: resultScreen })
+          }
         />
       );
     }
     case "analysis":
-      return <AnalysisScreen analysis={screen.analysis} onBack={() => setScreen(screen.back)} />;
+      return (
+        <AnalysisScreen
+          analysis={screen.analysis}
+          recentHistory={screen.recentHistory}
+          onBack={() => setScreen(screen.back)}
+        />
+      );
     case "ranking":
       return <RankingScreen onBack={() => setScreen({ name: "landing" })} />;
   }

@@ -506,4 +506,60 @@ describe("タイピング分析(D-048)", () => {
     const analysis = game.getSummary().analysis;
     expect(analysis.weakKeys.find((k) => k.key === wrongKey)).toBeUndefined();
   });
+
+  it("一度もミスしていないキーはweakKeysに含まれない(D-049)", () => {
+    const game = newGame("analysis-no-miss");
+    startPlaying(game);
+    const trigger = block(1, 0, "fire", 5);
+    setBoard(game, [trigger]);
+    const romaji = new TypingAutomaton(trigger.readingKana).getCanonicalRomaji();
+
+    // 一度もミスせず正解のみで打鍵回数を稼ぐ(試行回数の閾値は満たすがミスはゼロ)
+    for (const key of romaji) game.feedKey(key);
+
+    const analysis = game.getSummary().analysis;
+    for (const k of analysis.weakKeys) {
+      expect(k.incorrect).toBeGreaterThan(0);
+    }
+  });
+
+  it("手・指ごとのミス統計を正しく集計する(D-049)", () => {
+    const game = newGame("analysis-hand");
+    startPlaying(game);
+    setBoard(game, []); // 盤面を空にして全キーを確実にミスさせる
+    game.feedKey("q"); // left-pinky
+    game.feedKey("q"); // left-pinky
+    game.feedKey("p"); // right-pinky
+
+    const analysis = game.getSummary().analysis;
+    const leftHand = analysis.handStats.find((h) => h.hand === "left")!;
+    const rightHand = analysis.handStats.find((h) => h.hand === "right")!;
+    expect(leftHand.incorrect).toBe(2);
+    expect(rightHand.incorrect).toBe(1);
+
+    const leftPinky = analysis.fingerStats.find((f) => f.finger === "left-pinky")!;
+    expect(leftPinky.incorrect).toBe(2);
+    expect(leftPinky.missRate).toBe(1);
+    const rightPinky = analysis.fingerStats.find((f) => f.finger === "right-pinky")!;
+    expect(rightPinky.incorrect).toBe(1);
+    // 押されていない指も0件のまま結果に含まれる
+    const rightMiddle = analysis.fingerStats.find((f) => f.finger === "right-middle")!;
+    expect(rightMiddle.correct + rightMiddle.incorrect).toBe(0);
+  });
+
+  it("前半・後半の打鍵統計を経過時間の中間点で分割する(D-049)", () => {
+    const game = newGame("analysis-segment");
+    startPlaying(game);
+    setBoard(game, []);
+    game.feedKey("q"); // atMs=0
+    game.advance(1000);
+    game.feedKey("p"); // atMs=1000
+
+    const analysis = game.getSummary().analysis;
+    expect(analysis.firstHalf.keystrokes).toBe(1);
+    expect(analysis.secondHalf.keystrokes).toBe(1);
+    expect(analysis.firstHalf.keystrokes + analysis.secondHalf.keystrokes).toBe(
+      analysis.totalKeystrokes,
+    );
+  });
 });

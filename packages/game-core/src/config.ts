@@ -87,6 +87,14 @@ export interface GameConfig {
     fallMs: number;
     hitStopMs: number;
     maxSteps: number;
+    /** この連鎖数以上になったら「大連鎖スローモー」として拡張ヒットストップを入れる(D-051) */
+    bigChainDepth: number;
+    /** bigChainDepth到達時点の拡張ヒットストップ(ms)。基準値、深さに応じてさらに伸びる */
+    bigChainHitStopMs: number;
+    /** bigChainDepthを1超えるごとに拡張ヒットストップへ加算する量(ms) */
+    bigChainHitStopStepMs: number;
+    /** 拡張ヒットストップの上限(ms)。無限に伸びて間延びしないための天井 */
+    bigChainHitStopMaxMs: number;
   };
   special: {
     /** 新規行の1マスごとの出現率(1行に最大1個) */
@@ -180,6 +188,12 @@ export const DEFAULT_CONFIG: GameConfig = {
     fallMs: 120,
     hitStopMs: 70,
     maxSteps: 32,
+    // 大連鎖スローモー(D-051): 5連鎖以上でヒットストップを伸ばし「魅せる」間を作る。
+    // 深さに応じて40msずつ伸び、最大500msで頭打ちにして間延びを防ぐ。
+    bigChainDepth: 5,
+    bigChainHitStopMs: 260,
+    bigChainHitStopStepMs: 40,
+    bigChainHitStopMaxMs: 500,
   },
   special: {
     bombChance: 0.07,

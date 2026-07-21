@@ -459,8 +459,10 @@ export class BoardRenderer {
       this.shakeAmp = 0;
     }
 
-    // ズームパンチ(D-050): 連鎖ヒットで一瞬拡大して素早く戻る
-    const zoomScale = 1 + this.punchAmp;
+    // ズームパンチ(D-050): 連鎖ヒットで一瞬拡大して素早く戻る。大連鎖スローモー中は
+    // さらに一段ズームインしたまま維持し、「魅せる」間を強調する(D-051)
+    const bigChainZoom = snapshot.bigChainImpact && !this.reducedMotion ? 0.07 : 0;
+    const zoomScale = 1 + this.punchAmp + bigChainZoom;
     if (zoomScale > 1.001) {
       ctx.translate(this.w / 2, this.h / 2);
       ctx.scale(zoomScale, zoomScale);
@@ -479,6 +481,7 @@ export class BoardRenderer {
     this.updateAndDrawRings(dtMs);
     this.updateAndDrawPopups(dtMs);
     this.drawDangerVignette(snapshot);
+    this.drawBigChainVignette(snapshot);
     this.drawIncomingWarning(snapshot);
     this.drawFlash(dtMs);
     if (this.opts.overlays) this.drawOverlay(meta);
@@ -564,6 +567,25 @@ export class BoardRenderer {
     );
     grad.addColorStop(0, "rgba(255,60,40,0)");
     grad.addColorStop(1, `rgba(255,60,40,${alpha})`);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, this.w, this.h);
+  }
+
+  /** 大連鎖スローモー(D-051): 拡張ヒットストップ中だけ縁を金色に絞り、注目を中央へ集める */
+  private drawBigChainVignette(snapshot: PlayerSnapshot): void {
+    if (!snapshot.bigChainImpact || this.reducedMotion) return;
+    const ctx = this.ctx;
+    const pulse = 0.3 + 0.14 * Math.sin(this.pulseMs / 55);
+    const grad = ctx.createRadialGradient(
+      this.w / 2,
+      this.h / 2,
+      Math.min(this.w, this.h) * 0.26,
+      this.w / 2,
+      this.h / 2,
+      Math.max(this.w, this.h) * 0.65,
+    );
+    grad.addColorStop(0, "rgba(255,200,80,0)");
+    grad.addColorStop(1, `rgba(255,140,40,${pulse})`);
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, this.w, this.h);
   }

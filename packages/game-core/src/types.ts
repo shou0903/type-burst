@@ -120,6 +120,8 @@ export interface PlayerSnapshot {
   /** 着弾待ちの妨害ブロック数 */
   incomingGarbage: number;
   garbageSentTotal: number;
+  /** 大連鎖(5+)による拡張ヒットストップの真っ最中か(演出用。D-051) */
+  bigChainImpact: boolean;
 }
 
 export interface SurvivalSnapshot {

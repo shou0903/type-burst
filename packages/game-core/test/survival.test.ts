@@ -431,6 +431,63 @@ describe("難易度(D-032, D-033, D-039, D-040)", () => {
   });
 });
 
+describe("大連鎖スローモー(D-051)", () => {
+  function setResolving(game: SurvivalGame, resolving: Record<string, unknown>): void {
+    (game.getCore() as unknown as { resolving: unknown }).resolving = resolving;
+  }
+
+  it("拡張ヒットストップの長さは深さに応じて伸び、上限で頭打ちになる", () => {
+    const core = newGame("hitstop-calc").getCore() as unknown as {
+      bigChainHitStopMs: (depth: number) => number;
+    };
+    expect(core.bigChainHitStopMs(5)).toBe(260);
+    expect(core.bigChainHitStopMs(6)).toBe(300);
+    expect(core.bigChainHitStopMs(10)).toBe(260 + 5 * 40);
+    expect(core.bigChainHitStopMs(20)).toBe(500); // 上限で頭打ち
+  });
+
+  it("5連鎖に到達すると即座には確定させず、拡張ヒットストップの間だけ待ってから確定する", () => {
+    const game = newGame("big-chain-hitstop");
+    startPlaying(game);
+    setBoard(game, [
+      block(0, 0, "fire", 2),
+      block(0, 1, "fire", 3),
+      block(1, 0, "fire", 4),
+      block(1, 1, "fire", 5),
+    ]);
+    // 「falling ステージ・現在4連鎖目」から続きを再現する(実際の多段カスケードを手で
+    // 組む代わりに、他のテストと同様 resolving state を直接差し替える手法を使う)
+    setResolving(game, {
+      stage: "falling",
+      stageMsLeft: 0,
+      chainDepth: 4,
+      clearingBlocks: [],
+      largestGroupSize: 0,
+      cause: "auto",
+      fromBurst: false,
+      coloredCleared: 0,
+      garbageDestroyed: 0,
+      maxGroupSize: 4,
+    });
+
+    // 5連鎖目に入るが、拡張ヒットストップ(260ms)の間はまだ blocksCleared が来ない
+    const events1 = game.advance(10);
+    expect(events1.some((e) => e.type === "blocksCleared")).toBe(false);
+    expect(game.getSnapshot().player.bigChainImpact).toBe(true);
+
+    const events2 = game.advance(200); // 合計210ms、まだ260ms未満
+    expect(events2.some((e) => e.type === "blocksCleared")).toBe(false);
+
+    const events3 = game.advance(100); // 合計310ms > 260ms
+    const clear = events3.find((e) => e.type === "blocksCleared");
+    expect(clear).toBeDefined();
+    if (clear?.type === "blocksCleared") {
+      expect(clear.chain).toBe(5);
+    }
+    expect(game.getSnapshot().player.bigChainImpact).toBe(false);
+  });
+});
+
 describe("決定論", () => {
   it("同じSeedと同じ操作列から同じ結果になる", () => {
     const script = "shiryouwokakuninsuruhonwoyomimasuasupiko";

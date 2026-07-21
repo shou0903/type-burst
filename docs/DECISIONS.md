@@ -478,3 +478,16 @@
 - **理由:** 大きな連鎖ほど「ドカーン」と感じさせるには、既存の一部しきい値ベースの演出だけでは連鎖3→4→5…の間の変化が乏しかった。連鎖数に比例する連続的な式にすることで、どの深さでも「一段強くなった」ことが体感できるようにした。
 - **教訓:** なし(既存の`shakeAmp`減衰パターンを`punchAmp`にもそのまま流用でき、実装は素直だった)。
 
+## D-051: 大連鎖スローモー(5連鎖以上で拡張ヒットストップ+ズームイン)
+
+- **日付:** 2026-07-22
+- **内容:** 「ゲームフィール/爽快感」強化の2つ目。5連鎖以上に到達した際、実時間換算のsim time比自体は変えず(決定論を壊さないため)、既存の`config.chain.hitStopMs`の仕組みを使って「魅せる」一瞬の間を作った。
+  - `packages/game-core/src/config.ts`: `chain`設定に`bigChainDepth`(5)・`bigChainHitStopMs`(260)・`bigChainHitStopStepMs`(40)・`bigChainHitStopMaxMs`(500)を追加。深さに応じて拡張ヒットストップが伸び、上限で頭打ちになる。
+  - `packages/game-core/src/player.ts`: `stepResolving()`の自動連鎖判定部分で、新しい連鎖深度が`bigChainDepth`以上になった場合、即座にスコア加算・イベント発火を行わず、`stage: "hitstop"`へ遷移させて`bigChainHitStopMs(depth)`だけ待たせるようにした。待機後は既存の"hitstop"ステージ処理(スコア加算・`blocksCleared`発火・"clearing"への遷移)がそのまま流用されるため、ロジックの重複を避けられた。通常の連鎖(5未満)は従来通り即座に確定する。
+  - `packages/game-core/src/types.ts`: `PlayerSnapshot`に`bigChainImpact: boolean`を追加(拡張ヒットストップの最中かどうか)。
+  - `apps/web/src/render/BoardRenderer.ts`: `snapshot.bigChainImpact`が真の間、盤面をわずかにズームインしたまま維持し(既存のズームパンチ`punchAmp`に加算)、金色の縁が絞られるビネット(`drawBigChainVignette`)を表示する。
+  - `packages/game-core/test/survival.test.ts`: `bigChainHitStopMs()`の深さ別の値・上限頭打ちの検証、および実際に5連鎖目に入った際に拡張ヒットストップの間は`blocksCleared`が発火せず、時間経過後に発火することを検証するテストを追加(既存の`resolving`状態を直接差し替える手法を使用)。
+  - ブラウザ(ローカルdevサーバー、`window.__typeblastDebug`)で実際に5連鎖以上のシナリオを`core.resolving`を直接差し替えて再現し、`bigChainImpact`が正しくtrue→falseに遷移することを確認済み。
+- **理由:** ユーザー指示により、シミュレーションの実時間比を変えるスローモーは決定論(`survival.test.ts`の「同じSeedと同じ操作列から同じ結果になる」テスト)を壊すリスクがあるため避け、既存のヒットストップの仕組みを流用する設計とした。
+- **教訓:** 既存の"hitstop"ステージ処理が「resolving状態のどのフィールドが設定されていても同じように処理する」設計になっていたため、新しい連鎖ステップからそのステージへ分岐させるだけで、スコア加算・イベント発火のロジックを一切複製せずに済んだ。既存の状態機械が十分に汎用的だったことが素直な拡張につながった。
+

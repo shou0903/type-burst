@@ -539,11 +539,23 @@ export class PlayerCore {
     if (groups.length > 0 && resolving.chainDepth < this.config.chain.maxSteps) {
       const cleared = groups.flat();
       const garbage = findAdjacentGarbage(this.blocks, cleared, columns, rows);
-      resolving.chainDepth += 1;
+      const newDepth = resolving.chainDepth + 1;
+      resolving.chainDepth = newDepth;
       resolving.clearingBlocks = [...cleared, ...garbage];
       resolving.largestGroupSize = Math.max(...groups.map((g) => g.length));
       resolving.maxGroupSize = Math.max(resolving.maxGroupSize, resolving.largestGroupSize);
       resolving.cause = "auto";
+
+      if (newDepth >= this.config.chain.bigChainDepth) {
+        // 大連鎖スローモー(D-051): 「魅せる」ために一瞬の間(拡張ヒットストップ)を挟んでから
+        // 確定させる。決定論を壊さないよう、実時間の進み方(sim time比)自体は一切変えず、
+        // ヒットストップの長さをconfig値のみから計算する。反映(スコア加算・イベント発火)は
+        // 既存の"hitstop"ステージ処理(このメソッド冒頭)がそのまま行う。
+        resolving.stage = "hitstop";
+        resolving.stageMsLeft = this.bigChainHitStopMs(newDepth);
+        return;
+      }
+
       const gained = this.applyClearScore(resolving.clearingBlocks, !resolving.fromBurst);
       this.trackClearTotals(resolving, resolving.clearingBlocks);
       this.emit({
@@ -620,6 +632,14 @@ export class PlayerCore {
     }
     this.score += gained;
     return gained;
+  }
+
+  /** 大連鎖スローモー(D-051)の拡張ヒットストップ時間(ms)。深さに応じて伸び、上限で頭打ちにする */
+  private bigChainHitStopMs(depth: number): number {
+    const { bigChainDepth, bigChainHitStopMs, bigChainHitStopStepMs, bigChainHitStopMaxMs } =
+      this.config.chain;
+    const extra = Math.max(0, depth - bigChainDepth) * bigChainHitStopStepMs;
+    return Math.min(bigChainHitStopMaxMs, bigChainHitStopMs + extra);
   }
 
   // ------------------------------------------------------------------
@@ -954,6 +974,10 @@ export class PlayerCore {
       perfectStreak: this.perfectStreak,
       incomingGarbage: this.pendingIncoming,
       garbageSentTotal: this.garbageSentTotal,
+      bigChainImpact:
+        this.resolving !== null &&
+        this.resolving.stage === "hitstop" &&
+        this.resolving.chainDepth >= this.config.chain.bigChainDepth,
     };
   }
 

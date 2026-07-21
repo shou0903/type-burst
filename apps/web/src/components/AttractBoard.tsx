@@ -58,11 +58,19 @@ export function AttractBoard({ reducedMotion }: Props): JSX.Element {
     let rafId = 0;
     let last = performance.now();
 
+    // RAFの初回発火を待たずに初期盤面を1枚描いておく。これが無いと、RAFが
+    // 動き出すまでの間(あるいはRAFが抑制される環境で)「自動プレイ中」と
+    // ラベルの付いた枠が空白のまま見えてしまう。
+    renderer.draw(round.core.getSnapshot(), STATIC_META, 16);
+
     const step = (now: number): void => {
       rafId = requestAnimationFrame(step);
       const dt = Math.min(100, Math.max(0, now - last));
+      // 概ね30fpsへ間引く。ここで last を更新してしまうと dt が毎フレームの
+      // 間隔(60Hzなら約16.7ms)止まりとなり MAX_FRAME_MS を永久に超えられず、
+      // 一度も描画されない。時間を累積させるため、実際に描くときだけ更新する。
+      if (dt < MAX_FRAME_MS) return;
       last = now;
-      if (dt < MAX_FRAME_MS) return; // 低スペック端末向けに描画頻度を間引く(概ね30fps上限)
 
       round.driver.advance(dt);
       round.core.advance(dt);

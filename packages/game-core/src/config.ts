@@ -23,7 +23,7 @@ export interface CpuProfile {
 }
 
 /**
- * サバイバル難易度ごとの設定(D-032, D-033, D-039, D-040, D-041, D-042)。
+ * サバイバル難易度ごとの設定(D-032, D-033, D-039, D-040, D-041, D-042, D-044)。
  *
  * 行上昇の速さ(RiseConfig)は難易度に関わらず全員共通にする(ユーザーからの
  * 明確な指示: 「降ってくる時間はどれも同じで」)。これを難易度ごとに変えてしまうと、
@@ -55,6 +55,13 @@ export interface CpuProfile {
  * (micro+short)、normal=短文〜標準文主体(short+standard中心)、
  * hard=標準文〜長文主体(standardは控えめ、long中心)と、主要な語彙帯を
  * ずらすことで三段階の違いをより明確にした。
+ *
+ * D-044: D-042の比率で実際に触ったユーザーから「初級はいい感じ。中級はちょっと
+ * 難しいから、もう少し平均文字数を落として、今の中級と上級の間くらいが上級に
+ * ちょうどいい」とのフィードバックを受けた。easyはそのまま維持し、normalは
+ * shortの比率を増やして平均的な文章の長さをやや短く、hardはlongの比率を下げ
+ * standardの比率を上げることで、旧normalと旧hardの中間程度の長さになるよう
+ * 調整した。
  */
 export interface SurvivalDifficultyProfile {
   tierRatio: Record<PhraseTier, number>;
@@ -144,10 +151,12 @@ export const DEFAULT_CONFIG: GameConfig = {
       tierRatio: { micro: 0.8, short: 0.2, standard: 0, long: 0 },
     },
     normal: {
-      tierRatio: { micro: 0, short: 0.35, standard: 0.55, long: 0.1 },
+      // D-044: shortの比率を増やし平均的な文章の長さをやや短くした
+      tierRatio: { micro: 0, short: 0.5, standard: 0.45, long: 0.05 },
     },
     hard: {
-      tierRatio: { micro: 0, short: 0, standard: 0.25, long: 0.75 },
+      // D-044: longを減らしstandardを増やし、旧normalと旧hardの中間程度の長さにした
+      tierRatio: { micro: 0, short: 0, standard: 0.7, long: 0.3 },
     },
   },
   survivalRise: {

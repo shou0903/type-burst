@@ -36,6 +36,20 @@ export const MINI_RENDERER_OPTIONS: RendererOptions = {
   overlays: false,
 };
 
+/**
+ * モバイル・ランディングページの「アトラクトモード」用(D-057)。
+ * 375px幅程度のスマホ画面に収まる小さめの盤面で、かつ実際の文章が読める
+ * 大きさ(drawText: true)を両立させる。カウントダウン等のオーバーレイは
+ * ループ演出と無関係なので出さない。
+ */
+export const ATTRACT_RENDERER_OPTIONS: RendererOptions = {
+  cellW: 48,
+  cellH: 38,
+  pad: 8,
+  drawText: true,
+  overlays: false,
+};
+
 export function canvasSize(opts: RendererOptions): { w: number; h: number } {
   return {
     w: BOARD_COLS * opts.cellW + opts.pad * 2,

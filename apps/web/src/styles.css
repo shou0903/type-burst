@@ -496,38 +496,8 @@ body {
   border-color: rgba(255, 255, 255, 0.4);
 }
 
-.narrow-guard {
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  padding: 24px;
-  text-align: center;
-}
-
-.narrow-guard-logo {
-  font-family: "Arial Black", sans-serif;
-  font-size: 40px;
-  letter-spacing: 3px;
-}
-
-.narrow-guard-burst {
-  color: #ff8a70;
-}
-
-.narrow-guard-message {
-  font-size: 16px;
-  line-height: 1.7;
-  color: #f0f2fa;
-  max-width: 420px;
-}
-
-.narrow-guard-sub {
-  font-size: 13px;
-  color: #7d84a3;
-}
+/* narrow-guard(旧・モバイル非対応の案内文のみ表示)はD-057でMobileLandingへ
+   置き換え、このCSSは不要になったため削除した(下の "Mobile Landing" セクション参照)。 */
 
 /* ---------- Game ---------- */
 
@@ -1642,4 +1612,216 @@ body {
   width: 18px;
   background: linear-gradient(180deg, #6fc0ff, #3d8fd6);
   border-radius: 4px 4px 0 0;
+}
+
+/* ---------- Mobile Landing (D-057) ----------
+ * TikTok等からのモバイル流入向けランディング。1024px未満のときだけ
+ * SmallScreenGuard.tsx から表示される、PC側とは完全に独立した画面。
+ * クラス名はすべて "mobile-landing-" 接頭辞で統一し、PC側(.hero/.logo等)の
+ * 既存クラスとは一切共有しない(PC側の見た目に影響させないため)。
+ */
+
+.mobile-landing {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  padding: 28px 20px calc(28px + env(safe-area-inset-bottom, 0px));
+  text-align: center;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.mobile-landing-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.mobile-landing-logo {
+  font-family: "Arial Black", sans-serif;
+  font-size: 42px;
+  letter-spacing: 3px;
+  text-shadow: 0 0 24px rgba(110, 140, 255, 0.5);
+}
+
+.mobile-landing-burst {
+  color: #ff8a70;
+  text-shadow: 0 0 24px rgba(255, 110, 80, 0.6);
+}
+
+.mobile-landing-hook {
+  font-size: 16px;
+  line-height: 1.7;
+  color: #f0f2fa;
+  max-width: 340px;
+}
+
+.mobile-landing-hook strong {
+  color: #ffd75e;
+}
+
+.mobile-landing-demo-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.attract-board-canvas {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 14px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.mobile-landing-demo-caption {
+  font-size: 12px;
+  color: #7d84a3;
+}
+
+.mobile-landing-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.mobile-landing-badge {
+  font-size: 13px;
+  font-weight: bold;
+  color: #8ef5c9;
+  background: rgba(142, 245, 201, 0.1);
+  border: 1px solid rgba(142, 245, 201, 0.35);
+  border-radius: 999px;
+  padding: 6px 14px;
+}
+
+.mobile-landing-note {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #a8afc9;
+  max-width: 340px;
+}
+
+.mobile-landing-cta {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 10px;
+}
+
+.mobile-landing-btn {
+  width: 100%;
+  min-height: 52px;
+  font-size: 16px;
+  font-weight: bold;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  padding: 0 20px;
+}
+
+.mobile-landing-btn-primary {
+  background: linear-gradient(180deg, #ff8a70, #d65a3f);
+  color: #1a0d08;
+  box-shadow: 0 8px 24px rgba(255, 110, 80, 0.35);
+}
+
+.mobile-landing-btn-secondary {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f0f2fa;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.mobile-landing-cta-hint {
+  font-size: 12px;
+  color: #7d84a3;
+}
+
+.mobile-landing-ranking-toggle {
+  min-height: 44px;
+  background: none;
+  border: none;
+  color: #6fc0ff;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 8px 12px;
+}
+
+.mobile-landing-ranking {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.mobile-landing-ranking-caption {
+  font-size: 13px;
+  color: #c3c9e2;
+  margin-bottom: 8px;
+}
+
+.mobile-landing-ranking-status {
+  font-size: 13px;
+  color: #7d84a3;
+}
+
+.mobile-landing-ranking-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mobile-landing-ranking-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.mobile-landing-ranking-rank {
+  width: 20px;
+  color: #7d84a3;
+  font-weight: bold;
+}
+
+.mobile-landing-ranking-name {
+  flex: 1;
+  text-align: left;
+  color: #f0f2fa;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mobile-landing-ranking-score {
+  color: #ffd75e;
+  font-weight: bold;
+}
+
+.mobile-landing-footer {
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+  color: #7d84a3;
+  margin-top: 6px;
+}
+
+.mobile-landing-footer a {
+  color: #7d84a3;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .attract-board-canvas {
+    /* AttractBoard自体もJS側でreducedMotionを見て静止画1枚のみ描画するが、
+       念のためCSSトランジション等が今後付いても無効化されるよう明示しておく */
+    transition: none;
+  }
 }

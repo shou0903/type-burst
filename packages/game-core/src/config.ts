@@ -140,6 +140,15 @@ export interface GameConfig {
     chainSquareWeight: number;
     perPerfectPhrase: number;
   };
+  /** フィーバータイム(D-052): 大連鎖を達成すると一定時間スコア倍率がかかる */
+  fever: {
+    /** この連鎖数以上でフィーバー開始・延長 */
+    triggerChainDepth: number;
+    /** フィーバー継続時間(ms)。発動のたびにこの値へリセットされる(延長方式) */
+    durationMs: number;
+    /** フィーバー中のスコア倍率 */
+    scoreMultiplier: number;
+  };
   cpu: Record<CpuDifficulty, CpuProfile>;
 }
 
@@ -231,6 +240,13 @@ export const DEFAULT_CONFIG: GameConfig = {
     perSpecialBlock: 150,
     chainSquareWeight: 500,
     perPerfectPhrase: 150,
+  },
+  // フィーバータイム(D-052): 6連鎖以上を達成すると8秒間スコア2倍。
+  // 継続中に再度6連鎖以上を出すと8秒にリセットされ延長される。
+  fever: {
+    triggerChainDepth: 6,
+    durationMs: 8_000,
+    scoreMultiplier: 2,
   },
   cpu: {
     easy: { kpm: 120, errorRate: 0.13, thinkMsMin: 1000, thinkMsMax: 1800, burstDelayMs: 4000 },

@@ -370,6 +370,35 @@ export class BoardRenderer {
           });
         }
         break;
+      case "feverStarted":
+        if (!this.reducedMotion) this.flash("#ffd75e", 0.5);
+        if (this.opts.drawText) {
+          this.popups.push({
+            text: "FEVER!!",
+            x: this.w / 2,
+            y: this.h * 0.42,
+            age: 0,
+            life: 1000,
+            size: 54,
+            color: "#ffd75e",
+            stroke: true,
+          });
+        }
+        break;
+      case "feverEnded":
+        if (this.opts.drawText) {
+          this.popups.push({
+            text: "FEVER END",
+            x: this.w / 2,
+            y: this.h * 0.3,
+            age: 0,
+            life: 700,
+            size: 24,
+            color: "#ffb054",
+            stroke: true,
+          });
+        }
+        break;
       case "levelUp":
         if (this.opts.drawText) {
           this.popups.push({
@@ -482,6 +511,7 @@ export class BoardRenderer {
     this.updateAndDrawPopups(dtMs);
     this.drawDangerVignette(snapshot);
     this.drawBigChainVignette(snapshot);
+    this.drawFeverOverlay(snapshot);
     this.drawIncomingWarning(snapshot);
     this.drawFlash(dtMs);
     if (this.opts.overlays) this.drawOverlay(meta);
@@ -530,6 +560,18 @@ export class BoardRenderer {
       ctx.strokeStyle = `rgba(255, 176, 84, ${glow})`;
       ctx.lineWidth = 4;
       ctx.strokeRect(2, 2, this.w - 4, this.h - 4);
+    }
+
+    // フィーバータイム(D-052): 外周がバーストより太く・速く、金↔赤で明滅する
+    if (snapshot.feverActive && !this.reducedMotion) {
+      const pulse = 0.55 + 0.35 * Math.sin(this.pulseMs / 85);
+      const mix = 0.5 + 0.5 * Math.sin(this.pulseMs / 130);
+      const r = 255;
+      const g = Math.round(140 + mix * 75);
+      const b = Math.round(40 + mix * 20);
+      ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${pulse})`;
+      ctx.lineWidth = 7;
+      ctx.strokeRect(3, 3, this.w - 6, this.h - 6);
     }
   }
 
@@ -587,6 +629,15 @@ export class BoardRenderer {
     grad.addColorStop(0, "rgba(255,200,80,0)");
     grad.addColorStop(1, `rgba(255,140,40,${pulse})`);
     ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, this.w, this.h);
+  }
+
+  /** フィーバータイム(D-052): 盤面全体にごく薄い暖色のティントをかける */
+  private drawFeverOverlay(snapshot: PlayerSnapshot): void {
+    if (!snapshot.feverActive) return;
+    const ctx = this.ctx;
+    const alpha = this.reducedMotion ? 0.06 : 0.06 + 0.04 * Math.sin(this.pulseMs / 200);
+    ctx.fillStyle = `rgba(255, 150, 40, ${alpha})`;
     ctx.fillRect(0, 0, this.w, this.h);
   }
 

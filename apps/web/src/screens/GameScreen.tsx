@@ -132,6 +132,13 @@ export function GameScreen({
             🔥 PERFECT ×{player?.perfectStreak ?? 0}
           </div>
 
+          <div
+            className={`fever-badge badge-reserved${player?.feverActive ? "" : " badge-hidden"}`}
+          >
+            {/* スコア倍率(config.fever.scoreMultiplier)は現状2固定。変更時はここも合わせて更新する */}
+            🔥 FEVER TIME! SCORE ×2 ({Math.ceil((player?.feverMsLeft ?? 0) / 1000)}s)
+          </div>
+
           <div className="hud-block hud-typing">
             <div className="hud-label">INPUT</div>
             {player?.targetDisplayText ? (

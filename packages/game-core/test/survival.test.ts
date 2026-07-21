@@ -488,6 +488,77 @@ describe("大連鎖スローモー(D-051)", () => {
   });
 });
 
+describe("フィーバータイム(D-052)", () => {
+  function setResolving(game: SurvivalGame, resolving: Record<string, unknown>): void {
+    (game.getCore() as unknown as { resolving: unknown }).resolving = resolving;
+  }
+
+  it("6連鎖以上を達成するとフィーバーが開始し、スコア倍率がかかる", () => {
+    const game = newGame("fever-trigger");
+    startPlaying(game);
+    setBoard(game, [
+      block(0, 0, "fire", 2),
+      block(0, 1, "fire", 3),
+      block(1, 0, "fire", 4),
+      block(1, 1, "fire", 5),
+    ]);
+    setResolving(game, {
+      stage: "falling",
+      stageMsLeft: 0,
+      chainDepth: 5,
+      clearingBlocks: [],
+      largestGroupSize: 0,
+      cause: "auto",
+      fromBurst: false,
+      coloredCleared: 0,
+      garbageDestroyed: 0,
+      maxGroupSize: 5,
+    });
+
+    expect(game.getSnapshot().player.feverActive).toBe(false);
+    const events = game.advance(1000); // 拡張ヒットストップ+clearing+fallingを消化するのに十分
+    expect(events.some((e) => e.type === "feverStarted")).toBe(true);
+    const finished = events.find((e) => e.type === "chainFinished");
+    expect(finished?.type === "chainFinished" && finished.depth).toBe(6);
+    expect(game.getSnapshot().player.feverActive).toBe(true);
+    expect(game.getSnapshot().player.feverMsLeft).toBe(8000);
+  });
+
+  it("フィーバー中は打鍵の得点がscoreMultiplier倍になる", () => {
+    const game = newGame("fever-score");
+    startPlaying(game);
+    const core = game.getCore();
+
+    const trigger = block(0, 0, "fire", 2);
+    setBoard(game, [trigger]);
+    const key1 = new TypingAutomaton(trigger.readingKana).getCanonicalRomaji().charAt(0);
+    const before1 = game.getSnapshot().player.score;
+    game.feedKey(key1);
+    expect(game.getSnapshot().player.score - before1).toBe(10); // score.perCorrectKey
+
+    const trigger2 = block(0, 0, "fire", 3);
+    setBoard(game, [trigger2]);
+    (core as unknown as { feverMsLeft: number }).feverMsLeft = 8000;
+    const key2 = new TypingAutomaton(trigger2.readingKana).getCanonicalRomaji().charAt(0);
+    const before2 = game.getSnapshot().player.score;
+    game.feedKey(key2);
+    expect(game.getSnapshot().player.score - before2).toBe(20); // 2倍
+  });
+
+  it("フィーバーは残り時間が0になると自動終了しfeverEndedを発火する", () => {
+    const game = newGame("fever-end");
+    startPlaying(game);
+    const core = game.getCore();
+    (core as unknown as { feverMsLeft: number }).feverMsLeft = 500;
+    expect(game.getSnapshot().player.feverActive).toBe(true);
+
+    const events = game.advance(500);
+    expect(events.some((e) => e.type === "feverEnded")).toBe(true);
+    expect(game.getSnapshot().player.feverActive).toBe(false);
+    expect(game.getSnapshot().player.feverMsLeft).toBe(0);
+  });
+});
+
 describe("決定論", () => {
   it("同じSeedと同じ操作列から同じ結果になる", () => {
     const script = "shiryouwokakuninsuruhonwoyomimasuasupiko";

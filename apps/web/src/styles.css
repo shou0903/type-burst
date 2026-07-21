@@ -544,6 +544,15 @@ body {
   text-shadow: 0 0 12px rgba(255, 176, 84, 0.6);
 }
 
+.fever-badge {
+  text-align: center;
+  font-weight: 900;
+  font-size: calc(15px * var(--font-scale));
+  color: #ffd75e;
+  text-shadow: 0 0 14px rgba(255, 176, 84, 0.7);
+  animation: blink 0.7s steps(2) infinite;
+}
+
 .key-help {
   font-size: 11px;
   color: #7d84a3;

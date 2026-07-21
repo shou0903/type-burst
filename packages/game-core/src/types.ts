@@ -82,6 +82,8 @@ export type GameEvent =
   | { type: "allClear"; bonus: number }
   | { type: "levelUp"; level: number; bonus: number }
   | { type: "dangerChanged"; danger: boolean }
+  | { type: "feverStarted" }
+  | { type: "feverEnded" }
   | { type: "toppedOut" }
   | { type: "survivalFinished"; summary: SurvivalSummary }
   | { type: "duelFinished"; summary: DuelSummary };
@@ -122,6 +124,10 @@ export interface PlayerSnapshot {
   garbageSentTotal: number;
   /** 大連鎖(5+)による拡張ヒットストップの真っ最中か(演出用。D-051) */
   bigChainImpact: boolean;
+  /** フィーバータイム中か(D-052) */
+  feverActive: boolean;
+  /** フィーバー残り時間(ms)。非発動時は0 */
+  feverMsLeft: number;
 }
 
 export interface SurvivalSnapshot {

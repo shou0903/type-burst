@@ -240,6 +240,12 @@ export class GameController {
       case "levelUp":
         this.sound.levelUp();
         break;
+      case "feverStarted":
+        this.sound.feverStart();
+        break;
+      case "feverEnded":
+        this.sound.feverEnd();
+        break;
       case "burstFired":
         this.sound.burst();
         break;

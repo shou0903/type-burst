@@ -491,3 +491,19 @@
 - **理由:** ユーザー指示により、シミュレーションの実時間比を変えるスローモーは決定論(`survival.test.ts`の「同じSeedと同じ操作列から同じ結果になる」テスト)を壊すリスクがあるため避け、既存のヒットストップの仕組みを流用する設計とした。
 - **教訓:** 既存の"hitstop"ステージ処理が「resolving状態のどのフィールドが設定されていても同じように処理する」設計になっていたため、新しい連鎖ステップからそのステージへ分岐させるだけで、スコア加算・イベント発火のロジックを一切複製せずに済んだ。既存の状態機械が十分に汎用的だったことが素直な拡張につながった。
 
+## D-052: フィーバータイム(6連鎖以上でスコア2倍・数秒間の演出)
+
+- **日付:** 2026-07-22
+- **内容:** 「ゲームフィール/爽快感」強化の3つ目。6連鎖以上を達成すると8秒間スコア2倍になる「FEVER」状態を追加した。ユーザーからの明確な指示により、ループBGMは一切追加せず、単発SFX+画面演出+スコア倍率のみで表現している。
+  - `packages/game-core/src/config.ts`: `fever: { triggerChainDepth: 6, durationMs: 8000, scoreMultiplier: 2 }`を追加。
+  - `packages/game-core/src/types.ts`: `GameEvent`に`feverStarted`/`feverEnded`を追加。`PlayerSnapshot`に`feverActive: boolean`・`feverMsLeft: number`を追加。
+  - `packages/game-core/src/player.ts`: `feverMsLeft`を追加し、`advance()`内で経過時間ぶん減算(0になったら`feverEnded`を発火)。連鎖確定時(`stepResolving`の連鎖終了処理)に深度が`triggerChainDepth`以上なら`triggerFever()`を呼び、未発動なら`feverStarted`を発火しつつ`feverMsLeft`を`durationMs`にリセットする(既に発動中なら無音でリセット=延長)。スコア加算箇所(正解キー・PERFECTボーナス・ブロック消去・連鎖ボーナス・TYPE BURST発動・全消しボーナス)を`applyFeverMultiplier()`経由に統一し、フィーバー中は`scoreMultiplier`倍になるようにした。ゲージ増加量はフィーバーの影響を受けない(スコアのみを対象とする設計)。チュートリアルのステップ切り替え(`loadTutorialBoard`)でも`feverMsLeft`をリセットし、次のステップに持ち越さないようにした。
+  - `apps/web/src/audio/SoundEngine.ts`: `feverStart()`・`feverEnd()`を追加(いずれも単発のシンセSFX。ループ音源は一切使用していない)。
+  - `apps/web/src/game/GameController.ts`: `feverStarted`→`sound.feverStart()`、`feverEnded`→`sound.feverEnd()`を配線。
+  - `apps/web/src/render/BoardRenderer.ts`: `feverStarted`/`feverEnded`イベントで「FEVER!!」/「FEVER END」のポップアップとフラッシュを表示。`snapshot.feverActive`の間、盤面全体にごく薄い暖色ティント(`drawFeverOverlay`)と、バーストより太く速いパルスの外周ボーダー(金↔赤の明滅)を表示し続ける。
+  - `apps/web/src/screens/GameScreen.tsx`: HUDに「🔥 FEVER TIME! SCORE ×2 (残り秒数)」の予約領域バッジを追加(D-031のパターンに従い、常にDOM上に領域を確保し`visibility`で切り替えることでレイアウトのガタつきを防ぐ)。
+  - `apps/web/src/styles.css`: `.fever-badge`を追加(既存の`.streak-badge`/`.danger-badge`と同系統のスタイル)。
+  - `packages/game-core/test/survival.test.ts`: フィーバーのスコア倍率適用・6連鎖到達時の自動発動・残り時間0での自動終了(`feverEnded`発火)を検証するテストを追加。
+  - ブラウザ(ローカルdevサーバー)で実際に6連鎖シナリオを`core.resolving`の直接差し替えで再現し、スコアが期待通り(通常のブロック消去分400 + 連鎖ボーナス18000 + フィーバー中に確定した全消しボーナス10000<フィーバー発動と同じ連鎖の中で全消しボーナスにも2倍が適用される> = 28,400)になること、HUDに「🔥 FEVER TIME! SCORE ×2」バッジが表示されること、8秒経過後に`feverActive`がfalseへ戻ることを確認済み。
+- **理由:** 大連鎖という「達成」に対して、その場限りの演出だけでなくスコアという実利のある報酬を数秒間持続させることで、プレイヤーがより深い連鎖を積極的に狙う動機を作る狙い。BGM復活はユーザーが過去に明確に拒否した経緯があるため、単発SFXと画面演出のみに徹した。
+- **教訓:** フィーバー発動判定を連鎖確定処理の中(スコア加算の直後)に置いたことで、フィーバーを発動させた連鎖そのものの全消しボーナスにも倍率がかかるという、狙って作ったわけではない「同じ連鎖でボーナスが二重に効く」派手な挙動が生まれた。派手さの面では良い効果だが、今後スコア計算の順序を変える際はこの副作用(発動タイミングと適用範囲の順序依存)を意識する必要がある。

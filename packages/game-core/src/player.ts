@@ -139,6 +139,8 @@ export class PlayerCore {
   private garbageSentTotal = 0;
   private incoming: IncomingGarbage[] = [];
   private danger = false;
+  /** フィーバータイム残り時間(ms)。0ならフィーバーではない(D-052) */
+  private feverMsLeft = 0;
   toppedOut = false;
   frozen = false;
   /** チュートリアル専用: trueの間は行上昇(dropRow)だけを止める。入力や連鎖の演出は通常通り動く */
@@ -194,6 +196,8 @@ export class PlayerCore {
     this.toppedOut = false;
     this.perfectStreak = 0;
     this.gauge = Math.max(0, Math.min(this.config.special.gaugeMax, gauge));
+    // チュートリアルのステップ切り替えでフィーバーが持ち越されないようにする
+    this.feverMsLeft = 0;
   }
 
   // ------------------------------------------------------------------
@@ -203,6 +207,7 @@ export class PlayerCore {
   advance(deltaMs: number): void {
     if (this.frozen || deltaMs <= 0) return;
     this.elapsedMs += deltaMs;
+    this.advanceFever(deltaMs);
 
     if (this.resolving) {
       this.advanceResolving(deltaMs);
@@ -342,7 +347,7 @@ export class PlayerCore {
 
   private acceptKey(): void {
     this.correctKeys += 1;
-    this.score += this.config.score.perCorrectKey;
+    this.score += this.applyFeverMultiplier(this.config.score.perCorrectKey);
     this.emit({ type: "keyAccepted" });
   }
 
@@ -397,7 +402,7 @@ export class PlayerCore {
     if (targets.length === 0) return false;
     this.gauge = 0;
     this.burstCount += 1;
-    this.score += this.config.special.burstBaseScore;
+    this.score += this.applyFeverMultiplier(this.config.special.burstBaseScore);
     this.emit({ type: "burstFired" });
     this.startResolving(targets, 1, "burst", targets.length);
     return true;
@@ -413,6 +418,37 @@ export class PlayerCore {
   }
 
   // ------------------------------------------------------------------
+  // フィーバータイム(D-052): 大連鎖を達成すると一定時間スコア倍率がかかる
+  // ------------------------------------------------------------------
+
+  get feverActive(): boolean {
+    return this.feverMsLeft > 0;
+  }
+
+  private advanceFever(deltaMs: number): void {
+    if (this.feverMsLeft <= 0) return;
+    this.feverMsLeft = Math.max(0, this.feverMsLeft - deltaMs);
+    if (this.feverMsLeft === 0) {
+      this.emit({ type: "feverEnded" });
+    }
+  }
+
+  /** 大連鎖達成時に呼ぶ。未発動なら開始、発動中ならフルタイムへ延長する(延長方式) */
+  private triggerFever(): void {
+    const wasActive = this.feverActive;
+    this.feverMsLeft = this.config.fever.durationMs;
+    if (!wasActive) {
+      this.emit({ type: "feverStarted" });
+    }
+  }
+
+  /** フィーバー中はスコア加算を config.fever.scoreMultiplier 倍にする */
+  private applyFeverMultiplier(amount: number): number {
+    if (amount <= 0 || !this.feverActive) return amount;
+    return Math.round(amount * this.config.fever.scoreMultiplier);
+  }
+
+  // ------------------------------------------------------------------
   // 消去と連鎖
   // ------------------------------------------------------------------
 
@@ -422,7 +458,7 @@ export class PlayerCore {
     if (perfect) {
       this.perfectPhraseCount += 1;
       this.perfectStreak += 1;
-      this.score += this.config.score.perPerfectPhrase;
+      this.score += this.applyFeverMultiplier(this.config.score.perPerfectPhrase);
       this.addGauge(this.config.special.gaugePerPerfect);
     } else {
       this.perfectStreak = 0;
@@ -575,11 +611,14 @@ export class PlayerCore {
     const depth = resolving.chainDepth;
     let chainScore = 0;
     if (depth > 0) {
-      chainScore = depth * depth * this.config.score.chainSquareWeight;
+      chainScore = this.applyFeverMultiplier(depth * depth * this.config.score.chainSquareWeight);
       this.score += chainScore;
       if (depth > this.maxChain) this.maxChain = depth;
       if (!resolving.fromBurst) {
         this.addGauge(depth * this.config.special.gaugePerChainDepth);
+      }
+      if (depth >= this.config.fever.triggerChainDepth) {
+        this.triggerFever();
       }
     }
 
@@ -606,10 +645,11 @@ export class PlayerCore {
 
     // 全消しボーナス。次の行をすぐ降らせて手持ち無沙汰を防ぐ
     if (this.blocks.length === 0) {
-      this.score += this.config.special.allClearBonus;
+      const bonus = this.applyFeverMultiplier(this.config.special.allClearBonus);
+      this.score += bonus;
       this.addGauge(this.config.special.allClearGauge);
       this.riseTimerMs = Math.min(this.riseTimerMs, 600);
-      this.emit({ type: "allClear", bonus: this.config.special.allClearBonus });
+      this.emit({ type: "allClear", bonus });
     }
     this.updateDanger();
   }
@@ -630,6 +670,7 @@ export class PlayerCore {
       } else gained += this.config.score.perColoredBlock;
       if (fillGauge) this.addGauge(this.config.special.gaugePerBlock);
     }
+    gained = this.applyFeverMultiplier(gained);
     this.score += gained;
     return gained;
   }
@@ -978,6 +1019,8 @@ export class PlayerCore {
         this.resolving !== null &&
         this.resolving.stage === "hitstop" &&
         this.resolving.chainDepth >= this.config.chain.bigChainDepth,
+      feverActive: this.feverActive,
+      feverMsLeft: this.feverMsLeft,
     };
   }
 

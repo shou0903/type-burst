@@ -165,6 +165,19 @@ export class SoundEngine {
     this.noise(300, 0.1, 360);
   }
 
+  /** フィーバータイム開始(単発SFX。ループBGMは使わない, D-052) */
+  feverStart(): void {
+    const notes = [660, 880, 1109, 1319];
+    notes.forEach((f, i) => this.tone(f, 140, { type: "sawtooth", gain: 0.14, delayMs: i * 70 }));
+    this.noise(220, 0.14, 90);
+  }
+
+  /** フィーバータイム終了(単発SFX) */
+  feverEnd(): void {
+    this.tone(880, 160, { type: "triangle", gain: 0.1, endFreq: 440 });
+    this.tone(523, 220, { type: "triangle", gain: 0.09, endFreq: 260, delayMs: 90 });
+  }
+
   levelUp(): void {
     this.tone(659, 130, { type: "triangle", gain: 0.1 });
     this.tone(880, 200, { type: "triangle", gain: 0.11, delayMs: 110 });

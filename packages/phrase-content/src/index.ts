@@ -3,6 +3,8 @@ import { GARBAGE_PHRASE_SEEDS, PHRASE_SEEDS } from "./phrases";
 import type { JapanesePhrase, PhraseSeed, PhraseTier } from "./types";
 
 export type { JapanesePhrase, PhraseTier } from "./types";
+export { VOCAB_THEMES, buildThemedPhrasePool } from "./themes";
+export type { VocabThemeId, VocabThemeDef } from "./themes";
 
 /** Tier のモーラ帯域(DECISIONS.md D-003, D-040でmicroを追加) */
 export const TIER_MORA_RANGE: Record<PhraseTier, { min: number; max: number }> = {

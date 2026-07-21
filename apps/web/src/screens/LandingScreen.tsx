@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { CpuDifficulty, SurvivalDifficulty } from "@type-burst/game-core";
+import { VOCAB_THEMES } from "@type-burst/phrase-content";
 import type { GameMode } from "../game/GameController";
 import { useFitToViewport } from "../hooks/useFitToViewport";
 import { bestScore, loadDuelRecord, type FontScale, type Settings, type StoredResult } from "../storage";
+import { getSeasonalBadge } from "../seasonal";
 
 const FONT_SCALE_LABELS: Array<{ value: FontScale; label: string }> = [
   { value: 1, label: "標準" },
@@ -39,60 +41,47 @@ export function LandingScreen({
 }: Props): JSX.Element {
   const [difficulty, setDifficulty] = useState<CpuDifficulty>("normal");
   const [survivalDifficulty, setSurvivalDifficulty] = useState<SurvivalDifficulty>("normal");
+  const [howtoOpen, setHowtoOpen] = useState(false);
+  const theme = settings.theme;
   const best = bestScore(results, survivalDifficulty);
   const record = loadDuelRecord();
   const { ref, style } = useFitToViewport<HTMLDivElement>();
+  const seasonalBadge = useMemo(() => getSeasonalBadge(), []);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent): void => {
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
-        onStart({ type: "survival", difficulty: survivalDifficulty });
+        onStart({ type: "survival", difficulty: survivalDifficulty, theme });
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [onStart, survivalDifficulty]);
+  }, [onStart, survivalDifficulty, theme]);
 
   return (
     <div ref={ref} style={style} className="screen landing">
-      <h1 className="logo">
-        TYPE <span className="logo-burst">BURST</span>
-      </h1>
-      <p className="tagline">日本語を打ってブロックを爆破。連鎖で盤面を吹き飛ばそう。</p>
-
-      <div className="howto">
-        <div className="howto-step">
-          <span className="howto-num">1</span>
-          <span>消したいブロックの日本語をローマ字で入力。完成で爆発!</span>
-        </div>
-        <div className="howto-step">
-          <span className="howto-num">2</span>
-          <span>同じ色3個で全消し、落下で4個つながると自動連鎖</span>
-        </div>
-        <div className="howto-step">
-          <span className="howto-num">3</span>
-          <span>ゲージが満タンになったら Enter で TYPE BURST!(下3行を吹き飛ばす)</span>
-        </div>
-        <div className="howto-step">
-          <span className="howto-num">4</span>
-          <span>💣ボム=周囲爆破 / 🌈プリズム=同色全消し。全消しで ALL CLEAR ボーナス!</span>
-        </div>
-        <div className="howto-step">
-          <span className="howto-num">5</span>
-          <span>新しいブロックは上から降ってくる。選択の取り消しは Esc / Backspace</span>
-        </div>
+      <div className="hero">
+        {!settings.reducedMotion && (
+          <div className="hero-fx" aria-hidden="true">
+            <span className="hero-block hero-block-1" />
+            <span className="hero-block hero-block-2" />
+            <span className="hero-block hero-block-3" />
+            <span className="hero-block hero-block-4" />
+            <span className="hero-block hero-block-5" />
+          </div>
+        )}
+        <h1 className="logo">
+          TYPE <span className="logo-burst">BURST</span>
+        </h1>
+        <p className="tagline">日本語を打ってブロックを爆破。連鎖で盤面を吹き飛ばそう。</p>
       </div>
-
-      <button className="btn-tutorial-link" onClick={() => onStart({ type: "tutorial" })}>
-        📖 チュートリアルを見る(はじめての方はこちら)
-      </button>
 
       <div className="mode-row">
         <div className="duel-box">
           <button
             className="btn-primary"
-            onClick={() => onStart({ type: "survival", difficulty: survivalDifficulty })}
+            onClick={() => onStart({ type: "survival", difficulty: survivalDifficulty, theme })}
             autoFocus
           >
             サバイバル <span className="btn-sub">Enter</span>
@@ -105,6 +94,22 @@ export function LandingScreen({
                 onClick={() => setSurvivalDifficulty(d)}
               >
                 {SURVIVAL_DIFFICULTY_LABELS[d]}
+              </button>
+            ))}
+          </div>
+          <div className="difficulty-row theme-row">
+            {VOCAB_THEMES.map(({ id, label }) => (
+              <button
+                key={id}
+                className={id === theme ? "chip chip-active" : "chip"}
+                onClick={() => onUpdateSettings({ theme: id })}
+              >
+                {label}
+                {id === "season" && (
+                  <span className="theme-badge">
+                    {seasonalBadge.emoji}今月のおすすめ
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -140,9 +145,47 @@ export function LandingScreen({
         </p>
       )}
 
-      <button className="btn-ranking-link" onClick={onShowRanking}>
-        🏆 世界ランキングを見る
+      <div className="quick-links-row">
+        <button className="btn-tutorial-link" onClick={() => onStart({ type: "tutorial" })}>
+          📖 チュートリアル
+        </button>
+        <button className="btn-ranking-link" onClick={onShowRanking}>
+          🏆 世界ランキング
+        </button>
+      </div>
+
+      <button
+        className="btn-howto-toggle"
+        onClick={() => setHowtoOpen((open) => !open)}
+        aria-expanded={howtoOpen}
+      >
+        {howtoOpen ? "遊び方を閉じる ▲" : "遊び方を見る(はじめての方はこちら) ▼"}
       </button>
+
+      {howtoOpen && (
+        <div className="howto">
+          <div className="howto-step">
+            <span className="howto-num">1</span>
+            <span>消したいブロックの日本語をローマ字で入力。完成で爆発!</span>
+          </div>
+          <div className="howto-step">
+            <span className="howto-num">2</span>
+            <span>同じ色3個で全消し、落下で4個つながると自動連鎖</span>
+          </div>
+          <div className="howto-step">
+            <span className="howto-num">3</span>
+            <span>ゲージが満タンになったら Enter で TYPE BURST!(下3行を吹き飛ばす)</span>
+          </div>
+          <div className="howto-step">
+            <span className="howto-num">4</span>
+            <span>💣ボム=周囲爆破 / 🌈プリズム=同色全消し。全消しで ALL CLEAR ボーナス!</span>
+          </div>
+          <div className="howto-step">
+            <span className="howto-num">5</span>
+            <span>新しいブロックは上から降ってくる。選択の取り消しは Esc / Backspace</span>
+          </div>
+        </div>
+      )}
 
       <div className="settings-row">
         <label>

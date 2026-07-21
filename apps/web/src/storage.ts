@@ -4,6 +4,7 @@ import type {
   SurvivalDifficulty,
   SurvivalSummary,
 } from "@type-burst/game-core";
+import type { VocabThemeId } from "@type-burst/phrase-content";
 
 const SETTINGS_KEY = "typeblast.settings.v1";
 const RESULTS_KEY = "typeblast.results.v2";
@@ -17,6 +18,8 @@ export interface Settings {
   reducedMotion: boolean;
   highContrast: boolean;
   fontScale: FontScale;
+  /** 語彙テーマ選択(D-053)。既定は "all"(おまかせ、従来通り全カテゴリ) */
+  theme: VocabThemeId;
 }
 
 export interface StoredResult {
@@ -47,6 +50,7 @@ function defaultSettings(): Settings {
     reducedMotion: prefersReducedMotion(),
     highContrast: false,
     fontScale: 1,
+    theme: "all",
   };
 }
 const DEFAULT_DUEL_RECORD: DuelRecord = {

@@ -129,6 +129,8 @@ export class BoardRenderer {
   private shakeAmp = 0;
   private flashAlpha = 0;
   private flashColor = "#ffffff";
+  /** 連鎖エスカレーション用ズームパンチ(D-050)。0=通常, 値が大きいほど一瞬拡大する */
+  private punchAmp = 0;
   private pulseMs = 0;
   private firstDraw = true;
   private textCache = new Map<string, TextLayout>();
@@ -163,6 +165,7 @@ export class BoardRenderer {
     this.rings = [];
     this.shakeAmp = 0;
     this.flashAlpha = 0;
+    this.punchAmp = 0;
   }
 
   private cellX(col: number): number {
@@ -247,20 +250,23 @@ export class BoardRenderer {
           });
         }
 
-        // フラッシュとシェイク
+        // フラッシュ・シェイク・ズームパンチ(連鎖エスカレーション演出, D-050)
+        // 連鎖が深いほど段階的に派手にし、大連鎖は「ドカーン」と感じる強さにする
         if (!this.reducedMotion) {
           if (event.cause === "burst") this.flash("#ffffff", 0.55);
           else if (event.cause === "bomb") this.flash("#ffb054", 0.3);
           else if (event.cause === "prism") this.flash("#bfa5ff", 0.32);
-          else if (event.chain >= 3) this.flash("#ffffff", 0.16 + event.chain * 0.03);
-          this.shakeAmp = Math.max(
-            this.shakeAmp,
-            event.cause === "burst"
-              ? 16
-              : event.chain >= 5
-                ? 8 + event.chain
-                : Math.min(2.5 + event.blocks.length * 0.5, 8),
-          );
+          else if (event.chain >= 2) this.flash("#ffffff", Math.min(0.55, 0.1 + event.chain * 0.05));
+
+          const baseShake =
+            event.cause === "burst" ? 16 : Math.min(2.5 + event.blocks.length * 0.5, 8);
+          const chainShake = event.chain > 0 ? event.chain * 1.8 : 0;
+          this.shakeAmp = Math.max(this.shakeAmp, baseShake + chainShake);
+
+          if (event.chain >= 2 || event.cause === "burst") {
+            const punch = event.cause === "burst" ? 0.24 : Math.min(0.05 * event.chain, 0.34);
+            this.punchAmp = Math.max(this.punchAmp, punch);
+          }
         }
         break;
       }
@@ -451,6 +457,19 @@ export class BoardRenderer {
       this.shakeAmp *= Math.exp(-dtMs / 100);
     } else {
       this.shakeAmp = 0;
+    }
+
+    // ズームパンチ(D-050): 連鎖ヒットで一瞬拡大して素早く戻る
+    const zoomScale = 1 + this.punchAmp;
+    if (zoomScale > 1.001) {
+      ctx.translate(this.w / 2, this.h / 2);
+      ctx.scale(zoomScale, zoomScale);
+      ctx.translate(-this.w / 2, -this.h / 2);
+    }
+    if (this.punchAmp > 0.002) {
+      this.punchAmp *= Math.exp(-dtMs / 90);
+    } else {
+      this.punchAmp = 0;
     }
 
     this.drawBackground(snapshot);

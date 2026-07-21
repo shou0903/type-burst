@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { TypingAnalysis } from "@type-burst/game-core";
+import { resolveBoardTheme } from "@type-burst/progression";
 import { SoundEngine } from "./audio/SoundEngine";
 import type { GameMode, GameResult } from "./game/GameController";
 import { LandingScreen } from "./screens/LandingScreen";
@@ -9,6 +10,7 @@ import { RankingScreen } from "./screens/RankingScreen";
 import { AnalysisScreen } from "./screens/AnalysisScreen";
 import {
   appendResult,
+  loadProgress,
   loadResults,
   loadSettings,
   recordDuel,
@@ -17,6 +19,7 @@ import {
   type Settings,
   type StoredResult,
 } from "./storage";
+import type { LifetimeProgress } from "@type-burst/progression";
 
 type ResultScreenState = {
   name: "result";
@@ -25,21 +28,25 @@ type ResultScreenState = {
   duelRecord: DuelRecord | null;
 };
 
+type AnalysisBack = { name: "landing" } | ResultScreenState;
+
 type Screen =
   | { name: "landing" }
   | { name: "game"; mode: GameMode }
   | ResultScreenState
   | {
       name: "analysis";
-      analysis: TypingAnalysis;
+      /** null = 結果画面を経由せず(例: タイトル画面から)開いた場合。長期成長グラフのみ表示する */
+      analysis: TypingAnalysis | null;
       recentHistory: StoredResult[];
-      back: ResultScreenState;
+      back: AnalysisBack;
     }
   | { name: "ranking" };
 
 export function App(): JSX.Element {
   const sound = useMemo(() => new SoundEngine(), []);
   const [settings, setSettings] = useState<Settings>(() => loadSettings());
+  const [progress, setProgress] = useState<LifetimeProgress>(() => loadProgress());
   const [screen, setScreen] = useState<Screen>({ name: "landing" });
 
   sound.enabled = settings.soundOn;
@@ -70,7 +77,16 @@ export function App(): JSX.Element {
       const duelRecord = recordDuel(result.summary);
       setScreen({ name: "result", result, history: loadResults(), duelRecord });
     }
+    // appendResult/recordDuel は生涯累計(称号・アンロックの元データ)も更新済みなので読み直す
+    setProgress(loadProgress());
   };
+
+  // 盤面カラーテーマ(D-055): 未解放・High Contrast時はdefaultへフォールバックする
+  const resolvedBoardTheme = resolveBoardTheme(
+    settings.boardTheme,
+    progress.totalScore,
+    settings.highContrast,
+  );
 
   switch (screen.name) {
     case "landing":
@@ -78,9 +94,13 @@ export function App(): JSX.Element {
         <LandingScreen
           settings={settings}
           results={loadResults()}
+          progress={progress}
           onUpdateSettings={updateSettings}
           onStart={startGame}
           onShowRanking={() => setScreen({ name: "ranking" })}
+          onShowGrowth={() =>
+            setScreen({ name: "analysis", analysis: null, recentHistory: loadResults(), back: { name: "landing" } })
+          }
         />
       );
     case "game":
@@ -91,6 +111,7 @@ export function App(): JSX.Element {
           reducedMotion={settings.reducedMotion}
           highContrast={settings.highContrast}
           fontScale={settings.fontScale}
+          attributeColors={resolvedBoardTheme.colors}
           onFinish={finishGame}
           onQuit={() => setScreen({ name: "landing" })}
         />
@@ -102,6 +123,7 @@ export function App(): JSX.Element {
           result={screen.result}
           history={screen.history}
           duelRecord={screen.duelRecord}
+          progress={progress}
           onRetry={(mode) => startGame(mode)}
           onBackToTitle={() => setScreen({ name: "landing" })}
           onShowAnalysis={(analysis, recentHistory) =>
@@ -115,6 +137,7 @@ export function App(): JSX.Element {
         <AnalysisScreen
           analysis={screen.analysis}
           recentHistory={screen.recentHistory}
+          progress={progress}
           onBack={() => setScreen(screen.back)}
         />
       );

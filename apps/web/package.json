@@ -11,6 +11,7 @@
   "dependencies": {
     "@type-burst/game-core": "*",
     "@type-burst/phrase-content": "*",
+    "@type-burst/progression": "*",
     "@type-burst/typing-engine": "*",
     "@vercel/analytics": "^2.0.1",
     "ioredis": "^5.4.1",

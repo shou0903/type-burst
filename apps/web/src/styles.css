@@ -266,6 +266,100 @@ body {
   color: #7d84a3;
 }
 
+/* 称号/ランクシステム(D-054, Feature 1) */
+.title-badge-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 215, 94, 0.06);
+  border: 1px solid rgba(255, 215, 94, 0.25);
+  border-radius: 12px;
+  padding: 8px 22px;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+
+.title-badge-box:hover {
+  background: rgba(255, 215, 94, 0.11);
+}
+
+.title-badge-label {
+  font-size: 11px;
+  color: #7d84a3;
+}
+
+.title-badge-name {
+  font-size: 18px;
+  font-weight: bold;
+  color: #ffd75e;
+}
+
+.title-progress-bar {
+  width: 220px;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.title-progress-bar-wide {
+  width: 320px;
+  margin-top: 4px;
+}
+
+.title-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ffb054, #ffd75e);
+  transition: width 0.2s ease;
+}
+
+.title-badge-next {
+  font-size: 12px;
+  color: #c3c9e2;
+}
+
+.btn-growth-link {
+  background: rgba(142, 245, 201, 0.08);
+  border: 1px solid rgba(142, 245, 201, 0.3);
+  color: #8ef5c9;
+  font-size: 14px;
+  font-weight: bold;
+  border-radius: 10px;
+  padding: 8px 20px;
+  cursor: pointer;
+}
+
+.btn-growth-link:hover {
+  background: rgba(142, 245, 201, 0.16);
+}
+
+/* 盤面カラーテーマ(アンロック要素, D-055, Feature 2) */
+.board-theme-row {
+  flex-wrap: wrap;
+  justify-content: center;
+  row-gap: 8px;
+}
+
+.board-theme-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.board-theme-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.chip-locked {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* 語彙テーマ選択(D-053, Feature 1) */
 .theme-row {
   margin-top: 2px;
@@ -897,6 +991,17 @@ body {
   vertical-align: middle;
 }
 
+/* 称号バッジ(D-054, Feature 1: 結果画面にも現在の称号を表示) */
+.result-title-badge {
+  font-size: 13px;
+  font-weight: bold;
+  color: #ffd75e;
+  background: rgba(255, 215, 94, 0.08);
+  border: 1px solid rgba(255, 215, 94, 0.25);
+  border-radius: 999px;
+  padding: 3px 14px;
+}
+
 .result-score-wrap {
   display: flex;
   align-items: baseline;
@@ -1473,6 +1578,50 @@ body {
   color: #c3c9e2;
   width: 34px;
   text-align: right;
+}
+
+/* 生涯累計成績(D-054): 8項目あるため、幅が足りない画面でも折り返せるようにする */
+.lifetime-grid {
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* 成長グラフ(D-054, Feature 3): 素のSVG折れ線グラフ。外部ライブラリは使わない */
+.growth-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  max-width: 320px;
+}
+
+.growth-chart-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 12px;
+}
+
+.growth-chart-label {
+  color: #c3c9e2;
+  font-weight: bold;
+}
+
+.growth-chart-value {
+  color: #f0f2fa;
+  font-weight: bold;
+}
+
+.growth-chart-best {
+  margin-left: 8px;
+  color: #7d84a3;
+  font-weight: normal;
+}
+
+.growth-chart-svg {
+  width: 100%;
+  height: 56px;
+  display: block;
 }
 
 .trend-bars {

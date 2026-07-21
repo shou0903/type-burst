@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import type { CpuDifficulty, SurvivalDifficulty } from "@type-burst/game-core";
 import { VOCAB_THEMES } from "@type-burst/phrase-content";
+import {
+  BOARD_THEMES,
+  isBoardThemeUnlocked,
+  titleProgressForScore,
+  type LifetimeProgress,
+} from "@type-burst/progression";
 import type { GameMode } from "../game/GameController";
 import { useFitToViewport } from "../hooks/useFitToViewport";
 import { bestScore, loadDuelRecord, type FontScale, type Settings, type StoredResult } from "../storage";
@@ -15,9 +21,11 @@ const FONT_SCALE_LABELS: Array<{ value: FontScale; label: string }> = [
 interface Props {
   settings: Settings;
   results: StoredResult[];
+  progress: LifetimeProgress;
   onUpdateSettings: (patch: Partial<Settings>) => void;
   onStart: (mode: GameMode) => void;
   onShowRanking: () => void;
+  onShowGrowth: () => void;
 }
 
 const DIFFICULTY_LABELS: Record<CpuDifficulty, string> = {
@@ -35,9 +43,11 @@ const SURVIVAL_DIFFICULTY_LABELS: Record<SurvivalDifficulty, string> = {
 export function LandingScreen({
   settings,
   results,
+  progress,
   onUpdateSettings,
   onStart,
   onShowRanking,
+  onShowGrowth,
 }: Props): JSX.Element {
   const [difficulty, setDifficulty] = useState<CpuDifficulty>("normal");
   const [survivalDifficulty, setSurvivalDifficulty] = useState<SurvivalDifficulty>("normal");
@@ -47,6 +57,7 @@ export function LandingScreen({
   const record = loadDuelRecord();
   const { ref, style } = useFitToViewport<HTMLDivElement>();
   const seasonalBadge = useMemo(() => getSeasonalBadge(), []);
+  const titleProgress = useMemo(() => titleProgressForScore(progress.totalScore), [progress.totalScore]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent): void => {
@@ -76,6 +87,22 @@ export function LandingScreen({
         </h1>
         <p className="tagline">日本語を打ってブロックを爆破。連鎖で盤面を吹き飛ばそう。</p>
       </div>
+
+      <button className="title-badge-box" onClick={onShowGrowth} title="成長記録を見る">
+        <div className="title-badge-label">称号</div>
+        <div className="title-badge-name">{titleProgress.current.label}</div>
+        <div className="title-progress-bar">
+          <div
+            className="title-progress-fill"
+            style={{ width: `${Math.round(titleProgress.progressRatio * 100)}%` }}
+          />
+        </div>
+        <div className="title-badge-next">
+          {titleProgress.next
+            ? `あと${titleProgress.remainingToNext.toLocaleString()}で『${titleProgress.next.label}』`
+            : "最高位の称号に到達しました!"}
+        </div>
+      </button>
 
       <div className="mode-row">
         <div className="duel-box">
@@ -152,6 +179,9 @@ export function LandingScreen({
         <button className="btn-ranking-link" onClick={onShowRanking}>
           🏆 世界ランキング
         </button>
+        <button className="btn-growth-link" onClick={onShowGrowth}>
+          📈 成長記録
+        </button>
       </div>
 
       <button
@@ -225,6 +255,30 @@ export function LandingScreen({
             {label}
           </button>
         ))}
+      </div>
+
+      <div className="settings-row board-theme-row">
+        <span className="font-scale-label">盤面カラー{settings.highContrast && "(High Contrast中は無効)"}</span>
+        {BOARD_THEMES.map((t) => {
+          const unlocked = isBoardThemeUnlocked(t.id, progress.totalScore);
+          const active = t.id === settings.boardTheme;
+          return (
+            <button
+              key={t.id}
+              className={`chip board-theme-chip${active ? " chip-active" : ""}${unlocked ? "" : " chip-locked"}`}
+              disabled={!unlocked}
+              title={unlocked ? t.label : `🔒 累計スコア${t.unlockScore.toLocaleString()}で解放`}
+              onClick={() => unlocked && onUpdateSettings({ boardTheme: t.id })}
+            >
+              <span
+                className="board-theme-swatch"
+                style={{ background: t.colors.fire.bright }}
+                aria-hidden="true"
+              />
+              {unlocked ? t.label : "🔒"}
+            </button>
+          );
+        })}
       </div>
 
       <p className="ime-note">※ 日本語IMEはOFF(半角英数)にしてプレイしてください。登録は不要です。</p>

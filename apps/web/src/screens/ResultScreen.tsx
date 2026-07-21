@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { SurvivalSummary, TypingAnalysis } from "@type-burst/game-core";
+import { titleProgressForScore, type LifetimeProgress } from "@type-burst/progression";
 import type { GameMode, GameResult } from "../game/GameController";
 import { useFitToViewport } from "../hooks/useFitToViewport";
 import { loadNickname, saveNickname, type DuelRecord, type StoredResult } from "../storage";
@@ -9,6 +10,7 @@ interface Props {
   result: GameResult;
   history: StoredResult[];
   duelRecord: DuelRecord | null;
+  progress: LifetimeProgress;
   onRetry: (mode: GameMode) => void;
   onBackToTitle: () => void;
   onShowAnalysis: (analysis: TypingAnalysis, recentHistory: StoredResult[]) => void;
@@ -28,11 +30,13 @@ export function ResultScreen({
   result,
   history,
   duelRecord,
+  progress,
   onRetry,
   onBackToTitle,
   onShowAnalysis,
 }: Props): JSX.Element {
   const { ref, style } = useFitToViewport<HTMLDivElement>();
+  const titleLabel = titleProgressForScore(progress.totalScore).current.label;
   const retryMode: GameMode =
     result.mode === "survival"
       ? { type: "survival", difficulty: result.summary.difficulty }
@@ -75,6 +79,8 @@ export function ResultScreen({
             {SURVIVAL_DIFFICULTY_LABELS[summary.difficulty]}
           </span>
         </h2>
+
+        <div className="result-title-badge">称号: {titleLabel}</div>
 
         <div className="result-score-wrap">
           <div className={`rank-badge rank-${rank.replace("+", "plus")}`}>{rank}</div>
@@ -126,6 +132,7 @@ export function ResultScreen({
       <h2 className={summary.won ? "result-title win-title" : "result-title lose-title"}>
         {summary.won ? "YOU WIN!" : "YOU LOSE…"}
       </h2>
+      <div className="result-title-badge">称号: {titleLabel}</div>
       <p className="duel-sub">
         CPU({DIFFICULTY_LABELS[summary.difficulty]})/ {formatTime(summary.durationMs)}
         {record && (

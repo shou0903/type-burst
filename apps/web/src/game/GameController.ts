@@ -1,5 +1,6 @@
 import { DuelGame, SurvivalGame, TutorialGame } from "@type-burst/game-core";
 import type {
+  Attribute,
   CpuDifficulty,
   DuelSnapshot,
   DuelSummary,
@@ -15,6 +16,7 @@ import {
   BoardRenderer,
   MAIN_RENDERER_OPTIONS,
   MINI_RENDERER_OPTIONS,
+  type AttributePalette,
   type FrameMeta,
 } from "../render/BoardRenderer";
 import { SoundEngine } from "../audio/SoundEngine";
@@ -39,6 +41,9 @@ export interface GameControllerOptions {
   reducedMotion: boolean;
   highContrast: boolean;
   fontScale: number;
+  /** 盤面カラーテーマ(D-055)。解放判定・High Contrast時のフォールバックは
+   * 呼び出し側(App)で解決済みの配色をそのまま受け取る */
+  attributeColors: Record<Attribute, AttributePalette>;
   onSnapshot: (snapshot: AnySnapshot) => void;
   onFinish: (result: GameResult) => void;
   onImeDetected: () => void;
@@ -79,6 +84,7 @@ export class GameController {
     this.renderer.reducedMotion = options.reducedMotion;
     this.renderer.highContrast = options.highContrast;
     this.renderer.fontScale = options.fontScale;
+    this.renderer.attributeColors = options.attributeColors;
     this.cpuRenderer =
       options.cpuCanvas && options.mode.type === "duel"
         ? new BoardRenderer(options.cpuCanvas, MINI_RENDERER_OPTIONS)
@@ -87,6 +93,7 @@ export class GameController {
       this.cpuRenderer.reducedMotion = options.reducedMotion;
       this.cpuRenderer.highContrast = options.highContrast;
       this.cpuRenderer.fontScale = options.fontScale;
+      this.cpuRenderer.attributeColors = options.attributeColors;
     }
 
     if (import.meta.env.DEV) {

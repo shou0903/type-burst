@@ -11,6 +11,7 @@ export default defineConfig({
       "@type-burst/typing-engine": r("../../packages/typing-engine/src/index.ts"),
       "@type-burst/game-core": r("../../packages/game-core/src/index.ts"),
       "@type-burst/phrase-content": r("../../packages/phrase-content/src/index.ts"),
+      "@type-burst/progression": r("../../packages/progression/src/index.ts"),
     },
   },
   server: {

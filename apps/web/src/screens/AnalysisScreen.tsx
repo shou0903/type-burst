@@ -1,14 +1,24 @@
 import { useEffect } from "react";
 import type { FingerStat, KeyStat, TypingAnalysis } from "@type-burst/game-core";
+import { titleProgressForScore, type LifetimeProgress } from "@type-burst/progression";
 import { useFitToViewport } from "../hooks/useFitToViewport";
 import type { StoredResult } from "../storage";
 
 interface Props {
-  analysis: TypingAnalysis;
-  /** 同じ難易度の直近の記録(古い順ではなく新しい順、現在のプレイを含む)。DUELでは空配列 */
+  /**
+   * null = 直前のプレイ結果を経由せずに開いた場合(例: タイトル画面の「成長記録」から)。
+   * このとき、その場のキー分析・ペース比較などプレイ単位のセクションは表示せず、
+   * 長期的な成長グラフと生涯累計成績のみを表示する。
+   */
+  analysis: TypingAnalysis | null;
+  /** 直近の記録(新しい順、現在のプレイを含む場合がある)。DUELでは空配列 */
   recentHistory: StoredResult[];
+  progress: LifetimeProgress;
   onBack: () => void;
 }
+
+/** 成長グラフに表示する最大プレイ数(古すぎる記録まで詰め込むと見づらいため) */
+const MAX_GROWTH_POINTS = 30;
 
 /** JISキーボード配列に近い並び(段ごとに少しずつ右へずらす) */
 const KEYBOARD_ROWS: readonly (readonly string[])[] = [
@@ -51,7 +61,7 @@ const FINGER_LABEL_OF_KEY: Record<string, string> = {
 const MIN_FINGER_ATTEMPTS = 3;
 const MIN_SEGMENT_KEYSTROKES = 10;
 
-export function AnalysisScreen({ analysis, recentHistory, onBack }: Props): JSX.Element {
+export function AnalysisScreen({ analysis, recentHistory, progress, onBack }: Props): JSX.Element {
   const { ref, style } = useFitToViewport<HTMLDivElement>();
 
   useEffect(() => {
@@ -62,25 +72,88 @@ export function AnalysisScreen({ analysis, recentHistory, onBack }: Props): JSX.
     return () => window.removeEventListener("keydown", handler);
   }, [onBack]);
 
-  const statsByKey = new Map(analysis.keyStats.map((k) => [k.key, k]));
-  const hasData = analysis.totalKeystrokes > 0;
+  const statsByKey = new Map(analysis?.keyStats.map((k) => [k.key, k]) ?? []);
+  const hasPlayData = analysis !== null && analysis.totalKeystrokes > 0;
 
-  const usedFingers = analysis.fingerStats.filter((f) => f.correct + f.incorrect >= MIN_FINGER_ATTEMPTS);
+  const usedFingers =
+    analysis?.fingerStats.filter((f) => f.correct + f.incorrect >= MIN_FINGER_ATTEMPTS) ?? [];
   const weakestFinger = [...usedFingers].sort((a, b) => b.missRate - a.missRate)[0] ?? null;
-  const leftHand = analysis.handStats.find((h) => h.hand === "left");
-  const rightHand = analysis.handStats.find((h) => h.hand === "right");
+  const leftHand = analysis?.handStats.find((h) => h.hand === "left");
+  const rightHand = analysis?.handStats.find((h) => h.hand === "right");
 
-  const focus = buildNextFocus(analysis, weakestFinger);
-  const paceInsight = buildPaceInsight(analysis);
+  const focus = analysis ? buildNextFocus(analysis, weakestFinger) : null;
+  const paceInsight = analysis ? buildPaceInsight(analysis) : null;
   const trendInsight = buildTrendInsight(recentHistory);
+  const titleProgress = titleProgressForScore(progress.totalScore);
 
   return (
     <div ref={ref} style={style} className="screen analysis">
-      <h1 className="logo analysis-title">TYPING ANALYSIS</h1>
+      <h1 className="logo analysis-title">{analysis ? "TYPING ANALYSIS" : "成長記録"}</h1>
 
-      {!hasData && <p className="ranking-status">記録がありません。プレイしてから確認してください。</p>}
+      <div className="analysis-section growth-lifetime-section">
+        <div className="analysis-section-title">称号 / 生涯累計成績</div>
+        <div className="title-progress-bar title-progress-bar-wide">
+          <div
+            className="title-progress-fill"
+            style={{ width: `${Math.round(titleProgress.progressRatio * 100)}%` }}
+          />
+        </div>
+        <div className="title-badge-name">{titleProgress.current.label}</div>
+        <div className="title-badge-next">
+          {titleProgress.next
+            ? `あと${titleProgress.remainingToNext.toLocaleString()}で『${titleProgress.next.label}』`
+            : "最高位の称号に到達しました!"}
+        </div>
+        <div className="result-grid lifetime-grid">
+          <Item label="累計プレイ" value={`${progress.totalGames}回`} />
+          <Item label="累計スコア" value={progress.totalScore.toLocaleString()} />
+          <Item label="ベストスコア" value={progress.bestScore.toLocaleString()} />
+          <Item label="ベストKPM" value={String(Math.round(progress.bestKpm))} />
+          <Item label="ベスト正確率" value={`${(progress.bestAccuracy * 100).toFixed(1)}%`} />
+          <Item label="最大連鎖" value={String(progress.maxChainEver)} />
+          <Item label="総文章数" value={`${progress.totalPhrases}文`} />
+          <Item label="総プレイ時間" value={formatDuration(progress.totalPlaytimeMs)} />
+        </div>
+      </div>
 
-      {hasData && (
+      {recentHistory.length >= 2 ? (
+        <div className="analysis-section growth-chart-section">
+          <div className="analysis-section-title">
+            成長グラフ(直近{Math.min(recentHistory.length, MAX_GROWTH_POINTS)}件・古い→新しい)
+          </div>
+          <GrowthChart
+            label="スコア"
+            values={chronological(recentHistory, (r) => r.score)}
+            color="#ffd75e"
+            format={(v) => Math.round(v).toLocaleString()}
+          />
+          <GrowthChart
+            label="KPM"
+            values={chronological(recentHistory, (r) => r.kpm)}
+            color="#6fc0ff"
+            format={(v) => String(Math.round(v))}
+          />
+          <GrowthChart
+            label="正確率"
+            values={chronological(recentHistory, (r) => r.accuracy * 100)}
+            color="#8ef5c9"
+            format={(v) => `${v.toFixed(1)}%`}
+          />
+          {trendInsight && <p className="analysis-insight">{trendInsight}</p>}
+        </div>
+      ) : (
+        <p className="ranking-status">
+          プレイを重ねると、ここにスコア・KPM・正確率の成長グラフが表示されます。
+        </p>
+      )}
+
+      {!hasPlayData && (
+        <p className="ranking-status">
+          プレイするとキーボードのヒートマップやペース比較など、より詳しい分析も表示されます。
+        </p>
+      )}
+
+      {hasPlayData && analysis && (
         <>
           <div className="result-grid">
             <Item label="総打鍵数" value={String(analysis.totalKeystrokes)} />
@@ -196,25 +269,6 @@ export function AnalysisScreen({ analysis, recentHistory, onBack }: Props): JSX.
             )}
           </div>
 
-          {recentHistory.length >= 2 && (
-            <div className="analysis-section">
-              <div className="analysis-section-title">直近の正確率の推移(同じ難易度・新しい順)</div>
-              <div className="trend-bars">
-                {[...recentHistory]
-                  .slice(0, 5)
-                  .reverse()
-                  .map((r, i) => (
-                    <div key={i} className="trend-bar-wrap" title={`${(r.accuracy * 100).toFixed(1)}%`}>
-                      <span
-                        className="trend-bar"
-                        style={{ height: `${Math.max(4, r.accuracy * 60)}px` }}
-                      />
-                    </div>
-                  ))}
-              </div>
-              {trendInsight && <p className="analysis-insight">{trendInsight}</p>}
-            </div>
-          )}
         </>
       )}
 
@@ -277,6 +331,94 @@ function buildTrendInsight(recentHistory: StoredResult[]): string | null {
   if (diff >= 0.05) return "直近の記録と比べて正確率が上がってきています。";
   if (diff <= -0.05) return "直近の記録と比べて正確率がやや下がっています。";
   return "直近の記録と比べて正確率は安定しています。";
+}
+
+/**
+ * recentHistory(新しい順)から、直近 MAX_GROWTH_POINTS 件を古い→新しい順に並べ替え、
+ * 指定した数値を取り出す(成長グラフは時系列で左→右に読めるようにするため)。
+ */
+function chronological(recentHistory: StoredResult[], pick: (r: StoredResult) => number): number[] {
+  return recentHistory
+    .slice(0, MAX_GROWTH_POINTS)
+    .map(pick)
+    .reverse();
+}
+
+function formatDuration(ms: number): string {
+  const totalMinutes = Math.floor(ms / 60000);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours > 0) return `${hours}時間${minutes}分`;
+  return `${minutes}分`;
+}
+
+const GROWTH_CHART_WIDTH = 280;
+const GROWTH_CHART_HEIGHT = 56;
+const GROWTH_CHART_PAD = 6;
+
+/** 値の配列から、シンプルな折れ線グラフ用のSVG座標点列を計算する */
+function buildGrowthPoints(values: number[]): { x: number; y: number }[] {
+  if (values.length === 0) return [];
+  if (values.length === 1) {
+    return [{ x: GROWTH_CHART_WIDTH / 2, y: GROWTH_CHART_HEIGHT / 2 }];
+  }
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const span = max - min || 1;
+  const innerW = GROWTH_CHART_WIDTH - GROWTH_CHART_PAD * 2;
+  const innerH = GROWTH_CHART_HEIGHT - GROWTH_CHART_PAD * 2;
+  return values.map((v, i) => ({
+    x: GROWTH_CHART_PAD + (innerW * i) / (values.length - 1),
+    y: GROWTH_CHART_PAD + innerH * (1 - (v - min) / span),
+  }));
+}
+
+/**
+ * 長期的な成長を示すシンプルな折れ線グラフ(D-054, Feature 3)。
+ * 既存の`trend-bars`(直近5件の棒グラフ)を置き換え、より多くの記録を
+ * 時系列で見せる。外部ライブラリは使わず素のSVGで描画する。
+ */
+function GrowthChart({
+  label,
+  values,
+  color,
+  format,
+}: {
+  label: string;
+  values: number[];
+  color: string;
+  format: (v: number) => string;
+}): JSX.Element | null {
+  if (values.length < 2) return null;
+  const points = buildGrowthPoints(values);
+  const polyline = points.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+  const first = values[0]!;
+  const last = values[values.length - 1]!;
+  const best = Math.max(...values);
+
+  return (
+    <div className="growth-chart">
+      <div className="growth-chart-head">
+        <span className="growth-chart-label">{label}</span>
+        <span className="growth-chart-value">
+          {format(last)}
+          <span className="growth-chart-best">最高 {format(best)}</span>
+        </span>
+      </div>
+      <svg
+        className="growth-chart-svg"
+        viewBox={`0 0 ${GROWTH_CHART_WIDTH} ${GROWTH_CHART_HEIGHT}`}
+        preserveAspectRatio="none"
+        role="img"
+        aria-label={`${label}の推移。開始${format(first)}、直近${format(last)}`}
+      >
+        <polyline points={polyline} fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round" />
+        {points.map((p, i) => (
+          <circle key={i} cx={p.x} cy={p.y} r={i === points.length - 1 ? 3 : 1.6} fill={color} />
+        ))}
+      </svg>
+    </div>
+  );
 }
 
 function PaceCard({ label, segment }: { label: string; segment: TypingAnalysis["firstHalf"] }): JSX.Element {

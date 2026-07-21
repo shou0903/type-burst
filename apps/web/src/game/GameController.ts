@@ -1,6 +1,5 @@
 import { DuelGame, SurvivalGame, TutorialGame } from "@type-burst/game-core";
 import type {
-  Attribute,
   CpuDifficulty,
   DuelSnapshot,
   DuelSummary,
@@ -10,19 +9,13 @@ import type {
   SurvivalSummary,
   TutorialSnapshot,
 } from "@type-burst/game-core";
-import { GARBAGE_PHRASES, PHRASES, buildThemedPhrasePool, type VocabThemeId } from "@type-burst/phrase-content";
+import { GARBAGE_PHRASES, PHRASES } from "@type-burst/phrase-content";
 import { TypingAutomaton } from "@type-burst/typing-engine";
-import {
-  BoardRenderer,
-  MAIN_RENDERER_OPTIONS,
-  MINI_RENDERER_OPTIONS,
-  type AttributePalette,
-  type FrameMeta,
-} from "../render/BoardRenderer";
+import { BoardRenderer, MAIN_RENDERER_OPTIONS, MINI_RENDERER_OPTIONS, type FrameMeta } from "../render/BoardRenderer";
 import { SoundEngine } from "../audio/SoundEngine";
 
 export type GameMode =
-  | { type: "survival"; difficulty: SurvivalDifficulty; theme?: VocabThemeId }
+  | { type: "survival"; difficulty: SurvivalDifficulty }
   | { type: "duel"; difficulty: CpuDifficulty }
   | { type: "tutorial" };
 
@@ -41,9 +34,6 @@ export interface GameControllerOptions {
   reducedMotion: boolean;
   highContrast: boolean;
   fontScale: number;
-  /** 盤面カラーテーマ(D-055)。解放判定・High Contrast時のフォールバックは
-   * 呼び出し側(App)で解決済みの配色をそのまま受け取る */
-  attributeColors: Record<Attribute, AttributePalette>;
   onSnapshot: (snapshot: AnySnapshot) => void;
   onFinish: (result: GameResult) => void;
   onImeDetected: () => void;
@@ -69,22 +59,14 @@ export class GameController {
     const seed = `${options.mode.type}-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
     this.game =
       options.mode.type === "survival"
-        ? new SurvivalGame(
-            seed,
-            buildThemedPhrasePool(options.mode.theme ?? "all", PHRASES),
-            GARBAGE_PHRASES,
-            options.mode.difficulty,
-          )
+        ? new SurvivalGame(seed, PHRASES, GARBAGE_PHRASES, options.mode.difficulty)
         : options.mode.type === "duel"
-          ? // DUEL は常に「おまかせ」を使う(テーマは未継承。CPU側のバランス調整済みプールを
-            // プレイヤーごとに変えると対戦の公平性の検証が複雑になるため、単純さを優先した)
-            new DuelGame(seed, PHRASES, GARBAGE_PHRASES, options.mode.difficulty)
+          ? new DuelGame(seed, PHRASES, GARBAGE_PHRASES, options.mode.difficulty)
           : new TutorialGame(PHRASES, GARBAGE_PHRASES);
     this.renderer = new BoardRenderer(options.canvas, MAIN_RENDERER_OPTIONS);
     this.renderer.reducedMotion = options.reducedMotion;
     this.renderer.highContrast = options.highContrast;
     this.renderer.fontScale = options.fontScale;
-    this.renderer.attributeColors = options.attributeColors;
     this.cpuRenderer =
       options.cpuCanvas && options.mode.type === "duel"
         ? new BoardRenderer(options.cpuCanvas, MINI_RENDERER_OPTIONS)
@@ -93,7 +75,6 @@ export class GameController {
       this.cpuRenderer.reducedMotion = options.reducedMotion;
       this.cpuRenderer.highContrast = options.highContrast;
       this.cpuRenderer.fontScale = options.fontScale;
-      this.cpuRenderer.attributeColors = options.attributeColors;
     }
 
     if (import.meta.env.DEV) {

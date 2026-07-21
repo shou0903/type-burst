@@ -335,45 +335,6 @@ body {
   background: rgba(142, 245, 201, 0.16);
 }
 
-/* 盤面カラーテーマ(アンロック要素, D-055, Feature 2) */
-.board-theme-row {
-  flex-wrap: wrap;
-  justify-content: center;
-  row-gap: 8px;
-}
-
-.board-theme-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.board-theme-swatch {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-}
-
-.chip-locked {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* 語彙テーマ選択(D-053, Feature 1) */
-.theme-row {
-  margin-top: 2px;
-}
-
-.theme-badge {
-  display: inline-block;
-  margin-left: 6px;
-  font-size: 10px;
-  font-weight: normal;
-  color: #ffd75e;
-  white-space: nowrap;
-}
-
 .quick-links-row {
   display: flex;
   gap: 10px;
@@ -1276,7 +1237,7 @@ body {
 /* ---------- Analysis screen ---------- */
 
 .screen.analysis {
-  gap: 16px;
+  gap: 22px;
 }
 
 .analysis-title {
@@ -1355,12 +1316,13 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   background: rgba(255, 107, 107, 0.06);
   border: 1px solid rgba(255, 107, 107, 0.2);
   border-radius: 10px;
-  padding: 14px 24px;
-  max-width: 480px;
+  padding: 16px 24px;
+  max-width: 520px;
+  width: 100%;
 }
 
 .weak-keys-title {
@@ -1370,10 +1332,10 @@ body {
 }
 
 .weak-keys-list {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
-  justify-content: center;
+  width: 100%;
 }
 
 .weak-key-item {
@@ -1383,9 +1345,11 @@ body {
   background: rgba(255, 255, 255, 0.05);
   border-radius: 8px;
   padding: 6px 12px;
+  min-height: 46px;
 }
 
 .weak-key-char {
+  flex-shrink: 0;
   font-weight: 900;
   font-size: 16px;
   color: #ffd75e;
@@ -1523,8 +1487,9 @@ body {
 .finger-label {
   font-size: 12px;
   color: #c3c9e2;
-  width: 84px;
+  width: 92px;
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .finger-bar-wrap {

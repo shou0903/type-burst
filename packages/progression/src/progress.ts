@@ -1,6 +1,6 @@
 /**
- * 生涯累計プレイ統計(D-054)。称号(titles.ts)・アンロック要素(boardThemes.ts)の
- * どちらも、ここで集計する `totalScore` を共通の進捗指標として参照する。
+ * 生涯累計プレイ統計(D-054)。称号(titles.ts)は、ここで集計する
+ * `totalScore` を進捗指標として参照する。
  *
  * ブラウザのlocalStorage I/O自体はapps/web/src/storage.tsが担当し、この
  * パッケージは「保存された値の解釈(マージ)」と「1プレイ分の加算」という

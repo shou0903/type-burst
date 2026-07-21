@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import type { TypingAnalysis } from "@type-burst/game-core";
-import { resolveBoardTheme } from "@type-burst/progression";
 import { SoundEngine } from "./audio/SoundEngine";
 import type { GameMode, GameResult } from "./game/GameController";
 import { LandingScreen } from "./screens/LandingScreen";
@@ -81,13 +80,6 @@ export function App(): JSX.Element {
     setProgress(loadProgress());
   };
 
-  // 盤面カラーテーマ(D-055): 未解放・High Contrast時はdefaultへフォールバックする
-  const resolvedBoardTheme = resolveBoardTheme(
-    settings.boardTheme,
-    progress.totalScore,
-    settings.highContrast,
-  );
-
   switch (screen.name) {
     case "landing":
       return (
@@ -111,7 +103,6 @@ export function App(): JSX.Element {
           reducedMotion={settings.reducedMotion}
           highContrast={settings.highContrast}
           fontScale={settings.fontScale}
-          attributeColors={resolvedBoardTheme.colors}
           onFinish={finishGame}
           onQuit={() => setScreen({ name: "landing" })}
         />

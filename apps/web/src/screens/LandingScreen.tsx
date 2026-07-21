@@ -1,16 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import type { CpuDifficulty, SurvivalDifficulty } from "@type-burst/game-core";
-import { VOCAB_THEMES } from "@type-burst/phrase-content";
-import {
-  BOARD_THEMES,
-  isBoardThemeUnlocked,
-  titleProgressForScore,
-  type LifetimeProgress,
-} from "@type-burst/progression";
+import { titleProgressForScore, type LifetimeProgress } from "@type-burst/progression";
 import type { GameMode } from "../game/GameController";
 import { useFitToViewport } from "../hooks/useFitToViewport";
 import { bestScore, loadDuelRecord, type FontScale, type Settings, type StoredResult } from "../storage";
-import { getSeasonalBadge } from "../seasonal";
 
 const FONT_SCALE_LABELS: Array<{ value: FontScale; label: string }> = [
   { value: 1, label: "標準" },
@@ -52,23 +45,21 @@ export function LandingScreen({
   const [difficulty, setDifficulty] = useState<CpuDifficulty>("normal");
   const [survivalDifficulty, setSurvivalDifficulty] = useState<SurvivalDifficulty>("normal");
   const [howtoOpen, setHowtoOpen] = useState(false);
-  const theme = settings.theme;
   const best = bestScore(results, survivalDifficulty);
   const record = loadDuelRecord();
   const { ref, style } = useFitToViewport<HTMLDivElement>();
-  const seasonalBadge = useMemo(() => getSeasonalBadge(), []);
   const titleProgress = useMemo(() => titleProgressForScore(progress.totalScore), [progress.totalScore]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent): void => {
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
-        onStart({ type: "survival", difficulty: survivalDifficulty, theme });
+        onStart({ type: "survival", difficulty: survivalDifficulty });
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [onStart, survivalDifficulty, theme]);
+  }, [onStart, survivalDifficulty]);
 
   return (
     <div ref={ref} style={style} className="screen landing">
@@ -108,7 +99,7 @@ export function LandingScreen({
         <div className="duel-box">
           <button
             className="btn-primary"
-            onClick={() => onStart({ type: "survival", difficulty: survivalDifficulty, theme })}
+            onClick={() => onStart({ type: "survival", difficulty: survivalDifficulty })}
             autoFocus
           >
             サバイバル <span className="btn-sub">Enter</span>
@@ -121,22 +112,6 @@ export function LandingScreen({
                 onClick={() => setSurvivalDifficulty(d)}
               >
                 {SURVIVAL_DIFFICULTY_LABELS[d]}
-              </button>
-            ))}
-          </div>
-          <div className="difficulty-row theme-row">
-            {VOCAB_THEMES.map(({ id, label }) => (
-              <button
-                key={id}
-                className={id === theme ? "chip chip-active" : "chip"}
-                onClick={() => onUpdateSettings({ theme: id })}
-              >
-                {label}
-                {id === "season" && (
-                  <span className="theme-badge">
-                    {seasonalBadge.emoji}今月のおすすめ
-                  </span>
-                )}
               </button>
             ))}
           </div>
@@ -255,30 +230,6 @@ export function LandingScreen({
             {label}
           </button>
         ))}
-      </div>
-
-      <div className="settings-row board-theme-row">
-        <span className="font-scale-label">盤面カラー{settings.highContrast && "(High Contrast中は無効)"}</span>
-        {BOARD_THEMES.map((t) => {
-          const unlocked = isBoardThemeUnlocked(t.id, progress.totalScore);
-          const active = t.id === settings.boardTheme;
-          return (
-            <button
-              key={t.id}
-              className={`chip board-theme-chip${active ? " chip-active" : ""}${unlocked ? "" : " chip-locked"}`}
-              disabled={!unlocked}
-              title={unlocked ? t.label : `🔒 累計スコア${t.unlockScore.toLocaleString()}で解放`}
-              onClick={() => unlocked && onUpdateSettings({ boardTheme: t.id })}
-            >
-              <span
-                className="board-theme-swatch"
-                style={{ background: t.colors.fire.bright }}
-                aria-hidden="true"
-              />
-              {unlocked ? t.label : "🔒"}
-            </button>
-          );
-        })}
       </div>
 
       <p className="ime-note">※ 日本語IMEはOFF(半角英数)にしてプレイしてください。登録は不要です。</p>

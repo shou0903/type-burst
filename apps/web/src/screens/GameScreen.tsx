@@ -1,7 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { Attribute } from "@type-burst/game-core";
 import { GameController, type AnySnapshot, type GameMode, type GameResult } from "../game/GameController";
-import type { AttributePalette } from "../render/BoardRenderer";
 import { SoundEngine } from "../audio/SoundEngine";
 import { useFitToViewport } from "../hooks/useFitToViewport";
 
@@ -11,8 +9,6 @@ interface Props {
   reducedMotion: boolean;
   highContrast: boolean;
   fontScale: number;
-  /** 盤面カラーテーマ(D-055)。解放判定済みの配色をApp側から受け取る */
-  attributeColors: Record<Attribute, AttributePalette>;
   onFinish: (result: GameResult) => void;
   onQuit: () => void;
 }
@@ -30,7 +26,6 @@ export function GameScreen({
   reducedMotion,
   highContrast,
   fontScale,
-  attributeColors,
   onFinish,
   onQuit,
 }: Props): JSX.Element {
@@ -52,7 +47,6 @@ export function GameScreen({
       reducedMotion,
       highContrast,
       fontScale,
-      attributeColors,
       onSnapshot: setSnapshot,
       onFinish,
       onImeDetected: () => setImeWarning(true),

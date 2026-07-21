@@ -66,34 +66,18 @@ export interface FrameMeta {
   endColor?: string;
 }
 
-export interface AttributePalette {
+interface AttributeStyle {
   fill: string;
   bright: string;
   dark: string;
-}
-
-interface AttributeStyle extends AttributePalette {
   shape: "triangle" | "circle" | "diamond" | "star";
 }
 
-/** 属性ごとの形状(ハイコントラスト時等のため色に依らない識別手段として維持する) */
-const ATTRIBUTE_SHAPES: Record<Attribute, AttributeStyle["shape"]> = {
-  fire: "triangle",
-  water: "circle",
-  wind: "diamond",
-  light: "star",
-};
-
-/**
- * 既定の盤面カラー(D-055で盤面カラーテーマ機能を追加する以前からの配色)。
- * `attributeColors` が未設定の場合や、テーマ解放判定を持たない単体テスト・
- * ミニ盤面などで使うフォールバック。
- */
-const DEFAULT_ATTRIBUTE_COLORS: Record<Attribute, AttributePalette> = {
-  fire: { fill: "#c2402f", bright: "#ff8a70", dark: "#7c2418" },
-  water: { fill: "#1f6dc2", bright: "#6fc0ff", dark: "#123f7a" },
-  wind: { fill: "#1f9e74", bright: "#5fe8b6", dark: "#116048" },
-  light: { fill: "#c29a1f", bright: "#ffdf70", dark: "#7a5f10" },
+const ATTRIBUTE_STYLES: Record<Attribute, AttributeStyle> = {
+  fire: { fill: "#c2402f", bright: "#ff8a70", dark: "#7c2418", shape: "triangle" },
+  water: { fill: "#1f6dc2", bright: "#6fc0ff", dark: "#123f7a", shape: "circle" },
+  wind: { fill: "#1f9e74", bright: "#5fe8b6", dark: "#116048", shape: "diamond" },
+  light: { fill: "#c29a1f", bright: "#ffdf70", dark: "#7a5f10", shape: "star" },
 };
 
 const GARBAGE_STYLE = { fill: "#4a5164", bright: "#9aa3ba", dark: "#2c3140" };
@@ -167,17 +151,6 @@ export class BoardRenderer {
   reducedMotion = false;
   highContrast = false;
   fontScale = 1;
-  /**
-   * 盤面カラーテーマ(アンロック要素、D-055)。どのテーマを使うか(解放済みか、
-   * High Contrast時のフォールバックを適用するか)の判断は呼び出し側
-   * (GameController/App)が行い、ここには最終的な配色だけを渡す。
-   * これによりBoardRendererは進捗・アンロックの概念を一切知らずに済む。
-   */
-  attributeColors: Record<Attribute, AttributePalette> = DEFAULT_ATTRIBUTE_COLORS;
-
-  private attributeStyle(attribute: Attribute): AttributeStyle {
-    return { ...this.attributeColors[attribute], shape: ATTRIBUTE_SHAPES[attribute] };
-  }
 
   constructor(private readonly canvas: HTMLCanvasElement, opts: RendererOptions) {
     const ctx = canvas.getContext("2d");
@@ -488,7 +461,7 @@ export class BoardRenderer {
     let colors: string[];
     if (kind === "bomb") colors = ["#ffb054", "#ff8a70", "#ffffff"];
     else if (kind === "prism") colors = PRISM_COLORS;
-    else if (attribute) colors = [this.attributeStyle(attribute).bright, "#ffffff"];
+    else if (attribute) colors = [ATTRIBUTE_STYLES[attribute].bright, "#ffffff"];
     else colors = [GARBAGE_STYLE.bright, "#ffffff"];
 
     const scale = this.opts.drawText ? 1 : 0.45;
@@ -748,7 +721,7 @@ export class BoardRenderer {
         ? { fill: "#5a4d8c", bright: "#cbb8ff", dark: "#332b52" }
         : GARBAGE_STYLE;
     }
-    return this.attributeStyle(block.attribute);
+    return ATTRIBUTE_STYLES[block.attribute];
   }
 
   private drawBlock(block: BlockView, x: number, y: number): void {
@@ -905,7 +878,7 @@ export class BoardRenderer {
       return;
     }
 
-    const shape = block.attribute ? ATTRIBUTE_SHAPES[block.attribute] : "circle";
+    const shape = block.attribute ? ATTRIBUTE_STYLES[block.attribute].shape : "circle";
     ctx.fillStyle = color;
     ctx.beginPath();
     switch (shape) {

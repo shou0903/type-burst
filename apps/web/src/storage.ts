@@ -5,13 +5,10 @@ import type {
   SurvivalDifficulty,
   SurvivalSummary,
 } from "@type-burst/game-core";
-import type { VocabThemeId } from "@type-burst/phrase-content";
 import {
   accumulateProgress,
   defaultLifetimeProgress,
   mergeLifetimeProgress,
-  DEFAULT_BOARD_THEME_ID,
-  type BoardThemeId,
   type LifetimeProgress,
 } from "@type-burst/progression";
 
@@ -24,7 +21,6 @@ const NICKNAME_KEY = "typeblast.nickname.v1";
 const PROGRESS_KEY = "typeblast.progress.v1";
 
 export type FontScale = 1 | 1.15 | 1.3;
-export type { BoardThemeId } from "@type-burst/progression";
 
 /**
  * 直近結果として保持する件数(D-054, Feature 3: 成長グラフ)。
@@ -38,10 +34,6 @@ export interface Settings {
   reducedMotion: boolean;
   highContrast: boolean;
   fontScale: FontScale;
-  /** 語彙テーマ選択(D-053)。既定は "all"(おまかせ、従来通り全カテゴリ) */
-  theme: VocabThemeId;
-  /** 盤面カラーテーマ(D-055)。既定は "default"(従来通りの配色) */
-  boardTheme: BoardThemeId;
 }
 
 export interface StoredResult {
@@ -72,8 +64,6 @@ function defaultSettings(): Settings {
     reducedMotion: prefersReducedMotion(),
     highContrast: false,
     fontScale: 1,
-    theme: "all",
-    boardTheme: DEFAULT_BOARD_THEME_ID,
   };
 }
 const DEFAULT_DUEL_RECORD: DuelRecord = {

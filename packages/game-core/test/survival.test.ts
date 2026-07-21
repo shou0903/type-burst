@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { SurvivalGame, findAutoGroups } from "@type-burst/game-core";
 import type { Attribute, Block, BlockKind, GameEvent, PlayerCore } from "@type-burst/game-core";
-import { GARBAGE_PHRASES, PHRASES, VOCAB_THEMES, buildThemedPhrasePool } from "@type-burst/phrase-content";
+import { GARBAGE_PHRASES, PHRASES } from "@type-burst/phrase-content";
 import { TypingAutomaton } from "@type-burst/typing-engine";
 
 function newGame(seed = "test-seed"): SurvivalGame {
@@ -689,38 +689,5 @@ describe("タイピング分析(D-048)", () => {
     expect(analysis.firstHalf.keystrokes + analysis.secondHalf.keystrokes).toBe(
       analysis.totalKeystrokes,
     );
-  });
-});
-
-describe("語彙テーマ選択(D-053)", () => {
-  const difficulties = ["easy", "normal", "hard"] as const;
-
-  for (const themeDef of VOCAB_THEMES) {
-    for (const difficulty of difficulties) {
-      it(`テーマ「${themeDef.label}」× 難易度「${difficulty}」はクラッシュせず健全なプールで開始できる`, () => {
-        const pool = buildThemedPhrasePool(themeDef.id, PHRASES);
-        // PlayerCoreのコンストラクタは有効フレーズ<10で例外を投げるため、
-        // ここで十分に大きいことを確認してから実際にゲームを生成する
-        expect(pool.length).toBeGreaterThanOrEqual(30);
-
-        expect(() => {
-          const game = new SurvivalGame(`theme-${themeDef.id}-${difficulty}`, pool, GARBAGE_PHRASES, difficulty);
-          startPlaying(game);
-          game.advance(15_000);
-        }).not.toThrow();
-      });
-    }
-  }
-
-  it("テーマを切り替えても同じSeed・同じ操作列なら同じ結果になる(決定性を壊さない)", () => {
-    const poolA = buildThemedPhrasePool("business", PHRASES);
-    const gameA = new SurvivalGame("theme-determinism", poolA, GARBAGE_PHRASES, "normal");
-    const gameB = new SurvivalGame("theme-determinism", poolA, GARBAGE_PHRASES, "normal");
-    startPlaying(gameA);
-    startPlaying(gameB);
-    gameA.advance(5000);
-    gameB.advance(5000);
-    expect(gameA.getSnapshot().player.score).toBe(gameB.getSnapshot().player.score);
-    expect(coreBlocks(gameA)).toEqual(coreBlocks(gameB));
   });
 });

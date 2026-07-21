@@ -43,9 +43,9 @@ export class SurvivalGame {
     this.scoreMultiplier = profile.scoreMultiplier;
     this.countdownMsLeft = config.countdownMs;
     this.lastCountdownSecond = Math.ceil(config.countdownMs / 1000);
-    // 行上昇(config.survivalRise)は共通のまま、文章の長さ配分だけ難易度で変える
+    // 行上昇の速さ・文章の長さ配分の両方を難易度ごとに変える(D-038、詳細はconfig.tsのコメント参照)
     const effectiveConfig: GameConfig = { ...config, tierRatio: profile.tierRatio };
-    this.core = new PlayerCore(seed, phrases, garbagePhrases, effectiveConfig, config.survivalRise);
+    this.core = new PlayerCore(seed, phrases, garbagePhrases, effectiveConfig, profile.rise);
   }
 
   advance(deltaMs: number): GameEvent[] {

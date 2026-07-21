@@ -194,7 +194,13 @@ export class TutorialGame {
     garbagePhrases: readonly JapanesePhrase[],
     config: GameConfig = DEFAULT_CONFIG,
   ) {
-    this.core = new PlayerCore("tutorial", phrases, garbagePhrases, config, config.survivalRise);
+    this.core = new PlayerCore(
+      "tutorial",
+      phrases,
+      garbagePhrases,
+      config,
+      config.survivalDifficulty.normal.rise,
+    );
     this.core.pauseRise = true;
     this.steps = buildSteps(phrases);
     this.applyStep();

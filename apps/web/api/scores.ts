@@ -33,7 +33,7 @@ type SurvivalDifficulty = "easy" | "normal" | "hard";
  * importせず、値をここに複製している)。
  */
 const SCORE_MULTIPLIER: Record<SurvivalDifficulty, number> = {
-  easy: 0.65,
+  easy: 0.6,
   normal: 1.0,
   hard: 1.4,
 };

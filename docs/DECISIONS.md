@@ -666,6 +666,6 @@
 - **日付:** 2026-07-23
 - **正規ブランド:** 正式名称を`TYPE BURST`、日本語読みを`タイプバースト（たいぷばーすと）`として、タイトル、説明文、H1、OGP、Web App Manifest、静的紹介ページの表記を統一した。表記ゆれはキーワードの羅列ではなく、自然な本文と`WebSite.alternateName`で関連付ける。
 - **技術SEO:** トップページへcanonical、robotsメタ、言語指定、`WebSite`および`SoftwareApplication`のJSON-LDを追加した。初回HTML応答にもゲーム概要と内部リンクを含め、JavaScriptの実行を待たなくても検索クローラーが正式名称・内容・主要導線を取得できるようにした。
-- **クロール導線:** `sitemap.xml`を追加して`robots.txt`から通知し、静的な`about.html`へゲーム概要・遊び方・モード・FAQを掲載した。FAQの表示内容と`FAQPage`構造化データは一致させる。実験的なAIクローラー向け補助情報として`llms.txt`も追加したが、標準規格や順位保証とは扱わない。
+- **クロール導線:** `sitemap.xml`を追加して`robots.txt`から通知し、静的な`about.html`へゲーム概要・遊び方・モード・FAQを掲載した。FAQの表示内容と`FAQPage`構造化データは一致させる。IndexNowの検証キーを公開し、本番更新後にトップと紹介ページを通知する。実験的なAIクローラー向け補助情報として`llms.txt`も追加したが、標準規格や順位保証とは扱わない。
 - **共有表示:** 正方形のアイコン画像とは別に、ゲームの配色・ブロック・正式名称を使った横長の`og-image-v3.png`を作成し、Open GraphとX Cardをlarge imageへ更新した。
 - **運用上の残作業:** 独自ドメインの取得・接続とGoogle Search Console／Bing Webmaster Toolsへの所有権確認・サイトマップ送信はアカウント操作が必要。実施後は新ドメインをcanonical、構造化データ、サイトマップ、OGPの唯一の正規URLへ切り替え、旧Vercel URLから恒久リダイレクトする。

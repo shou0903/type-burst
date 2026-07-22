@@ -4,11 +4,22 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#101321" />
-    <title>TYPE BURST - 日本語タイピング連鎖パズル</title>
+    <title>TYPE BURST（タイプバースト）｜無料ブラウザタイピングゲーム</title>
     <meta
       name="description"
-      content="日本語を打ってブロックを爆破。連鎖で盤面を吹き飛ばすタイピングパズル。登録不要、ブラウザですぐ遊べます。"
+      content="TYPE BURST（タイプバースト／たいぷばーすと）は、日本語をローマ字で打ってブロックを爆破する無料タイピングゲーム。登録不要でPCブラウザからすぐ遊べます。"
     />
+    <meta name="application-name" content="TYPE BURST" />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
+    <link rel="canonical" href="https://type-burst-web.vercel.app/" />
+    <link rel="alternate" hreflang="ja" href="https://type-burst-web.vercel.app/" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <style>
+      html, body { margin: 0; min-height: 100%; background: #090c17; color: #edf4ff; }
+      .seo-prerender { width: min(760px, calc(100% - 40px)); margin: 0 auto; padding: 72px 0; font-family: sans-serif; line-height: 1.8; }
+      .seo-prerender h1 { letter-spacing: 0.05em; }
+      .seo-prerender a { color: #78d9ff; }
+    </style>
 
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
     <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
@@ -17,24 +28,79 @@
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="ja_JP" />
     <meta property="og:site_name" content="TYPE BURST" />
-    <meta property="og:title" content="TYPE BURST - 日本語タイピング連鎖パズル" />
+    <meta property="og:title" content="TYPE BURST（タイプバースト）｜無料タイピングゲーム" />
     <meta
       property="og:description"
-      content="日本語を打ってブロックを爆破。連鎖で盤面を吹き飛ばすタイピングパズル。登録不要、ブラウザですぐ遊べます。"
+      content="日本語をローマ字で打ってブロックを爆破。タイピングと連鎖パズルを融合した、登録不要の無料PCブラウザゲーム。"
     />
-    <meta property="og:image" content="https://type-burst-web.vercel.app/og-image.png?v=2" />
+    <meta property="og:image" content="https://type-burst-web.vercel.app/og-image-v3.png" />
+    <meta property="og:image:secure_url" content="https://type-burst-web.vercel.app/og-image-v3.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1731" />
+    <meta property="og:image:height" content="909" />
+    <meta property="og:image:alt" content="TYPE BURST タイピング×連鎖パズル" />
     <meta property="og:url" content="https://type-burst-web.vercel.app/" />
 
-    <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="TYPE BURST - 日本語タイピング連鎖パズル" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="TYPE BURST（タイプバースト）｜無料タイピングゲーム" />
     <meta
       name="twitter:description"
-      content="日本語を打ってブロックを爆破。連鎖で盤面を吹き飛ばすタイピングパズル。"
+      content="日本語をローマ字で打ってブロックを爆破。登録不要で遊べるタイピング×連鎖パズル。"
     />
-    <meta name="twitter:image" content="https://type-burst-web.vercel.app/og-image.png?v=2" />
+    <meta name="twitter:image" content="https://type-burst-web.vercel.app/og-image-v3.png" />
+    <meta name="twitter:image:alt" content="TYPE BURST タイピング×連鎖パズル" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://type-burst-web.vercel.app/#website",
+            "url": "https://type-burst-web.vercel.app/",
+            "name": "TYPE BURST",
+            "alternateName": ["Type Burst", "タイプバースト", "たいぷばーすと", "type-burst-web.vercel.app"],
+            "inLanguage": "ja"
+          },
+          {
+            "@type": "SoftwareApplication",
+            "@id": "https://type-burst-web.vercel.app/#game",
+            "url": "https://type-burst-web.vercel.app/",
+            "name": "TYPE BURST",
+            "alternateName": ["Type Burst", "タイプバースト", "たいぷばーすと"],
+            "description": "日本語をローマ字で打ってブロックを爆破する、タイピングと連鎖パズルを融合した無料PCブラウザゲーム。",
+            "applicationCategory": "GameApplication",
+            "applicationSubCategory": "TypingGame",
+            "operatingSystem": "Windows, macOS, ChromeOS",
+            "browserRequirements": "JavaScript対応のPCブラウザと物理キーボードが必要です。",
+            "inLanguage": "ja",
+            "isAccessibleForFree": true,
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "JPY"
+            },
+            "image": "https://type-burst-web.vercel.app/og-image-v3.png",
+            "publisher": {
+              "@type": "Organization",
+              "name": "TYPE BURST運営チーム"
+            }
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <main class="seo-prerender">
+        <h1>TYPE BURST（タイプバースト）</h1>
+        <p>
+          TYPE BURST（タイプバースト／たいぷばーすと）は、日本語をローマ字で入力してブロックを爆破する、無料のタイピング×連鎖パズルゲームです。
+        </p>
+        <p>登録やインストールは不要。PCブラウザとキーボードがあれば、初級・中級・上級・神級のサバイバルやCPU対戦をすぐに遊べます。</p>
+        <p><a href="/about.html">TYPE BURSTの遊び方とゲーム紹介</a></p>
+      </main>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

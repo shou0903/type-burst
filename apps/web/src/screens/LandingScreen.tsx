@@ -89,7 +89,10 @@ export function LandingScreen({
         <h1 className="logo">
           TYPE <span className="logo-burst">BURST</span>
         </h1>
-        <p className="tagline">日本語を打ってブロックを爆破。連鎖で盤面を吹き飛ばそう。</p>
+        <p className="tagline">
+          TYPE BURST（タイプバースト）は、日本語を打ってブロックを爆破する無料タイピングゲーム。
+          連鎖で盤面を吹き飛ばそう。
+        </p>
       </div>
 
       <button className="title-badge-box" onClick={onShowGrowth} title="成長記録を見る">
@@ -248,6 +251,8 @@ export function LandingScreen({
       <p className="ime-note">※ 日本語IMEはOFF(半角英数)にしてプレイしてください。登録は不要です。</p>
 
       <div className="footer-links">
+        <a href="/about.html">TYPE BURSTとは</a>
+        <span aria-hidden="true">・</span>
         <a href="/terms.html" target="_blank" rel="noreferrer">
           利用規約
         </a>

@@ -92,7 +92,7 @@ export function MobileLanding(): JSX.Element {
           TYPE <span className="mobile-landing-burst">BURST</span>
         </h1>
         <p className="mobile-landing-hook">
-          速さだけじゃなく<strong>「どこを消すか」</strong>で勝負する
+          TYPE BURST（タイプバースト）は、速さだけじゃなく<strong>「どこを消すか」</strong>で勝負する
           <br />
           タイピング×連鎖パズル
         </p>
@@ -135,6 +135,8 @@ export function MobileLanding(): JSX.Element {
       {rankingOpen && <MobileRankingPreview />}
 
       <div className="mobile-landing-footer">
+        <a href="/about.html">TYPE BURSTとは</a>
+        <span aria-hidden="true">・</span>
         <a href="/terms.html" target="_blank" rel="noreferrer">
           利用規約
         </a>

@@ -4,8 +4,8 @@
 
 - 正式名称: TYPE BURST
 - 読み方: タイプバースト（たいぷばーすと）
-- 公式URL: https://type-burst-web.vercel.app/
-- ゲーム紹介: https://type-burst-web.vercel.app/about.html
+- 公式URL: https://type-burst.com/
+- ゲーム紹介: https://type-burst.com/about.html
 - 対応環境: 物理キーボードを利用できるPCブラウザ
 - 料金: 無料
 - 登録: 不要

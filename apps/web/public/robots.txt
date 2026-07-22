@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://type-burst-web.vercel.app/sitemap.xml
+Sitemap: https://type-burst.com/sitemap.xml

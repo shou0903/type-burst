@@ -669,3 +669,11 @@
 - **クロール導線:** `sitemap.xml`を追加して`robots.txt`から通知し、静的な`about.html`へゲーム概要・遊び方・モード・FAQを掲載した。FAQの表示内容と`FAQPage`構造化データは一致させる。IndexNowの検証キーを公開し、本番更新後にトップと紹介ページを通知する。実験的なAIクローラー向け補助情報として`llms.txt`も追加したが、標準規格や順位保証とは扱わない。
 - **共有表示:** 正方形のアイコン画像とは別に、ゲームの配色・ブロック・正式名称を使った横長の`og-image-v3.png`を作成し、Open GraphとX Cardをlarge imageへ更新した。
 - **運用上の残作業:** 独自ドメインの取得・接続とGoogle Search Console／Bing Webmaster Toolsへの所有権確認・サイトマップ送信はアカウント操作が必要。実施後は新ドメインをcanonical、構造化データ、サイトマップ、OGPの唯一の正規URLへ切り替え、旧Vercel URLから恒久リダイレクトする。
+
+## D-068: `type-burst.com`を唯一の正規ドメインへ移行
+
+- **日付:** 2026-07-23
+- **内容:** ユーザーが取得・Vercelへ接続した`https://type-burst.com/`を唯一の正規URLにした。トップ・紹介ページのcanonical、hreflang、OGP、X Card、`WebSite`／`SoftwareApplication`構造化データ、サイトマップ、robots、`llms.txt`、運用ドキュメントを新ドメインへ統一した。
+- **転送:** 旧`type-burst-web.vercel.app`の全パスと`www.type-burst.com`の全パスを、対応する`type-burst.com`のパスへ308恒久転送する。旧URLの被リンク評価とクロール信号を正規ドメインへ集約し、重複インデックスを防ぐ。
+- **DNS確認:** apexドメインはVercelからHTTPS 200でゲームを配信済み。`www`はDNS解決するが証明書の信頼エラーが残っているため、VercelプロジェクトのDomainsで`www.type-burst.com`も追加し、apexへのRedirectとして証明書発行を完了させる必要がある。
+- **検索運用:** 新ドメインでIndexNowを再送信する。Google Search ConsoleとBing Webmaster Toolsは、新ドメインの所有権確認と`https://type-burst.com/sitemap.xml`の送信をユーザー側アカウントで行う。

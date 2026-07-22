@@ -11,7 +11,8 @@
 
 - **これは何か:** 日本語の文章・単語をローマ字で入力してブロックを爆破し、同属性の落下連鎖を
   起こすブラウザパズルゲーム「TYPE BURST」。
-- **公開URL:** https://type-burst-web.vercel.app/
+- **正規公開URL:** https://type-burst.com/
+- **旧Vercel URL:** https://type-burst-web.vercel.app/（正規URLへ恒久転送）
 - **リポジトリ:** https://github.com/shou0903/type-burst(`master`ブランチへのpushでVercelが自動デプロイ)
 - **正本仕様書:** [`TYPE_BURST_Product_Game_Technical_Spec_v1.0.md`](../TYPE_BURST_Product_Game_Technical_Spec_v1.0.md)
   だが、**この仕様書は初期構想であり、以後の全ての変更・上書きは`docs/DECISIONS.md`に記録されている。**
@@ -166,7 +167,7 @@ npm run typecheck && npm test && npm run build
 ポーリングする:
 
 ```bash
-curl -s https://type-burst-web.vercel.app/ | grep -o 'assets/index-[A-Za-z0-9_-]*\.js'
+curl -s https://type-burst.com/ | grep -o 'assets/index-[A-Za-z0-9_-]*\.js'
 ```
 
 ハッシュが変わったら、実際に本番URLへブラウザでアクセスしてコンソールエラーがないこと、

@@ -6,7 +6,8 @@ TYPE BURST は静的サイト(SPA)+ ランキング機能用のVercel Serverless
 
 ## 現在の本番環境
 
-- **URL:** https://type-burst-web.vercel.app/
+- **正規URL:** https://type-burst.com/
+- **旧Vercel URL:** https://type-burst-web.vercel.app/（正規URLへ恒久転送）
 - **ホスティング:** Vercel
 - **リポジトリ:** https://github.com/shou0903/type-burst(`master` ブランチへのpushで自動デプロイ)
 

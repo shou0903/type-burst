@@ -2,6 +2,28 @@
   "trailingSlash": false,
   "redirects": [
     {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "type-burst-web.vercel.app"
+        }
+      ],
+      "destination": "https://type-burst.com/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.type-burst.com"
+        }
+      ],
+      "destination": "https://type-burst.com/:path*",
+      "permanent": true
+    },
+    {
       "source": "/index.html",
       "destination": "/",
       "permanent": true

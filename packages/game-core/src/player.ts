@@ -244,9 +244,32 @@ export class PlayerCore {
   }
 
   currentRiseInterval(): number {
-    const shrunk =
-      this.rise.startIntervalMs - (this.elapsedMs / 1000) * this.rise.accelPerSecondMs;
+    const shrunk = this.rise.startIntervalMs - this.riseReductionMs();
     return Math.max(this.rise.minIntervalMs, shrunk);
+  }
+
+  /**
+   * 序盤は従来の加速感を残しつつ、レベル帯が上がるほど短縮幅を小さくする。
+   * n段階目の加速率を初期値の1/sqrt(n)とするため、間隔は下がり続けるが
+   * 高レベルほど変化が穏やかになる。減衰設定がない対戦モードは従来の線形加速。
+   */
+  private riseReductionMs(): number {
+    const decayIntervalMs = this.rise.accelDecayIntervalMs;
+    if (!decayIntervalMs || decayIntervalMs <= 0) {
+      return (this.elapsedMs / 1000) * this.rise.accelPerSecondMs;
+    }
+
+    const completedStages = Math.floor(this.elapsedMs / decayIntervalMs);
+    const remainderMs = this.elapsedMs % decayIntervalMs;
+    let reductionMs = 0;
+    for (let stage = 1; stage <= completedStages; stage++) {
+      reductionMs +=
+        (decayIntervalMs / 1000) * (this.rise.accelPerSecondMs / Math.sqrt(stage));
+    }
+    reductionMs +=
+      (remainderMs / 1000) *
+      (this.rise.accelPerSecondMs / Math.sqrt(completedStages + 1));
+    return reductionMs;
   }
 
   private advanceRise(deltaMs: number): void {
@@ -901,19 +924,42 @@ export class PlayerCore {
       pool = [...this.phrasePool];
     }
 
-    let candidate = this.rng.pick(pool);
-    for (let attempt = 0; attempt < 8; attempt++) {
+    // ランダムな開始位置から全候補を1周し、入力列が別ブロックの完成形と
+    // 前方一致する語を除外する。「か」と「かき」のような組み合わせで、
+    // 長い方を狙っても短い方が先に消えてしまう干渉を防ぐ(D-065)。
+    const start = this.rng.int(pool.length);
+    let safeFallback: JapanesePhrase | null = null;
+    let safeCandidatesChecked = 0;
+    for (let offset = 0; offset < pool.length; offset++) {
+      const candidate = pool[(start + offset) % pool.length]!;
+      if (this.hasTypingConflict(candidate.readingKana)) continue;
+      if (safeFallback === null) safeFallback = candidate;
       const first = this.firstKeyOf(candidate.id, candidate.readingKana);
-      if (!usedFirstKeys.has(first)) break;
-      candidate = this.rng.pick(pool);
+      if (!usedFirstKeys.has(first)) return candidate;
+      // 盤面に使える先頭キーは有限なので、全プールを走査してまで重複を
+      // 避けようとしない。入力完成形の衝突回避は維持したまま、候補探索を抑える。
+      safeCandidatesChecked += 1;
+      if (safeCandidatesChecked >= 12) return safeFallback;
     }
-    return candidate;
+    return safeFallback ?? pool[start]!;
   }
 
   private pickGarbagePhrase(): JapanesePhrase {
     const usedIds = new Set(this.blocks.map((b) => b.phraseId));
     const pool = this.garbagePool.filter((p) => !usedIds.has(p.id));
-    return this.rng.pick(pool.length > 0 ? pool : this.garbagePool);
+    const candidates = pool.length > 0 ? pool : this.garbagePool;
+    const start = this.rng.int(candidates.length);
+    for (let offset = 0; offset < candidates.length; offset++) {
+      const candidate = candidates[(start + offset) % candidates.length]!;
+      if (!this.hasTypingConflict(candidate.readingKana)) return candidate;
+    }
+    return candidates[start]!;
+  }
+
+  private hasTypingConflict(readingKana: string): boolean {
+    return this.blocks.some((block) =>
+      TypingAutomaton.hasCompletionPrefixConflict(readingKana, block.readingKana),
+    );
   }
 
   private pickTier(): PhraseTier {

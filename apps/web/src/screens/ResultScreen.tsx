@@ -17,7 +17,12 @@ interface Props {
 }
 
 const DIFFICULTY_LABELS = { easy: "弱い", normal: "普通", hard: "強い" } as const;
-const SURVIVAL_DIFFICULTY_LABELS = { easy: "初級", normal: "中級", hard: "上級" } as const;
+const SURVIVAL_DIFFICULTY_LABELS = {
+  easy: "初級",
+  normal: "中級",
+  hard: "上級",
+  god: "神級",
+} as const;
 
 function formatTime(ms: number): string {
   const total = Math.floor(ms / 1000);
@@ -44,8 +49,23 @@ export function ResultScreen({
 
   useEffect(() => {
     const handler = (e: KeyboardEvent): void => {
-      // ニックネーム入力中はEnter/Escをショートカットとして奪わない
-      if (e.target instanceof HTMLInputElement) return;
+      const target = e.target;
+      const isInteractive =
+        target instanceof HTMLElement &&
+        (target.isContentEditable ||
+          target.closest("button, input, select, textarea, a[href]") !== null);
+      const isEditing =
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        (target instanceof HTMLElement && target.isContentEditable);
+
+      // ボタン等のEnter/Spaceはネイティブ操作を優先する。再戦ショートカットで
+      // 横取りすると「分析を見る」を押したのに再戦が始まる競合が起きる(D-060)。
+      if (e.defaultPrevented || ((e.key === "Enter" || e.key === " ") && isInteractive)) return;
+      // 文字入力・選択操作中のEscだけはタイトル遷移に使わない。ボタンに
+      // フォーカスがある通常状態では、従来どおりEscでタイトルへ戻れる。
+      if (e.key === "Escape" && isEditing) return;
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
         onRetry(retryMode);
@@ -177,25 +197,57 @@ export function ResultScreen({
 
 type SubmitStatus = "idle" | "submitting" | "done" | "error";
 
+const RANKING_SUBMITTED_KEY_PREFIX = "typeblast.ranking-submitted.v1";
+
+function rankingSubmissionKey(summary: SurvivalSummary): string {
+  return `${RANKING_SUBMITTED_KEY_PREFIX}:${summary.seed}`;
+}
+
+function wasRankingSubmitted(summary: SurvivalSummary): boolean {
+  try {
+    return sessionStorage.getItem(rankingSubmissionKey(summary)) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function markRankingSubmitted(summary: SurvivalSummary): void {
+  try {
+    sessionStorage.setItem(rankingSubmissionKey(summary), "1");
+  } catch {
+    // sessionStorage不可でも、ランキング送信そのものは成功として扱う
+  }
+}
+
 /** サバイバル結果を世界ランキングへ送信する。未入力ならスキップ可能(登録は任意) */
 function RankingSubmitBox({ summary }: { summary: SurvivalSummary }): JSX.Element | null {
   const [savedNickname, setSavedNickname] = useState(loadNickname());
   const [nickname, setNickname] = useState(savedNickname ?? "");
-  const [status, setStatus] = useState<SubmitStatus>("idle");
+  const [status, setStatus] = useState<SubmitStatus>(() =>
+    wasRankingSubmitted(summary) ? "done" : "idle",
+  );
   const [skipped, setSkipped] = useState(false);
   const [editing, setEditing] = useState(false);
 
   useEffect(() => {
+    // APIは0点を妥当なランキング記録として受け付けない。送信欄も自動送信も出さない。
+    if (summary.score <= 0 || wasRankingSubmitted(summary)) return;
     if (savedNickname) {
       setStatus("submitting");
       submitScore(savedNickname, summary)
-        .then((result) => setStatus(result.ok ? "done" : "error"))
+        .then((result) => {
+          if (result.ok) markRankingSubmitted(summary);
+          setStatus(result.ok ? "done" : "error");
+        })
         .catch(() => setStatus("error"));
     }
     // 初回マウント時のみ送信する(summaryは1回分の結果のため依存配列は空でよい)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  if (summary.score <= 0) {
+    return <p className="ranking-submit-unavailable">スコアを獲得するとランキングに登録できます。</p>;
+  }
   if (skipped) return null;
 
   const handleRename = (): void => {
@@ -268,13 +320,16 @@ function RankingSubmitBox({ summary }: { summary: SurvivalSummary }): JSX.Elemen
     saveNickname(trimmed);
     setSavedNickname(trimmed);
     submitScore(trimmed, summary)
-      .then((result) => setStatus(result.ok ? "done" : "error"))
+      .then((result) => {
+        if (result.ok) markRankingSubmitted(summary);
+        setStatus(result.ok ? "done" : "error");
+      })
       .catch(() => setStatus("error"));
   };
 
   return (
     <div className="ranking-submit-box">
-      <div className="ranking-submit-label">ランキングに登録する(任意・登録不要の方針は維持)</div>
+      <div className="ranking-submit-label">ニックネームで世界ランキングに登録（任意）</div>
       <div className="ranking-submit-row">
         <input
           className="nickname-input"

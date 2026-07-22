@@ -44,6 +44,7 @@ body {
  */
 .hero {
   position: relative;
+  isolation: isolate;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -54,10 +55,17 @@ body {
    settings.reducedMotion が true の場合は React 側でそもそも描画しない(D-053)。 */
 .hero-fx {
   position: absolute;
-  inset: -20px -40px auto -40px;
-  height: 140px;
+  inset: -16px -40px auto -40px;
+  height: 72px;
+  overflow: hidden;
+  opacity: 0.45;
   pointer-events: none;
-  z-index: -1;
+  z-index: 0;
+}
+
+.hero > :not(.hero-fx) {
+  position: relative;
+  z-index: 1;
 }
 
 .hero-block {
@@ -115,7 +123,7 @@ body {
     opacity: 0.6;
   }
   92% {
-    transform: translateY(-120px) rotate(200deg) scale(0.4);
+    transform: translateY(-74px) rotate(200deg) scale(0.4);
     opacity: 0;
   }
   100% {
@@ -1085,6 +1093,11 @@ body {
   color: #ff8a70;
 }
 
+.ranking-submit-unavailable {
+  color: #7d84a3;
+  font-size: 13px;
+}
+
 /* ---------- Ranking screen ---------- */
 
 .screen.ranking {
@@ -1237,11 +1250,65 @@ body {
 /* ---------- Analysis screen ---------- */
 
 .screen.analysis {
-  gap: 22px;
+  gap: 24px;
+  padding: 32px 40px 48px;
+}
+
+.analysis-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
 }
 
 .analysis-title {
   font-size: 32px;
+}
+
+.analysis-lead {
+  color: #aab1cc;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.analysis-overview-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(340px, 0.85fr);
+  align-items: stretch;
+  gap: 18px;
+  width: 100%;
+  max-width: 1120px;
+}
+
+.analysis-detail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  width: 100%;
+  max-width: 1120px;
+}
+
+.analysis-metrics {
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.analysis-metrics .result-item {
+  min-width: 150px;
+}
+
+.analysis-dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 18px;
+  width: 100%;
+}
+
+.analysis-dashboard-wide {
+  grid-column: 1 / -1;
 }
 
 .analysis-keyboard-wrap {
@@ -1253,12 +1320,16 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
   padding: 20px;
+  width: 100%;
+  min-width: 0;
+  overflow-x: auto;
 }
 
 .analysis-keyboard {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-width: 472px;
 }
 
 .analysis-key-row {
@@ -1321,7 +1392,6 @@ body {
   border: 1px solid rgba(255, 107, 107, 0.2);
   border-radius: 10px;
   padding: 16px 24px;
-  max-width: 520px;
   width: 100%;
 }
 
@@ -1372,7 +1442,7 @@ body {
   border: 1px solid rgba(111, 192, 255, 0.3);
   border-radius: 10px;
   padding: 12px 24px;
-  max-width: 520px;
+  width: 100%;
   text-align: center;
 }
 
@@ -1396,8 +1466,22 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
   padding: 16px 20px;
-  max-width: 560px;
   width: 100%;
+}
+
+.analysis-empty-section {
+  justify-content: center;
+  min-height: 180px;
+  text-align: center;
+}
+
+.analysis-empty-note {
+  max-width: 720px;
+  padding: 14px 18px;
+  border: 1px solid rgba(111, 192, 255, 0.18);
+  border-radius: 10px;
+  background: rgba(111, 192, 255, 0.06);
+  text-align: center;
 }
 
 .analysis-section-title {
@@ -1517,8 +1601,14 @@ body {
 
 /* 生涯累計成績(D-054): 8項目あるため、幅が足りない画面でも折り返せるようにする */
 .lifetime-grid {
-  flex-wrap: wrap;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  width: 100%;
+}
+
+.lifetime-grid .result-item {
+  min-width: 0;
+  padding-inline: 10px;
 }
 
 /* 成長グラフ(D-054, Feature 3): 素のSVG折れ線グラフ。外部ライブラリは使わない */
@@ -1527,7 +1617,58 @@ body {
   flex-direction: column;
   gap: 4px;
   width: 100%;
-  max-width: 320px;
+  max-width: 420px;
+}
+
+.growth-chart-section {
+  justify-content: center;
+}
+
+@media (max-width: 1100px) {
+  .screen.analysis {
+    padding-inline: 24px;
+  }
+
+  .analysis-overview-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .growth-chart-section {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: start;
+  }
+
+  .growth-chart-section .analysis-section-title,
+  .growth-chart-section .analysis-insight {
+    grid-column: 1 / -1;
+    justify-self: center;
+  }
+}
+
+@media (max-width: 760px) {
+  .screen.analysis {
+    padding: 24px 16px 40px;
+  }
+
+  .analysis-dashboard-grid,
+  .growth-chart-section {
+    grid-template-columns: 1fr;
+  }
+
+  .analysis-dashboard-wide,
+  .growth-chart-section .analysis-section-title,
+  .growth-chart-section .analysis-insight {
+    grid-column: 1;
+  }
+
+  .lifetime-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .analysis-title {
+    font-size: 27px;
+  }
 }
 
 .growth-chart-head {

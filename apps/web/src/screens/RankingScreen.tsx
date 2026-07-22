@@ -7,9 +7,10 @@ const SURVIVAL_DIFFICULTY_LABELS: Record<SurvivalDifficulty, string> = {
   easy: "初級",
   normal: "中級",
   hard: "上級",
+  god: "神級",
 };
 
-const DIFFICULTY_ORDER: readonly SurvivalDifficulty[] = ["easy", "normal", "hard"];
+const DIFFICULTY_ORDER: readonly SurvivalDifficulty[] = ["easy", "normal", "hard", "god"];
 
 interface Props {
   onBack: () => void;

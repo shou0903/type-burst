@@ -238,4 +238,4 @@ export interface DuelSummary {
 }
 
 export type CpuDifficulty = "easy" | "normal" | "hard";
-export type SurvivalDifficulty = "easy" | "normal" | "hard";
+export type SurvivalDifficulty = "easy" | "normal" | "hard" | "god";

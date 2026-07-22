@@ -7,6 +7,11 @@ export interface RiseConfig {
   minIntervalMs: number;
   /** 経過1秒ごとに間隔を縮める量(ms) */
   accelPerSecondMs: number;
+  /**
+   * 指定した時間ごとに加速率を 1/sqrt(段階) へ緩和する。未指定なら従来どおり一定加速。
+   * サバイバルではレベル間隔と同じ30秒を指定する。
+   */
+  accelDecayIntervalMs?: number;
   warningMs: number;
 }
 
@@ -165,20 +170,20 @@ export const DEFAULT_CONFIG: GameConfig = {
   countdownMs: 3_000,
   tierRatio: { micro: 0, short: 0.2, standard: 0.65, long: 0.15 },
   survivalDifficulty: {
-    // 三段階の体感差がはっきり分かるよう、tier構成の重なりを減らした(D-042)。
-    // easy=ほぼ単語のみ、normal=短文〜標準文中心、hard=標準文〜長文中心、というように
-    // 主に使うtierの範囲そのものをずらし、「同じstandard文がnormalにもhardにも
-    // 大量に出る」ことで難易度差が感じにくくなっていた問題を解消した。
     easy: {
       tierRatio: { micro: 0.8, short: 0.2, standard: 0, long: 0 },
     },
     normal: {
-      // D-044: shortの比率を増やし平均的な文章の長さをやや短くした
-      tierRatio: { micro: 0, short: 0.5, standard: 0.45, long: 0.05 },
+      // 中級は長文を完全に除外し、短い語彙を中心にする(D-065)。
+      tierRatio: { micro: 0.15, short: 0.65, standard: 0.2, long: 0 },
     },
     hard: {
-      // D-044: longを減らしstandardを増やし、旧normalと旧hardの中間程度の長さにした
-      tierRatio: { micro: 0, short: 0, standard: 0.7, long: 0.3 },
+      // 旧中級と旧上級の中間より少し上級寄り。
+      tierRatio: { micro: 0, short: 0.1, standard: 0.65, long: 0.25 },
+    },
+    god: {
+      // 神級は最長グループだけを出題する。
+      tierRatio: { micro: 0, short: 0, standard: 0, long: 1 },
     },
   },
   survivalRise: {
@@ -189,7 +194,10 @@ export const DEFAULT_CONFIG: GameConfig = {
     // ビジー無限ループ防止のためだけの値)まで際限なく加速し続けるようにした。
     // 難易度間で共通の値のままなので「行上昇速度は難易度に関わらず同じ」制約は維持される。
     minIntervalMs: 50,
-    accelPerSecondMs: 30,
+    // D-065: 第1レベル帯は15ms/秒。以後は30秒ごとに1/sqrt(レベル)へ緩和し、
+    // 技術的な下限までは短くなり続ける一方、高レベルほど短縮幅を小さくする。
+    accelPerSecondMs: 15,
+    accelDecayIntervalMs: 30_000,
     warningMs: 900,
   },
   duelRise: {

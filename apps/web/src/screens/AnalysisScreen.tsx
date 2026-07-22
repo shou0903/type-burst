@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import type { FingerStat, KeyStat, TypingAnalysis } from "@type-burst/game-core";
 import { titleProgressForScore, type LifetimeProgress } from "@type-burst/progression";
-import { useFitToViewport } from "../hooks/useFitToViewport";
 import type { StoredResult } from "../storage";
 
 interface Props {
@@ -62,8 +61,6 @@ const MIN_FINGER_ATTEMPTS = 3;
 const MIN_SEGMENT_KEYSTROKES = 10;
 
 export function AnalysisScreen({ analysis, recentHistory, progress, onBack }: Props): JSX.Element {
-  const { ref, style } = useFitToViewport<HTMLDivElement>();
-
   useEffect(() => {
     const handler = (e: KeyboardEvent): void => {
       if (e.key === "Escape") onBack();
@@ -77,7 +74,9 @@ export function AnalysisScreen({ analysis, recentHistory, progress, onBack }: Pr
 
   const usedFingers =
     analysis?.fingerStats.filter((f) => f.correct + f.incorrect >= MIN_FINGER_ATTEMPTS) ?? [];
-  const weakestFinger = [...usedFingers].sort((a, b) => b.missRate - a.missRate)[0] ?? null;
+  const weakestFinger =
+    [...usedFingers].filter((finger) => finger.missRate > 0).sort((a, b) => b.missRate - a.missRate)[0] ??
+    null;
   const leftHand = analysis?.handStats.find((h) => h.hand === "left");
   const rightHand = analysis?.handStats.find((h) => h.hand === "right");
 
@@ -87,75 +86,85 @@ export function AnalysisScreen({ analysis, recentHistory, progress, onBack }: Pr
   const titleProgress = titleProgressForScore(progress.totalScore);
 
   return (
-    <div ref={ref} style={style} className="screen analysis">
-      <h1 className="logo analysis-title">{analysis ? "TYPING ANALYSIS" : "成長記録"}</h1>
+    <div className="screen analysis">
+      <header className="analysis-header">
+        <h1 className="logo analysis-title">{analysis ? "TYPING ANALYSIS" : "成長記録"}</h1>
+        <p className="analysis-lead">
+          {analysis ? "今回の打鍵を振り返り、次のプレイで意識するポイントを確認できます。" : "これまでの記録と上達の推移を確認できます。"}
+        </p>
+      </header>
 
-      <div className="analysis-section growth-lifetime-section">
-        <div className="analysis-section-title">称号 / 生涯累計成績</div>
-        <div className="title-progress-bar title-progress-bar-wide">
-          <div
-            className="title-progress-fill"
-            style={{ width: `${Math.round(titleProgress.progressRatio * 100)}%` }}
-          />
+      <div className="analysis-overview-grid">
+        <div className="analysis-section growth-lifetime-section">
+          <div className="analysis-section-title">称号 / 生涯累計成績</div>
+          <div className="title-progress-bar title-progress-bar-wide">
+            <div
+              className="title-progress-fill"
+              style={{ width: `${Math.round(titleProgress.progressRatio * 100)}%` }}
+            />
+          </div>
+          <div className="title-badge-name">{titleProgress.current.label}</div>
+          <div className="title-badge-next">
+            {titleProgress.next
+              ? `あと${titleProgress.remainingToNext.toLocaleString()}で『${titleProgress.next.label}』`
+              : "最高位の称号に到達しました!"}
+          </div>
+          <div className="result-grid lifetime-grid">
+            <Item label="累計プレイ" value={`${progress.totalGames}回`} />
+            <Item label="累計スコア" value={progress.totalScore.toLocaleString()} />
+            <Item label="ベストスコア" value={progress.bestScore.toLocaleString()} />
+            <Item label="ベストKPM" value={String(Math.round(progress.bestKpm))} />
+            <Item label="ベスト正確率" value={`${(progress.bestAccuracy * 100).toFixed(1)}%`} />
+            <Item label="最大連鎖" value={String(progress.maxChainEver)} />
+            <Item label="総文章数" value={`${progress.totalPhrases}文`} />
+            <Item label="総プレイ時間" value={formatDuration(progress.totalPlaytimeMs)} />
+          </div>
         </div>
-        <div className="title-badge-name">{titleProgress.current.label}</div>
-        <div className="title-badge-next">
-          {titleProgress.next
-            ? `あと${titleProgress.remainingToNext.toLocaleString()}で『${titleProgress.next.label}』`
-            : "最高位の称号に到達しました!"}
-        </div>
-        <div className="result-grid lifetime-grid">
-          <Item label="累計プレイ" value={`${progress.totalGames}回`} />
-          <Item label="累計スコア" value={progress.totalScore.toLocaleString()} />
-          <Item label="ベストスコア" value={progress.bestScore.toLocaleString()} />
-          <Item label="ベストKPM" value={String(Math.round(progress.bestKpm))} />
-          <Item label="ベスト正確率" value={`${(progress.bestAccuracy * 100).toFixed(1)}%`} />
-          <Item label="最大連鎖" value={String(progress.maxChainEver)} />
-          <Item label="総文章数" value={`${progress.totalPhrases}文`} />
-          <Item label="総プレイ時間" value={formatDuration(progress.totalPlaytimeMs)} />
-        </div>
+
+        {recentHistory.length >= 2 ? (
+          <div className="analysis-section growth-chart-section">
+            <div className="analysis-section-title">
+              成長グラフ(直近{Math.min(recentHistory.length, MAX_GROWTH_POINTS)}件・古い→新しい)
+            </div>
+            <GrowthChart
+              label="スコア"
+              values={chronological(recentHistory, (r) => r.score)}
+              color="#ffd75e"
+              format={(v) => Math.round(v).toLocaleString()}
+            />
+            <GrowthChart
+              label="KPM"
+              values={chronological(recentHistory, (r) => r.kpm)}
+              color="#6fc0ff"
+              format={(v) => String(Math.round(v))}
+            />
+            <GrowthChart
+              label="正確率"
+              values={chronological(recentHistory, (r) => r.accuracy * 100)}
+              color="#8ef5c9"
+              format={(v) => `${v.toFixed(1)}%`}
+            />
+            {trendInsight && <p className="analysis-insight">{trendInsight}</p>}
+          </div>
+        ) : (
+          <div className="analysis-section analysis-empty-section">
+            <div className="analysis-section-title">成長グラフ</div>
+            <p className="ranking-status">
+              2回以上プレイすると、スコア・KPM・正確率の推移が表示されます。
+            </p>
+          </div>
+        )}
       </div>
 
-      {recentHistory.length >= 2 ? (
-        <div className="analysis-section growth-chart-section">
-          <div className="analysis-section-title">
-            成長グラフ(直近{Math.min(recentHistory.length, MAX_GROWTH_POINTS)}件・古い→新しい)
-          </div>
-          <GrowthChart
-            label="スコア"
-            values={chronological(recentHistory, (r) => r.score)}
-            color="#ffd75e"
-            format={(v) => Math.round(v).toLocaleString()}
-          />
-          <GrowthChart
-            label="KPM"
-            values={chronological(recentHistory, (r) => r.kpm)}
-            color="#6fc0ff"
-            format={(v) => String(Math.round(v))}
-          />
-          <GrowthChart
-            label="正確率"
-            values={chronological(recentHistory, (r) => r.accuracy * 100)}
-            color="#8ef5c9"
-            format={(v) => `${v.toFixed(1)}%`}
-          />
-          {trendInsight && <p className="analysis-insight">{trendInsight}</p>}
-        </div>
-      ) : (
-        <p className="ranking-status">
-          プレイを重ねると、ここにスコア・KPM・正確率の成長グラフが表示されます。
-        </p>
-      )}
-
       {!hasPlayData && (
-        <p className="ranking-status">
+        <p className="ranking-status analysis-empty-note">
           プレイするとキーボードのヒートマップやペース比較など、より詳しい分析も表示されます。
         </p>
       )}
 
       {hasPlayData && analysis && (
-        <>
-          <div className="result-grid">
+        <section className="analysis-detail" aria-label="今回のタイピング分析">
+          <div className="result-grid analysis-metrics">
             <Item label="総打鍵数" value={String(analysis.totalKeystrokes)} />
             <Item label="正確率" value={`${(analysis.accuracy * 100).toFixed(1)}%`} />
             <Item label="ミス数" value={String(analysis.incorrectKeystrokes)} />
@@ -169,7 +178,8 @@ export function AnalysisScreen({ analysis, recentHistory, progress, onBack }: Pr
             </div>
           )}
 
-          <div className="analysis-keyboard-wrap">
+          <div className="analysis-dashboard-grid">
+            <div className="analysis-keyboard-wrap analysis-dashboard-wide">
             <div className="analysis-keyboard">
               {KEYBOARD_ROWS.map((row, i) => (
                 <div key={i} className="analysis-key-row" style={{ marginLeft: `${i * 18}px` }}>
@@ -205,9 +215,9 @@ export function AnalysisScreen({ analysis, recentHistory, progress, onBack }: Pr
                 未使用
               </span>
             </div>
-          </div>
+            </div>
 
-          {analysis.weakKeys.length > 0 && (
+            {analysis.weakKeys.length > 0 && (
             <div className="weak-keys-box">
               <div className="weak-keys-title">苦手なキー TOP{analysis.weakKeys.length}</div>
               <div className="weak-keys-list">
@@ -223,18 +233,18 @@ export function AnalysisScreen({ analysis, recentHistory, progress, onBack }: Pr
                 ))}
               </div>
             </div>
-          )}
+            )}
 
-          <div className="analysis-section">
+            <div className="analysis-section">
             <div className="analysis-section-title">前半 / 後半のペース比較</div>
             <div className="pace-compare">
               <PaceCard label="前半" segment={analysis.firstHalf} />
               <PaceCard label="後半" segment={analysis.secondHalf} />
             </div>
             {paceInsight && <p className="analysis-insight">{paceInsight}</p>}
-          </div>
+            </div>
 
-          <div className="analysis-section">
+            <div className="analysis-section">
             <div className="analysis-section-title">手・指ごとのミス率</div>
             <div className="hand-compare">
               <HandBar label="左手" stat={leftHand} />
@@ -267,12 +277,12 @@ export function AnalysisScreen({ analysis, recentHistory, progress, onBack }: Pr
                 特に{weakestFinger.label}のミスが多め(ミス率{Math.round(weakestFinger.missRate * 100)}%)です。
               </p>
             )}
+            </div>
           </div>
-
-        </>
+        </section>
       )}
 
-      <button className="btn-secondary" onClick={onBack} autoFocus>
+      <button className="btn-secondary" onClick={onBack}>
         戻る <span className="btn-sub">Esc</span>
       </button>
     </div>

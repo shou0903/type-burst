@@ -128,6 +128,13 @@ describe("ミスと復帰", () => {
 });
 
 describe("前方一致と進捗", () => {
+  it("片方の完成形がもう片方の入力途中になる組み合わせを検出する", () => {
+    expect(TypingAutomaton.hasCompletionPrefixConflict("か", "かき")).toBe(true);
+    // shi / si / ci の代替入力を含んでも検出できる
+    expect(TypingAutomaton.hasCompletionPrefixConflict("し", "しま")).toBe(true);
+    expect(TypingAutomaton.hasCompletionPrefixConflict("か", "さき")).toBe(false);
+  });
+
   it("残りローマ字ガイドが入力に追従する", () => {
     const a = new TypingAutomaton("しりょう");
     expect(a.getCanonicalRomaji()).toBe("shiryou");

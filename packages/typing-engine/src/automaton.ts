@@ -32,6 +32,40 @@ export class TypingAutomaton {
     this.states = this.closure([{ seg: 0, prefix: "" }]);
   }
 
+  /**
+   * 2つの読みが、同じ入力列の途中で片方だけ先に完成し得るかを調べる。
+   * 例: 「か」(ka) と「かき」(kaki)。この組み合わせを同じ盤面へ置くと、
+   * 長い方を打ちたいのに短い方が先に確定してしまうため、出題時の衝突回避に使う。
+   * shi/si などの代替入力も、両オートマトンの共通遷移をたどって判定する。
+   */
+  static hasCompletionPrefixConflict(leftReading: string, rightReading: string): boolean {
+    const initialLeft = new TypingAutomaton(leftReading);
+    const initialRight = new TypingAutomaton(rightReading);
+    const queue: Array<[TypingAutomaton, TypingAutomaton]> = [[initialLeft, initialRight]];
+    const seen = new Set<string>();
+
+    while (queue.length > 0) {
+      const [left, right] = queue.pop()!;
+      const signature = `${left.stateSignature()}|${right.stateSignature()}`;
+      if (seen.has(signature)) continue;
+      seen.add(signature);
+
+      if (left.isAccepted() || right.isAccepted()) return true;
+
+      const rightKeys = new Set(right.getExpectedKeys());
+      for (const key of left.getExpectedKeys()) {
+        if (!rightKeys.has(key)) continue;
+        const nextLeft = left.clone();
+        const nextRight = right.clone();
+        if (nextLeft.feed(key).accepted && nextRight.feed(key).accepted) {
+          queue.push([nextLeft, nextRight]);
+        }
+      }
+    }
+
+    return false;
+  }
+
   reset(): void {
     this.states = this.closure([{ seg: 0, prefix: "" }]);
     this.typed = "";
@@ -146,6 +180,13 @@ export class TypingAutomaton {
   /** 文章全体の標準表記(未入力時のガイド用) */
   getCanonicalRomaji(): string {
     return this.segments.map((s) => s.alternatives[0] ?? "").join("");
+  }
+
+  private stateSignature(): string {
+    return this.states
+      .map((state) => `${state.seg}:${state.prefix}`)
+      .sort()
+      .join(",");
   }
 
   private closure(states: AutomatonState[]): AutomatonState[] {

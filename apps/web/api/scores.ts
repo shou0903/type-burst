@@ -27,7 +27,7 @@ const MAX_PLAUSIBLE_SURVIVED_MS = 6 * 60 * 60 * 1000; // 6時間
 const RATE_LIMIT_WINDOW_SEC = 5;
 const NICKNAME_MAX_LENGTH = 12;
 
-type SurvivalDifficulty = "easy" | "normal" | "hard";
+type SurvivalDifficulty = "easy" | "normal" | "hard" | "god";
 
 function leaderboardKey(difficulty: SurvivalDifficulty): string {
   return `${LEADERBOARD_KEY_PREFIX}:${difficulty}`;
@@ -45,7 +45,7 @@ interface ScoreEntry {
 }
 
 function isSurvivalDifficulty(value: unknown): value is SurvivalDifficulty {
-  return value === "easy" || value === "normal" || value === "hard";
+  return value === "easy" || value === "normal" || value === "hard" || value === "god";
 }
 
 // サーバーレス関数のウォームインスタンス間で接続を使い回す(毎回接続を張り直さない)

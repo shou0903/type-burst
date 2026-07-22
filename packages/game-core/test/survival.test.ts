@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SurvivalGame, findAutoGroups } from "@type-burst/game-core";
+import { DEFAULT_CONFIG, SurvivalGame, findAutoGroups } from "@type-burst/game-core";
 import type { Attribute, Block, BlockKind, GameEvent, PlayerCore } from "@type-burst/game-core";
 import { GARBAGE_PHRASES, PHRASES } from "@type-burst/phrase-content";
 import { TypingAutomaton } from "@type-burst/typing-engine";
@@ -109,6 +109,27 @@ describe("終了条件", () => {
     game.advance(60000); // 60秒経過(途中で終了していても interval 計算は進む)
     const late = core.currentRiseInterval();
     expect(late).toBeLessThan(early);
+  });
+
+  it("行上昇は序盤より高レベル帯のほうが緩やかに加速する(D-065)", () => {
+    expect(DEFAULT_CONFIG.survivalRise.accelPerSecondMs).toBe(15);
+    expect(DEFAULT_CONFIG.survivalRise.accelDecayIntervalMs).toBe(30_000);
+
+    const game = newGame("rise-decay");
+    startPlaying(game);
+    const core = game.getCore();
+    core.pauseRise = true;
+    const level1Start = core.currentRiseInterval();
+    game.advance(30_000);
+    const level2Start = core.currentRiseInterval();
+    game.advance(30_000);
+    const level3Start = core.currentRiseInterval();
+
+    const firstReduction = level1Start - level2Start;
+    const secondReduction = level2Start - level3Start;
+    expect(firstReduction).toBeCloseTo(450, 5);
+    expect(secondReduction).toBeGreaterThan(0);
+    expect(secondReduction).toBeLessThan(firstReduction);
   });
 });
 
@@ -350,22 +371,27 @@ describe("レベルアップ(v3)", () => {
   });
 });
 
-describe("難易度(D-032, D-033, D-039, D-040)", () => {
+describe("難易度(D-032, D-033, D-039, D-040, D-065)", () => {
   it("行上昇の速さは難易度に関わらず共通(易しい難易度でも無限に生存できてしまわないように)", () => {
     const easy = new SurvivalGame("diff-easy", PHRASES, GARBAGE_PHRASES, "easy");
     const normal = new SurvivalGame("diff-normal", PHRASES, GARBAGE_PHRASES, "normal");
     const hard = new SurvivalGame("diff-hard", PHRASES, GARBAGE_PHRASES, "hard");
+    const god = new SurvivalGame("diff-god", PHRASES, GARBAGE_PHRASES, "god");
     startPlaying(easy);
     startPlaying(normal);
     startPlaying(hard);
+    startPlaying(god);
     easy.advance(20_000);
     normal.advance(20_000);
     hard.advance(20_000);
+    god.advance(20_000);
     const easyInterval = easy.getCore().currentRiseInterval();
     const normalInterval = normal.getCore().currentRiseInterval();
     const hardInterval = hard.getCore().currentRiseInterval();
+    const godInterval = god.getCore().currentRiseInterval();
     expect(easyInterval).toBe(normalInterval);
     expect(normalInterval).toBe(hardInterval);
+    expect(hardInterval).toBe(godInterval);
   });
 
   it("easyはほぼ全てmicro tier(単語レベル)の文章になる(D-040: 寿司打を参考にした短さ)", () => {
@@ -387,10 +413,34 @@ describe("難易度(D-032, D-033, D-039, D-040)", () => {
     expect(microCount / total).toBeGreaterThan(0.6);
   });
 
-  it("easyは短い文章、hardは長い文章が多く出現する(行上昇の速さは変えず、文章の長さで難易度差をつける)", () => {
+  it("中級ではlong tierが出ず、神級ではlong tierだけが出る", () => {
+    for (const [difficulty, expectedLongRatio] of [
+      ["normal", 0],
+      ["god", 1],
+    ] as const) {
+      const game = new SurvivalGame(`diff-long-${difficulty}`, PHRASES, GARBAGE_PHRASES, difficulty);
+      const core = game.getCore() as unknown as { blocks: Block[]; dropRow: () => void };
+      let longCount = 0;
+      let total = 0;
+      for (let i = 0; i < 100; i++) {
+        core.dropRow();
+        for (const b of core.blocks) {
+          if (b.kind !== "normal") continue;
+          const phrase = PHRASES.find((p) => p.id === b.phraseId);
+          if (!phrase) continue;
+          total += 1;
+          if (phrase.tier === "long") longCount += 1;
+        }
+        core.blocks = [];
+      }
+      expect(longCount / total).toBe(expectedLongRatio);
+    }
+  });
+
+  it("文章の平均的な長さは初級 < 中級 < 上級 < 神級になる", () => {
     const tierWeight: Record<string, number> = { micro: 1, short: 2, standard: 3, long: 4 };
 
-    function averageTierWeight(difficulty: "easy" | "normal" | "hard"): number {
+    function averageTierWeight(difficulty: "easy" | "normal" | "hard" | "god"): number {
       const game = new SurvivalGame(`diff-tier-${difficulty}`, PHRASES, GARBAGE_PHRASES, difficulty);
       const core = game.getCore() as unknown as { blocks: Block[]; dropRow: () => void };
       let weightSum = 0;
@@ -412,10 +462,28 @@ describe("難易度(D-032, D-033, D-039, D-040)", () => {
     const easy = averageTierWeight("easy");
     const normal = averageTierWeight("normal");
     const hard = averageTierWeight("hard");
+    const god = averageTierWeight("god");
 
-    // 平均的な文章の長さ(tierの重み)は easy < normal < hard の順になる
     expect(easy).toBeLessThan(normal);
     expect(normal).toBeLessThan(hard);
+    expect(hard).toBeLessThan(god);
+  });
+
+  it("生成された盤面には入力完成形の前方一致衝突がない", () => {
+    for (const difficulty of ["easy", "normal", "hard", "god"] as const) {
+      const game = new SurvivalGame(`no-prefix-${difficulty}`, PHRASES, GARBAGE_PHRASES, difficulty);
+      const blocks = coreBlocks(game);
+      for (let i = 0; i < blocks.length; i++) {
+        for (let j = i + 1; j < blocks.length; j++) {
+          expect(
+            TypingAutomaton.hasCompletionPrefixConflict(
+              blocks[i]!.readingKana,
+              blocks[j]!.readingKana,
+            ),
+          ).toBe(false);
+        }
+      }
+    }
   });
 
   it("getSummaryが選択した難易度を返す", () => {

@@ -31,6 +31,7 @@ const SURVIVAL_DIFFICULTY_LABELS: Record<SurvivalDifficulty, string> = {
   easy: "初級",
   normal: "中級",
   hard: "上級",
+  god: "神級",
 };
 
 export function LandingScreen({
@@ -52,6 +53,18 @@ export function LandingScreen({
 
   useEffect(() => {
     const handler = (e: KeyboardEvent): void => {
+      // ボタン・チェックボックス等にフォーカスがある場合は、ネイティブの
+      // Enter/Space操作を優先する。ここで横取りすると、設定をSpaceで切り替えた
+      // だけなのにサバイバルが始まるなど、キーボード操作が破綻する(D-060)。
+      const target = e.target;
+      if (
+        e.defaultPrevented ||
+        (target instanceof HTMLElement &&
+          (target.isContentEditable ||
+            target.closest("button, input, select, textarea, a[href]") !== null))
+      ) {
+        return;
+      }
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
         onStart({ type: "survival", difficulty: survivalDifficulty });

@@ -7,11 +7,6 @@ export interface RiseConfig {
   minIntervalMs: number;
   /** 経過1秒ごとに間隔を縮める量(ms) */
   accelPerSecondMs: number;
-  /**
-   * 指定した時間ごとに加速率を 1/sqrt(段階) へ緩和する。未指定なら従来どおり一定加速。
-   * サバイバルではレベル間隔と同じ30秒を指定する。
-   */
-  accelDecayIntervalMs?: number;
   warningMs: number;
 }
 
@@ -174,8 +169,8 @@ export const DEFAULT_CONFIG: GameConfig = {
       tierRatio: { micro: 0.8, short: 0.2, standard: 0, long: 0 },
     },
     normal: {
-      // 中級は長文を完全に除外し、短い語彙を中心にする(D-065)。
-      tierRatio: { micro: 0.15, short: 0.65, standard: 0.2, long: 0 },
+      // 中級は短単語を明確に主役にし、上級との差を広げる(D-066)。
+      tierRatio: { micro: 0.45, short: 0.5, standard: 0.05, long: 0 },
     },
     hard: {
       // 旧中級と旧上級の中間より少し上級寄り。
@@ -194,10 +189,8 @@ export const DEFAULT_CONFIG: GameConfig = {
     // ビジー無限ループ防止のためだけの値)まで際限なく加速し続けるようにした。
     // 難易度間で共通の値のままなので「行上昇速度は難易度に関わらず同じ」制約は維持される。
     minIntervalMs: 50,
-    // D-065: 第1レベル帯は15ms/秒。以後は30秒ごとに1/sqrt(レベル)へ緩和し、
-    // 技術的な下限までは短くなり続ける一方、高レベルほど短縮幅を小さくする。
-    accelPerSecondMs: 15,
-    accelDecayIntervalMs: 30_000,
+    // D-066: 加速幅は常に一定。直前の15ms/秒から12ms/秒へ少しだけ緩和する。
+    accelPerSecondMs: 12,
     warningMs: 900,
   },
   duelRise: {

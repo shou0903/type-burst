@@ -111,11 +111,10 @@ describe("終了条件", () => {
     expect(late).toBeLessThan(early);
   });
 
-  it("行上昇は序盤より高レベル帯のほうが緩やかに加速する(D-065)", () => {
-    expect(DEFAULT_CONFIG.survivalRise.accelPerSecondMs).toBe(15);
-    expect(DEFAULT_CONFIG.survivalRise.accelDecayIntervalMs).toBe(30_000);
+  it("行上昇は一定幅で、直前より少し緩やかに加速する(D-066)", () => {
+    expect(DEFAULT_CONFIG.survivalRise.accelPerSecondMs).toBe(12);
 
-    const game = newGame("rise-decay");
+    const game = newGame("linear-rise");
     startPlaying(game);
     const core = game.getCore();
     core.pauseRise = true;
@@ -127,9 +126,8 @@ describe("終了条件", () => {
 
     const firstReduction = level1Start - level2Start;
     const secondReduction = level2Start - level3Start;
-    expect(firstReduction).toBeCloseTo(450, 5);
-    expect(secondReduction).toBeGreaterThan(0);
-    expect(secondReduction).toBeLessThan(firstReduction);
+    expect(firstReduction).toBeCloseTo(360, 5);
+    expect(secondReduction).toBeCloseTo(360, 5);
   });
 });
 
@@ -371,7 +369,7 @@ describe("レベルアップ(v3)", () => {
   });
 });
 
-describe("難易度(D-032, D-033, D-039, D-040, D-065)", () => {
+describe("難易度(D-032, D-033, D-039, D-040, D-065, D-066)", () => {
   it("行上昇の速さは難易度に関わらず共通(易しい難易度でも無限に生存できてしまわないように)", () => {
     const easy = new SurvivalGame("diff-easy", PHRASES, GARBAGE_PHRASES, "easy");
     const normal = new SurvivalGame("diff-normal", PHRASES, GARBAGE_PHRASES, "normal");

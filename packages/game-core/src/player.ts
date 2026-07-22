@@ -244,32 +244,9 @@ export class PlayerCore {
   }
 
   currentRiseInterval(): number {
-    const shrunk = this.rise.startIntervalMs - this.riseReductionMs();
+    const shrunk =
+      this.rise.startIntervalMs - (this.elapsedMs / 1000) * this.rise.accelPerSecondMs;
     return Math.max(this.rise.minIntervalMs, shrunk);
-  }
-
-  /**
-   * 序盤は従来の加速感を残しつつ、レベル帯が上がるほど短縮幅を小さくする。
-   * n段階目の加速率を初期値の1/sqrt(n)とするため、間隔は下がり続けるが
-   * 高レベルほど変化が穏やかになる。減衰設定がない対戦モードは従来の線形加速。
-   */
-  private riseReductionMs(): number {
-    const decayIntervalMs = this.rise.accelDecayIntervalMs;
-    if (!decayIntervalMs || decayIntervalMs <= 0) {
-      return (this.elapsedMs / 1000) * this.rise.accelPerSecondMs;
-    }
-
-    const completedStages = Math.floor(this.elapsedMs / decayIntervalMs);
-    const remainderMs = this.elapsedMs % decayIntervalMs;
-    let reductionMs = 0;
-    for (let stage = 1; stage <= completedStages; stage++) {
-      reductionMs +=
-        (decayIntervalMs / 1000) * (this.rise.accelPerSecondMs / Math.sqrt(stage));
-    }
-    reductionMs +=
-      (remainderMs / 1000) *
-      (this.rise.accelPerSecondMs / Math.sqrt(completedStages + 1));
-    return reductionMs;
   }
 
   private advanceRise(deltaMs: number): void {

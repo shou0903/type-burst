@@ -111,12 +111,20 @@ export function GameScreen({
           <div className="hud-row">
             <div className="hud-mini">
               <div className="hud-label">
-                TIME
+                {mode.type === "daily" ? "TIME LEFT" : "TIME"}
                 {snapshot?.mode === "survival" && (
-                  <span className="level-chip">LV {snapshot.level}</span>
+                  <span className="level-chip">
+                    {mode.type === "daily" ? "TODAY" : `LV ${snapshot.level}`}
+                  </span>
                 )}
               </div>
-              <div className="hud-time">{formatTime(snapshot?.elapsedMs ?? 0)}</div>
+              <div className="hud-time">
+                {formatTime(
+                  mode.type === "daily" && snapshot?.mode === "survival" && snapshot.timeLimitMs
+                    ? Math.max(0, snapshot.timeLimitMs - snapshot.elapsedMs)
+                    : snapshot?.elapsedMs ?? 0,
+                )}
+              </div>
             </div>
             <div className="hud-mini">
               <div className="hud-label">SCORE</div>

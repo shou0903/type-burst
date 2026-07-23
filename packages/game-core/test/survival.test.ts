@@ -83,6 +83,32 @@ describe("初期盤面", () => {
 });
 
 describe("終了条件", () => {
+  it("制限時間つきモードは指定時間で終了する", () => {
+    const game = new SurvivalGame(
+      "daily-time-limit",
+      PHRASES,
+      GARBAGE_PHRASES,
+      "normal",
+      DEFAULT_CONFIG,
+      { timeLimitMs: 5000 },
+    );
+    startPlaying(game);
+    game.getCore().pauseRise = true;
+
+    const events = game.advance(7000);
+    const finished = events.find((event) => event.type === "survivalFinished");
+
+    expect(game.getSnapshot().phase).toBe("ended");
+    expect(game.getSnapshot().elapsedMs).toBe(5000);
+    expect(game.getSnapshot().timeLimitMs).toBe(5000);
+    expect(finished?.type).toBe("survivalFinished");
+    if (finished?.type === "survivalFinished") {
+      expect(finished.summary.finishReason).toBe("timeLimit");
+      expect(finished.summary.survivedMs).toBe(5000);
+      expect(finished.summary.timeLimitMs).toBe(5000);
+    }
+  });
+
   it("時間では終了しない(トップアウトのみ)", () => {
     const game = newGame();
     startPlaying(game);
@@ -111,8 +137,8 @@ describe("終了条件", () => {
     expect(late).toBeLessThan(early);
   });
 
-  it("行上昇は一定幅で、直前より少し緩やかに加速する(D-066)", () => {
-    expect(DEFAULT_CONFIG.survivalRise.accelPerSecondMs).toBe(12);
+  it("行上昇は一定幅で、わずかに速く加速する(D-069)", () => {
+    expect(DEFAULT_CONFIG.survivalRise.accelPerSecondMs).toBe(13);
 
     const game = newGame("linear-rise");
     startPlaying(game);
@@ -126,8 +152,8 @@ describe("終了条件", () => {
 
     const firstReduction = level1Start - level2Start;
     const secondReduction = level2Start - level3Start;
-    expect(firstReduction).toBeCloseTo(360, 5);
-    expect(secondReduction).toBeCloseTo(360, 5);
+    expect(firstReduction).toBeCloseTo(390, 5);
+    expect(secondReduction).toBeCloseTo(390, 5);
   });
 });
 
@@ -312,7 +338,18 @@ describe("選択キャンセル(v3)", () => {
   it("Escキャンセルでロックと入力バッファが解除され、ミス扱いにならない", () => {
     const game = newGame();
     startPlaying(game);
-    const target = coreBlocks(game)[0]!;
+    // ランダムな語彙プールの先頭語に依存せず、途中入力を確実に観測する。
+    const target: Block = {
+      id: 9_999,
+      kind: "normal",
+      attribute: "fire",
+      phraseId: "selection-cancel-test",
+      displayText: "テスト入力",
+      readingKana: "てすとにゅうりょく",
+      row: 0,
+      col: 0,
+    };
+    setBoard(game, [target]);
     const romaji = new TypingAutomaton(target.readingKana).getCanonicalRomaji();
     // 途中まで入力
     const events: GameEvent[] = [];

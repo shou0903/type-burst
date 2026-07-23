@@ -135,6 +135,8 @@ export interface SurvivalSnapshot {
   phase: GamePhase;
   countdownMsLeft: number;
   elapsedMs: number;
+  /** 制限時間付きモードの上限。通常サバイバルはnull */
+  timeLimitMs: number | null;
   /** 30秒ごとに上がるレベル */
   level: number;
   player: PlayerSnapshot;
@@ -226,6 +228,8 @@ export interface SurvivalSummary extends PlayerSummary {
   survivedMs: number;
   level: number;
   difficulty: SurvivalDifficulty;
+  timeLimitMs: number | null;
+  finishReason: "toppedOut" | "timeLimit";
 }
 
 export interface DuelSummary {

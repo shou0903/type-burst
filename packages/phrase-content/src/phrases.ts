@@ -1,4 +1,5 @@
 import type { PhraseSeed } from "./types";
+import { ADDITIONAL_PHRASE_SEEDS } from "./additionalPhrases";
 
 /**
  * 標準問題。全て自作の自然な日本語(CONTENT_GUIDELINES.md 参照)。
@@ -719,6 +720,7 @@ export const PHRASE_SEEDS: readonly PhraseSeed[] = [
   { id: "season_0093", displayText: "初雪が降って街が白く染まる", readingKana: "はつゆきがふってまちがしろくそまる", tier: "long", category: "季節" },
   { id: "season_0094", displayText: "新緑がまぶしい季節になった", readingKana: "しんりょくがまぶしいきせつになった", tier: "long", category: "季節" },
   { id: "season_0095", displayText: "紅葉が色づく山を静かに歩く", readingKana: "もみじがいろづくやまをしずかにあるく", tier: "long", category: "季節" },
+  ...ADDITIONAL_PHRASE_SEEDS,
 ];
 
 /**

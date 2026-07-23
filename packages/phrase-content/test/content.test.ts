@@ -22,4 +22,10 @@ describe("phrase-content", () => {
     const sample = PHRASES.find((p) => p.id === "daily_0001");
     expect(sample?.moraCount).toBe(9);
   });
+
+  it("各文字数グループへ追加語彙を100件ずつ含む", () => {
+    for (const tier of ["micro", "short", "standard", "long"] as const) {
+      expect(PHRASES.filter((phrase) => phrase.id.startsWith(`extra_${tier}_`))).toHaveLength(100);
+    }
+  });
 });

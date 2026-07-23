@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import type { CpuDifficulty, SurvivalDifficulty } from "@type-burst/game-core";
 import { titleProgressForScore, type LifetimeProgress } from "@type-burst/progression";
 import type { GameMode } from "../game/GameController";
-import { useFitToViewport } from "../hooks/useFitToViewport";
 import { bestScore, loadDuelRecord, type FontScale, type Settings, type StoredResult } from "../storage";
+import type { DailyProgress } from "../daily";
+import { DailyChallengeCard } from "../components/DailyChallengeCard";
 
 const FONT_SCALE_LABELS: Array<{ value: FontScale; label: string }> = [
   { value: 1, label: "標準" },
@@ -15,6 +16,7 @@ interface Props {
   settings: Settings;
   results: StoredResult[];
   progress: LifetimeProgress;
+  dailyProgress: DailyProgress;
   onUpdateSettings: (patch: Partial<Settings>) => void;
   onStart: (mode: GameMode) => void;
   onShowRanking: () => void;
@@ -38,6 +40,7 @@ export function LandingScreen({
   settings,
   results,
   progress,
+  dailyProgress,
   onUpdateSettings,
   onStart,
   onShowRanking,
@@ -48,7 +51,6 @@ export function LandingScreen({
   const [howtoOpen, setHowtoOpen] = useState(false);
   const best = bestScore(results, survivalDifficulty);
   const record = loadDuelRecord();
-  const { ref, style } = useFitToViewport<HTMLDivElement>();
   const titleProgress = useMemo(() => titleProgressForScore(progress.totalScore), [progress.totalScore]);
 
   useEffect(() => {
@@ -75,7 +77,7 @@ export function LandingScreen({
   }, [onStart, survivalDifficulty]);
 
   return (
-    <div ref={ref} style={style} className="screen landing">
+    <div className="screen landing">
       <div className="hero">
         {!settings.reducedMotion && (
           <div className="hero-fx" aria-hidden="true">
@@ -110,6 +112,8 @@ export function LandingScreen({
             : "最高位の称号に到達しました!"}
         </div>
       </button>
+
+      <DailyChallengeCard progress={dailyProgress} onStart={onStart} />
 
       <div className="mode-row">
         <div className="duel-box">

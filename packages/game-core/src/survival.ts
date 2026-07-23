@@ -9,9 +9,17 @@ import type {
   SurvivalSummary,
 } from "./types";
 
+export interface SurvivalGameOptions {
+  /** null/未指定なら従来どおりトップアウトまで続く */
+  timeLimitMs?: number | null;
+  /** デイリー等で難易度とは別のtier構成を使う場合の上書き */
+  tierRatio?: GameConfig["tierRatio"];
+}
+
 /**
  * サバイバルモード(1人用)。
- * 時間切れは存在しない。行上昇が徐々に加速し、盤面があふれたら終了。
+ * 通常は行上昇が徐々に加速し、盤面があふれたら終了。
+ * デイリー等はoptionsで制限時間を設定できる。
  * 難易度(D-032, D-033, D-039, D-041)は1ブロックあたりの文章の長さ(tierRatio)のみを変え、
  * 行上昇の速さ・盤面サイズは全難易度共通にする(理由はconfig.tsのコメント参照)。
  */
@@ -26,6 +34,8 @@ export class SurvivalGame {
   private lastCountdownSecond: number;
   private elapsedMs = 0;
   private level = 1;
+  private readonly timeLimitMs: number | null;
+  private finishReason: SurvivalSummary["finishReason"] = "toppedOut";
   private events: GameEvent[] = [];
 
   constructor(
@@ -34,15 +44,23 @@ export class SurvivalGame {
     garbagePhrases: readonly JapanesePhrase[],
     difficulty: SurvivalDifficulty = "normal",
     config: GameConfig = DEFAULT_CONFIG,
+    options: SurvivalGameOptions = {},
   ) {
     this.seed = seed;
     this.difficulty = difficulty;
     this.config = config;
+    this.timeLimitMs =
+      typeof options.timeLimitMs === "number" && options.timeLimitMs > 0
+        ? options.timeLimitMs
+        : null;
     const profile = config.survivalDifficulty[difficulty];
     this.countdownMsLeft = config.countdownMs;
     this.lastCountdownSecond = Math.ceil(config.countdownMs / 1000);
     // 行上昇(config.survivalRise)は共通のまま、文章の長さ配分だけ難易度で変える(D-033, D-039)
-    const effectiveConfig: GameConfig = { ...config, tierRatio: profile.tierRatio };
+    const effectiveConfig: GameConfig = {
+      ...config,
+      tierRatio: options.tierRatio ?? profile.tierRatio,
+    };
     this.core = new PlayerCore(seed, phrases, garbagePhrases, effectiveConfig, config.survivalRise);
   }
 
@@ -69,7 +87,10 @@ export class SurvivalGame {
   }
 
   private advancePlaying(deltaMs: number): void {
-    this.elapsedMs += deltaMs;
+    const remaining =
+      this.timeLimitMs === null ? deltaMs : Math.max(0, this.timeLimitMs - this.elapsedMs);
+    const appliedDelta = Math.min(deltaMs, remaining);
+    this.elapsedMs += appliedDelta;
 
     // 30秒ごとのレベルアップ(ボーナス加点)
     const newLevel = 1 + Math.floor(this.elapsedMs / this.config.survivalLevel.intervalMs);
@@ -80,9 +101,11 @@ export class SurvivalGame {
       this.events.push({ type: "levelUp", level: this.level, bonus });
     }
 
-    this.core.advance(deltaMs);
+    this.core.advance(appliedDelta);
     this.events.push(...this.core.drainEvents());
-    if (this.core.toppedOut) {
+    const reachedTimeLimit = this.timeLimitMs !== null && this.elapsedMs >= this.timeLimitMs;
+    if (this.core.toppedOut || reachedTimeLimit) {
+      this.finishReason = reachedTimeLimit ? "timeLimit" : "toppedOut";
       this.core.flushResolving();
       this.core.frozen = true;
       this.events.push(...this.core.drainEvents());
@@ -121,6 +144,7 @@ export class SurvivalGame {
       phase: this.phase,
       countdownMsLeft: this.countdownMsLeft,
       elapsedMs: this.elapsedMs,
+      timeLimitMs: this.timeLimitMs,
       level: this.level,
       player: this.core.getSnapshot(),
     };
@@ -133,6 +157,8 @@ export class SurvivalGame {
       survivedMs: this.elapsedMs,
       level: this.level,
       difficulty: this.difficulty,
+      timeLimitMs: this.timeLimitMs,
+      finishReason: this.finishReason,
     };
   }
 

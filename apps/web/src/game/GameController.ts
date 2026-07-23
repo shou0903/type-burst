@@ -1,4 +1,4 @@
-import { DuelGame, SurvivalGame, TutorialGame } from "@type-burst/game-core";
+import { DEFAULT_CONFIG, DuelGame, SurvivalGame, TutorialGame } from "@type-burst/game-core";
 import type {
   CpuDifficulty,
   DuelSnapshot,
@@ -13,14 +13,17 @@ import { GARBAGE_PHRASES, PHRASES } from "@type-burst/phrase-content";
 import { TypingAutomaton } from "@type-burst/typing-engine";
 import { BoardRenderer, MAIN_RENDERER_OPTIONS, MINI_RENDERER_OPTIONS, type FrameMeta } from "../render/BoardRenderer";
 import { SoundEngine } from "../audio/SoundEngine";
+import { DAILY_TIME_LIMIT_MS, dailySeed } from "../daily";
 
 export type GameMode =
   | { type: "survival"; difficulty: SurvivalDifficulty }
+  | { type: "daily"; challengeId: string; ranked: boolean }
   | { type: "duel"; difficulty: CpuDifficulty }
   | { type: "tutorial" };
 
 export type GameResult =
   | { mode: "survival"; summary: SurvivalSummary }
+  | { mode: "daily"; summary: SurvivalSummary; challengeId: string; ranked: boolean }
   | { mode: "duel"; summary: DuelSummary };
 
 export type AnySnapshot = SurvivalSnapshot | DuelSnapshot | TutorialSnapshot;
@@ -56,10 +59,19 @@ export class GameController {
   constructor(options: GameControllerOptions) {
     this.options = options;
     this.sound = options.sound;
-    const seed = `${options.mode.type}-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
+    const seed =
+      options.mode.type === "daily"
+        ? dailySeed(options.mode.challengeId)
+        : `${options.mode.type}-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
     this.game =
       options.mode.type === "survival"
         ? new SurvivalGame(seed, PHRASES, GARBAGE_PHRASES, options.mode.difficulty)
+        : options.mode.type === "daily"
+          ? new SurvivalGame(seed, PHRASES, GARBAGE_PHRASES, "normal", DEFAULT_CONFIG, {
+              timeLimitMs: DAILY_TIME_LIMIT_MS,
+              // 初級と中級の中間を軸に、標準文と長文も少量混ぜる共通条件。
+              tierRatio: { micro: 0.35, short: 0.45, standard: 0.15, long: 0.05 },
+            })
         : options.mode.type === "duel"
           ? new DuelGame(seed, PHRASES, GARBAGE_PHRASES, options.mode.difficulty)
           : new TutorialGame(PHRASES, GARBAGE_PHRASES);
@@ -260,7 +272,16 @@ export class GameController {
         this.sound.gameStart();
         break;
       case "survivalFinished":
-        this.finish({ mode: "survival", summary: event.summary });
+        if (this.options.mode.type === "daily") {
+          this.finish({
+            mode: "daily",
+            summary: event.summary,
+            challengeId: this.options.mode.challengeId,
+            ranked: this.options.mode.ranked,
+          });
+        } else {
+          this.finish({ mode: "survival", summary: event.summary });
+        }
         break;
       case "duelFinished":
         this.finish({ mode: "duel", summary: event.summary });
@@ -273,7 +294,7 @@ export class GameController {
   private finish(result: GameResult): void {
     if (this.finished) return;
     this.finished = true;
-    if (result.mode === "survival") this.sound.gameFinish();
+    if (result.mode === "survival" || result.mode === "daily") this.sound.gameFinish();
     else if (result.summary.won) this.sound.win();
     else this.sound.lose();
     // 終了演出を見せてから結果画面へ

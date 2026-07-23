@@ -189,8 +189,8 @@ export const DEFAULT_CONFIG: GameConfig = {
     // ビジー無限ループ防止のためだけの値)まで際限なく加速し続けるようにした。
     // 難易度間で共通の値のままなので「行上昇速度は難易度に関わらず同じ」制約は維持される。
     minIntervalMs: 50,
-    // D-066: 加速幅は常に一定。直前の15ms/秒から12ms/秒へ少しだけ緩和する。
-    accelPerSecondMs: 12,
+    // D-069: 加速幅は常に一定。12ms/秒から13ms/秒へわずかに上げる。
+    accelPerSecondMs: 13,
     warningMs: 900,
   },
   duelRise: {

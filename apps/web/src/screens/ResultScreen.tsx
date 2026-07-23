@@ -5,12 +5,26 @@ import type { GameMode, GameResult } from "../game/GameController";
 import { useFitToViewport } from "../hooks/useFitToViewport";
 import { loadNickname, saveNickname, type DuelRecord, type StoredResult } from "../storage";
 import { submitScore } from "../ranking";
+import {
+  DAILY_RANKED_ATTEMPTS,
+  dailyAttempts,
+  dailyBestScore,
+  type DailyProgress,
+  type DailyRecordResult,
+} from "../daily";
+import {
+  fetchDailyLeaderboard,
+  submitDailyScore,
+  type DailyLeaderboardResponse,
+} from "../dailyRanking";
 
 interface Props {
   result: GameResult;
   history: StoredResult[];
   duelRecord: DuelRecord | null;
   progress: LifetimeProgress;
+  dailyProgress: DailyProgress;
+  dailyRecord: DailyRecordResult | null;
   onRetry: (mode: GameMode) => void;
   onBackToTitle: () => void;
   onShowAnalysis: (analysis: TypingAnalysis, recentHistory: StoredResult[]) => void;
@@ -36,6 +50,8 @@ export function ResultScreen({
   history,
   duelRecord,
   progress,
+  dailyProgress,
+  dailyRecord,
   onRetry,
   onBackToTitle,
   onShowAnalysis,
@@ -45,7 +61,9 @@ export function ResultScreen({
   const retryMode: GameMode =
     result.mode === "survival"
       ? { type: "survival", difficulty: result.summary.difficulty }
-      : { type: "duel", difficulty: result.summary.difficulty };
+      : result.mode === "daily"
+        ? { type: "daily", challengeId: result.challengeId, ranked: result.ranked }
+        : { type: "duel", difficulty: result.summary.difficulty };
 
   useEffect(() => {
     const handler = (e: KeyboardEvent): void => {
@@ -77,6 +95,21 @@ export function ResultScreen({
     return () => window.removeEventListener("keydown", handler);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onRetry, onBackToTitle]);
+
+  if (result.mode === "daily") {
+    return (
+      <DailyResultScreen
+        result={result}
+        progress={dailyProgress}
+        record={dailyRecord}
+        retryMode={retryMode}
+        onRetry={onRetry}
+        onBackToTitle={onBackToTitle}
+        onShowAnalysis={onShowAnalysis}
+        history={history}
+      />
+    );
+  }
 
   if (result.mode === "survival") {
     const summary = result.summary;
@@ -192,6 +225,195 @@ export function ResultScreen({
         タイトルへ
       </button>
     </div>
+  );
+}
+
+function DailyResultScreen({
+  result,
+  progress,
+  record,
+  retryMode,
+  history,
+  onRetry,
+  onBackToTitle,
+  onShowAnalysis,
+}: {
+  result: Extract<GameResult, { mode: "daily" }>;
+  progress: DailyProgress;
+  record: DailyRecordResult | null;
+  retryMode: GameMode;
+  history: StoredResult[];
+  onRetry: (mode: GameMode) => void;
+  onBackToTitle: () => void;
+  onShowAnalysis: (analysis: TypingAnalysis, recentHistory: StoredResult[]) => void;
+}): JSX.Element {
+  const summary = result.summary;
+  const attempts = dailyAttempts(progress, result.challengeId);
+  const remaining = Math.max(0, DAILY_RANKED_ATTEMPTS - attempts);
+  const best = dailyBestScore(progress, result.challengeId);
+  const sameDifficultyHistory = history.filter(
+    (item) => (item.difficulty ?? "normal") === summary.difficulty,
+  );
+
+  return (
+    <div className="screen result daily-result">
+      <h2 className="result-title">TODAY&apos;S BURST</h2>
+      <p className="daily-result-date">{result.challengeId}・全員共通2分チャレンジ</p>
+
+      <div className="result-score-wrap">
+        <div className={`rank-badge rank-${rankOf(summary.score).replace("+", "plus")}`}>
+          {rankOf(summary.score)}
+        </div>
+        <div className="result-score">{summary.score.toLocaleString()}</div>
+        {summary.score >= best && summary.score > 0 && <div className="best-badge">TODAY BEST!</div>}
+      </div>
+
+      <div className="result-grid">
+        <Item label="プレイ時間" value={formatTime(summary.survivedMs)} />
+        <Item label="KPM" value={String(summary.kpm)} />
+        <Item label="正確率" value={`${(summary.accuracy * 100).toFixed(1)}%`} />
+        <Item label="文章完成" value={String(summary.phraseCount)} />
+        <Item label="最大連鎖" value={String(summary.maxChain)} />
+        <Item label="BURST" value={String(summary.burstCount)} />
+      </div>
+
+      <div className="daily-result-streak">
+        <strong>🔥 {progress.currentStreak}日連続</strong>
+        <span>
+          {record?.freezeUsed
+            ? "お休み券で昨日の記録を保護しました"
+            : record?.freezeAwarded
+              ? "7日達成！お休み券を1枚獲得しました"
+              : record?.firstPlayToday
+                ? "今日の連続記録を達成しました"
+                : "今日の記録は達成済みです"}
+        </span>
+      </div>
+
+      <DailyRankingBox
+        challengeId={result.challengeId}
+        summary={summary}
+        ranked={result.ranked}
+      />
+
+      <p className="daily-attempt-note">
+        {remaining > 0
+          ? `今日の記録挑戦は残り${remaining}回です`
+          : "今日の記録挑戦3回は終了。以降はランキング対象外の練習です"}
+      </p>
+      <button className="btn-daily" onClick={() => onRetry(retryMode)} autoFocus>
+        {remaining > 0 ? "今日のベストを更新する" : "同じステージを練習する"}
+      </button>
+      <button
+        className="btn-secondary"
+        onClick={() => onShowAnalysis(summary.analysis, sameDifficultyHistory)}
+      >
+        タイピング分析を見る
+      </button>
+      <button className="btn-secondary" onClick={onBackToTitle}>タイトルへ</button>
+    </div>
+  );
+}
+
+function DailyRankingBox({
+  challengeId,
+  summary,
+  ranked,
+}: {
+  challengeId: string;
+  summary: SurvivalSummary;
+  ranked: boolean;
+}): JSX.Element {
+  const [savedNickname, setSavedNickname] = useState(loadNickname());
+  const [nickname, setNickname] = useState(savedNickname ?? "");
+  const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
+  const [ranking, setRanking] = useState<DailyLeaderboardResponse | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    if (ranked && savedNickname && summary.score > 0) {
+      setStatus("loading");
+      submitDailyScore(savedNickname, challengeId, summary)
+        .then((response) => {
+          if (!active) return;
+          setRanking(response);
+          setStatus("done");
+        })
+        .catch(() => active && setStatus("error"));
+    } else {
+      fetchDailyLeaderboard(challengeId)
+        .then((response) => {
+          if (!active) return;
+          setRanking(response);
+          setStatus("done");
+        })
+        .catch(() => active && setStatus("error"));
+    }
+    return () => {
+      active = false;
+    };
+  }, [challengeId, ranked, savedNickname, summary]);
+
+  const submit = (): void => {
+    const trimmed = nickname.trim();
+    if (!trimmed) return;
+    saveNickname(trimmed);
+    setSavedNickname(trimmed);
+  };
+
+  return (
+    <section className="daily-ranking-box">
+      <div className="daily-ranking-title">本日のランキング</div>
+      {ranked && !savedNickname && (
+        <>
+          <p>ニックネームを登録すると、今回の記録が本日のランキングに反映されます。</p>
+          <div className="ranking-submit-row">
+            <input
+              className="nickname-input"
+              maxLength={12}
+              value={nickname}
+              placeholder="ニックネーム"
+              onChange={(event) => setNickname(event.target.value)}
+            />
+            <button
+              className="btn-ranking-submit"
+              disabled={!nickname.trim()}
+              onClick={submit}
+            >
+              登録
+            </button>
+          </div>
+        </>
+      )}
+      {status === "loading" && <p className="ranking-status">ランキングへ反映中…</p>}
+      {status === "error" && (
+        <p className="ranking-status ranking-error">
+          ランキングを取得できませんでした。記録は端末に保存されています。
+        </p>
+      )}
+      {ranking?.viewer && (
+        <div className="daily-viewer-rank">
+          <strong>{ranking.viewer.rank}位</strong>
+          <span>
+            ／{ranking.viewer.total.toLocaleString()}人・上位{ranking.viewer.percentile.toFixed(1)}%
+          </span>
+          {ranking.viewer.scoreToNext !== null && (
+            <small>ひとつ上まであと{ranking.viewer.scoreToNext.toLocaleString()}点</small>
+          )}
+        </div>
+      )}
+      {ranking && ranking.entries.length > 0 && (
+        <ol className="daily-ranking-mini">
+          {ranking.entries.slice(0, 5).map((entry) => (
+            <li key={`${entry.rank}-${entry.nickname}`}>
+              <span>{entry.rank}位 {entry.nickname}</span>
+              <strong>{entry.score.toLocaleString()}</strong>
+            </li>
+          ))}
+        </ol>
+      )}
+      {!ranked && <p className="ranking-status">今回の練習スコアはランキング対象外です。</p>}
+    </section>
   );
 }
 

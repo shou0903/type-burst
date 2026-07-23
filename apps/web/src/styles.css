@@ -569,17 +569,17 @@ body {
 .daily-continuity-label,
 .daily-protection span {
   color: #9099bb;
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .daily-continuity-summary strong {
   color: #f7f8fc;
-  font-size: 15px;
+  font-size: 17px;
 }
 
 .daily-continuity-summary small {
   color: #767f9f;
-  font-size: 9px;
+  font-size: 10px;
 }
 
 .daily-protection strong {
@@ -589,7 +589,7 @@ body {
 .daily-continuity-explanation {
   align-self: center;
   color: #aeb6d2;
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.7;
 }
 
@@ -603,7 +603,7 @@ body {
 
 .daily-calendar-details > summary {
   color: #9da6c8;
-  font-size: 11px;
+  font-size: 12px;
   text-align: center;
   cursor: pointer;
 }

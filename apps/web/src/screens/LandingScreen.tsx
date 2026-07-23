@@ -120,7 +120,6 @@ export function LandingScreen({
           <button
             className="btn-primary"
             onClick={() => onStart({ type: "survival", difficulty: survivalDifficulty })}
-            autoFocus
           >
             サバイバル <span className="btn-sub">Enter</span>
           </button>

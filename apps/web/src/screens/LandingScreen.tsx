@@ -164,8 +164,6 @@ export function LandingScreen({
         </p>
       )}
 
-      <DailyChallengeCard progress={dailyProgress} onStart={onStart} />
-
       <div className="quick-links-row">
         <button className="btn-tutorial-link" onClick={() => onStart({ type: "tutorial" })}>
           📖 チュートリアル
@@ -177,6 +175,8 @@ export function LandingScreen({
           📈 成長記録
         </button>
       </div>
+
+      <DailyChallengeCard progress={dailyProgress} onStart={onStart} />
 
       <button
         className="btn-howto-toggle"

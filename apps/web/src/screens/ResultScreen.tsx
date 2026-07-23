@@ -281,9 +281,9 @@ function DailyResultScreen({
         <strong>🔥 {progress.currentStreak}日連続</strong>
         <span>
           {record?.freezeUsed
-            ? "お休み券で昨日の記録を保護しました"
+            ? "連続記録キープが自動で使われ、昨日の空白を保護しました"
             : record?.freezeAwarded
-              ? "7日達成！お休み券を1枚獲得しました"
+              ? "7日達成！1日休んでも連続記録を保てる権利を獲得しました"
               : record?.firstPlayToday
                 ? "今日の連続記録を達成しました"
                 : "今日の記録は達成済みです"}

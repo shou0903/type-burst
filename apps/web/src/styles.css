@@ -231,22 +231,34 @@ body {
 
 .daily-card {
   width: min(940px, 100%);
-  display: grid;
-  grid-template-columns: minmax(0, 1.55fr) minmax(260px, 0.75fr);
-  gap: 22px;
-  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 24px;
   background:
     radial-gradient(circle at 12% 10%, rgba(255, 215, 94, 0.16), transparent 38%),
     linear-gradient(135deg, rgba(43, 51, 85, 0.96), rgba(22, 27, 48, 0.96));
   border: 1px solid rgba(255, 215, 94, 0.36);
-  border-radius: 18px;
+  border-radius: 20px;
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+}
+
+.daily-card-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(330px, 0.9fr);
+  gap: 18px;
+  align-items: stretch;
 }
 
 .daily-card-main {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
+  min-width: 0;
+  padding: 18px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px;
 }
 
 .daily-heading-row {
@@ -258,35 +270,38 @@ body {
 
 .daily-kicker {
   color: #ffd75e;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.11em;
 }
 
 .daily-title {
-  margin-top: 2px;
+  margin-top: 3px;
   font-family: "Arial Black", sans-serif;
-  font-size: 29px;
+  font-size: 30px;
   letter-spacing: 1px;
 }
 
 .daily-date {
-  color: #c3c9e2;
-  font-size: 13px;
+  color: #f3f4fa;
+  font-size: 14px;
+  font-weight: 700;
   white-space: nowrap;
-  padding-top: 4px;
+  padding: 6px 11px;
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: 999px;
 }
 
 .daily-description {
   color: #c3c9e2;
   font-size: 14px;
-  line-height: 1.65;
+  line-height: 1.75;
 }
 
 .daily-stats {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
 }
 
 .daily-stat {
@@ -294,33 +309,37 @@ body {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 9px 10px;
-  background: rgba(255, 255, 255, 0.055);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
+  padding: 11px 12px;
+  background: rgba(10, 13, 25, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 11px;
 }
 
 .daily-stat span {
-  color: #8d95b5;
-  font-size: 10px;
+  color: #9da6c8;
+  font-size: 11px;
 }
 
 .daily-stat strong {
   overflow: hidden;
   color: #f5f6fb;
-  font-size: 15px;
+  font-size: 18px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .btn-daily {
-  align-self: flex-start;
+  align-self: stretch;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
   color: #151620;
   background: linear-gradient(180deg, #ffe680, #f2bd36);
   border: none;
-  border-radius: 11px;
-  padding: 13px 24px;
-  font-size: 17px;
+  border-radius: 12px;
+  padding: 15px 24px;
+  font-size: 18px;
   font-weight: 900;
   cursor: pointer;
   box-shadow: 0 8px 24px rgba(242, 189, 54, 0.25);
@@ -332,7 +351,270 @@ body {
   filter: brightness(1.05);
 }
 
+.daily-attempt-help {
+  color: #8f98b9;
+  font-size: 11px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.daily-leaderboard-preview {
+  min-width: 0;
+  padding: 17px;
+  background:
+    linear-gradient(155deg, rgba(11, 15, 30, 0.88), rgba(20, 25, 47, 0.94));
+  border: 1px solid rgba(111, 192, 255, 0.28);
+  border-radius: 14px;
+}
+
+.daily-leaderboard-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.daily-leaderboard-head > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.daily-leaderboard-head span {
+  color: #a6afd0;
+  font-size: 11px;
+}
+
+.daily-leaderboard-head strong {
+  color: #f7f8fc;
+  font-size: 18px;
+}
+
+.daily-live-label {
+  padding: 4px 8px;
+  color: #77c9ff !important;
+  font-size: 9px !important;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  background: rgba(111, 192, 255, 0.1);
+  border: 1px solid rgba(111, 192, 255, 0.24);
+  border-radius: 999px;
+}
+
+.daily-ranking-loading,
+.daily-rank-guidance,
+.daily-ranking-error {
+  display: grid;
+  place-items: center;
+  min-height: 72px;
+  padding: 12px;
+  color: #aab2ce;
+  font-size: 12px;
+  line-height: 1.65;
+  text-align: center;
+}
+
+.daily-ranking-error {
+  gap: 8px;
+  color: #ff9f93;
+}
+
+.daily-ranking-error button {
+  color: #dcefff;
+  background: rgba(111, 192, 255, 0.12);
+  border: 1px solid rgba(111, 192, 255, 0.28);
+  border-radius: 7px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+.daily-my-rank {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 13px 0 11px;
+}
+
+.daily-my-rank > span {
+  color: #9aa4c6;
+  font-size: 10px;
+}
+
+.daily-my-rank > div {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+}
+
+.daily-my-rank > div > strong {
+  color: #ffd75e;
+  font-family: "Arial Black", sans-serif;
+  font-size: 30px;
+  line-height: 1;
+}
+
+.daily-my-rank > div > small {
+  color: #aab2ce;
+  font-size: 12px;
+}
+
+.daily-my-rank-details {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px !important;
+}
+
+.daily-my-rank-details span {
+  padding: 7px;
+  color: #dcefff;
+  font-size: 10px;
+  text-align: center;
+  background: rgba(111, 192, 255, 0.08);
+  border-radius: 7px;
+}
+
+.daily-ranking-preview-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 0;
+  margin: 10px 0 0;
+  list-style: none;
+}
+
+.daily-ranking-preview-list li {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  color: #d4d8e8;
+  font-size: 11px;
+  background: rgba(255, 255, 255, 0.035);
+  border-radius: 7px;
+}
+
+.daily-preview-rank {
+  color: #ffd75e;
+  font-weight: 900;
+  text-align: center;
+}
+
+.daily-preview-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.daily-ranking-preview-list strong {
+  color: #fff;
+  font-size: 12px;
+}
+
+.daily-ranking-preview-list.is-expanded {
+  max-height: 320px;
+  padding-right: 4px;
+  overflow-y: auto;
+  scrollbar-color: #566083 rgba(255, 255, 255, 0.04);
+  scrollbar-width: thin;
+}
+
+.daily-ranking-expand {
+  width: 100%;
+  margin-top: 9px;
+  padding: 7px 9px;
+  color: #9fd7ff;
+  font-size: 10px;
+  background: rgba(111, 192, 255, 0.07);
+  border: 1px solid rgba(111, 192, 255, 0.18);
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.daily-ranking-expand:hover {
+  color: #fff;
+  background: rgba(111, 192, 255, 0.13);
+}
+
+.daily-continuity {
+  display: grid;
+  grid-template-columns: minmax(230px, 0.68fr) minmax(0, 1.32fr);
+  gap: 14px 18px;
+  padding: 14px 16px;
+  background: rgba(8, 11, 22, 0.34);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 13px;
+}
+
+.daily-continuity-summary {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.daily-continuity-summary > div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+  padding: 9px 10px;
+  background: rgba(255, 255, 255, 0.045);
+  border-radius: 9px;
+}
+
+.daily-continuity-label,
+.daily-protection span {
+  color: #9099bb;
+  font-size: 9px;
+}
+
+.daily-continuity-summary strong {
+  color: #f7f8fc;
+  font-size: 15px;
+}
+
+.daily-continuity-summary small {
+  color: #767f9f;
+  font-size: 9px;
+}
+
+.daily-protection strong {
+  color: #76caff;
+}
+
+.daily-continuity-explanation {
+  align-self: center;
+  color: #aeb6d2;
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.daily-continuity-explanation strong {
+  color: #dcefff;
+}
+
+.daily-calendar-details {
+  grid-column: 1 / -1;
+}
+
+.daily-calendar-details > summary {
+  color: #9da6c8;
+  font-size: 11px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.daily-calendar-details[open] > summary {
+  margin-bottom: 10px;
+}
+
 .daily-calendar {
+  width: min(360px, 100%);
+  margin: 0 auto;
   padding: 13px;
   background: rgba(7, 9, 18, 0.38);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -388,8 +670,8 @@ body {
 
 .daily-calendar-note {
   margin-top: 8px;
-  color: #747d9c;
-  font-size: 9px;
+  color: #8c95b5;
+  font-size: 10px;
   text-align: center;
 }
 
@@ -1947,8 +2229,11 @@ body {
 
 @media (max-width: 760px) {
   .daily-card {
-    grid-template-columns: 1fr;
     padding: 16px;
+  }
+
+  .daily-card-grid {
+    grid-template-columns: 1fr;
   }
 
   .daily-heading-row {
@@ -1961,6 +2246,18 @@ body {
 
   .daily-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .daily-continuity {
+    grid-template-columns: 1fr;
+  }
+
+  .daily-continuity-summary {
+    flex-direction: column;
+  }
+
+  .daily-calendar-details {
+    grid-column: 1;
   }
 
   .btn-daily {

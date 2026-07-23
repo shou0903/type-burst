@@ -113,8 +113,6 @@ export function LandingScreen({
         </div>
       </button>
 
-      <DailyChallengeCard progress={dailyProgress} onStart={onStart} />
-
       <div className="mode-row">
         <div className="duel-box">
           <button
@@ -165,6 +163,8 @@ export function LandingScreen({
           <strong>{best.toLocaleString()}</strong>
         </p>
       )}
+
+      <DailyChallengeCard progress={dailyProgress} onStart={onStart} />
 
       <div className="quick-links-row">
         <button className="btn-tutorial-link" onClick={() => onStart({ type: "tutorial" })}>

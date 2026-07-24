@@ -84,6 +84,8 @@ export function MobileLanding(): JSX.Element {
 
   const copyLabel =
     copyState === "copied" ? "コピーしました!" : copyState === "error" ? "コピーできませんでした" : "URLをコピー";
+  const primaryActionLabel = shareSupported ? "自分に送る（LINEなど）" : copyLabel;
+  const primaryAction = shareSupported ? handleShare : handleCopy;
 
   return (
     <div className="mobile-landing">
@@ -92,7 +94,7 @@ export function MobileLanding(): JSX.Element {
           TYPE <span className="mobile-landing-burst">BURST</span>
         </h1>
         <p className="mobile-landing-hook">
-          TYPE BURST（タイプバースト）は、速さだけじゃなく<strong>「どこを消すか」</strong>で勝負する
+          速さだけじゃなく<strong>「どこを消すか」</strong>で勝負。
           <br />
           タイピング×連鎖パズル
         </p>
@@ -100,7 +102,10 @@ export function MobileLanding(): JSX.Element {
 
       <div className="mobile-landing-demo-wrap">
         <AttractBoard reducedMotion={reducedMotion} />
-        <p className="mobile-landing-demo-caption">実際のゲーム画面(自動プレイ中)</p>
+        <p className="mobile-landing-demo-caption">
+          <span aria-hidden="true" />
+          実際のゲーム画面（自動プレイ中）
+        </p>
       </div>
 
       <div className="mobile-landing-badges">
@@ -109,30 +114,48 @@ export function MobileLanding(): JSX.Element {
         <span className="mobile-landing-badge">ブラウザですぐ遊べる</span>
       </div>
 
-      <p className="mobile-landing-note">
-        このゲームは物理キーボードでのローマ字入力が前提のため、現在はPCブラウザのみに対応しています。
-      </p>
-
-      <div className="mobile-landing-cta">
-        <button className="mobile-landing-btn mobile-landing-btn-primary" onClick={handleCopy}>
-          {copyLabel}
-        </button>
-        {shareSupported && (
-          <button className="mobile-landing-btn mobile-landing-btn-secondary" onClick={handleShare}>
-            自分に送る(LINEなど)
+      <section className="mobile-landing-handoff" aria-labelledby="mobile-handoff-title">
+        <p className="mobile-landing-handoff-kicker">スマホでは“観るだけ”。本番はPCで。</p>
+        <h2 id="mobile-handoff-title" className="mobile-landing-handoff-title">
+          この続きはPCで遊ぼう
+        </h2>
+        <p className="mobile-landing-handoff-reason">
+          PCで開くだけ。無料・登録不要ですぐ遊べます。
+          <strong>忘れないよう、今のうちに自分へ送っておこう。</strong>
+        </p>
+        <div className="mobile-landing-cta">
+          <button
+            className="mobile-landing-btn mobile-landing-btn-primary"
+            onClick={primaryAction}
+          >
+            <span className="mobile-landing-btn-icon" aria-hidden="true">
+              {shareSupported ? "↗" : "⧉"}
+            </span>
+            {primaryActionLabel}
           </button>
-        )}
-      </div>
-      <p className="mobile-landing-cta-hint">このURLをPCのブラウザで開けば、今すぐ遊べます。</p>
+          {shareSupported && (
+            <button className="mobile-landing-copy-link" onClick={handleCopy}>
+              {copyLabel}
+            </button>
+          )}
+        </div>
+        <p className="mobile-landing-copy-status" aria-live="polite">
+          {copyState === "copied"
+            ? "URLをコピーしました。PCへ送れば準備完了です。"
+            : copyState === "error"
+              ? "コピーできませんでした。共有ボタンから送ってください。"
+              : "物理キーボードで連鎖を決める、本格タイピングゲームです。"}
+        </p>
+      </section>
 
+      <MobileRankingPreview expanded={rankingOpen} />
       <button
         className="mobile-landing-ranking-toggle"
         onClick={() => setRankingOpen((open) => !open)}
         aria-expanded={rankingOpen}
       >
-        {rankingOpen ? "世界ランキングを閉じる ▲" : "🏆 世界ランキングを見る ▼"}
+        {rankingOpen ? "上位3件だけ表示する ▲" : "世界ランキングをTOP10まで見る ▼"}
       </button>
-      {rankingOpen && <MobileRankingPreview />}
 
       <div className="mobile-landing-footer">
         <a href="/about.html">TYPE BURSTとは</a>

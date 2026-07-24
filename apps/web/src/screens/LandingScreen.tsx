@@ -5,6 +5,7 @@ import type { GameMode } from "../game/GameController";
 import { bestScore, loadDuelRecord, type FontScale, type Settings, type StoredResult } from "../storage";
 import type { DailyProgress } from "../daily";
 import { DailyChallengeCard } from "../components/DailyChallengeCard";
+import { AttractBoard } from "../components/AttractBoard";
 
 const FONT_SCALE_LABELS: Array<{ value: FontScale; label: string }> = [
   { value: 1, label: "標準" },
@@ -78,23 +79,27 @@ export function LandingScreen({
 
   return (
     <div className="screen landing">
-      <div className="hero">
-        {!settings.reducedMotion && (
-          <div className="hero-fx" aria-hidden="true">
-            <span className="hero-block hero-block-1" />
-            <span className="hero-block hero-block-2" />
-            <span className="hero-block hero-block-3" />
-            <span className="hero-block hero-block-4" />
-            <span className="hero-block hero-block-5" />
+      <div className="hero hero-with-demo">
+        <div className="hero-pitch">
+          <h1 className="logo">
+            TYPE <span className="logo-burst">BURST</span>
+          </h1>
+          <p className="tagline">
+            TYPE BURST（タイプバースト）は、日本語を打ってブロックを爆破する無料タイピングゲーム。
+            連鎖で盤面を吹き飛ばそう。
+          </p>
+          <div className="hero-badges">
+            <span className="hero-badge">完全無料</span>
+            <span className="hero-badge">登録不要</span>
+            <span className="hero-badge">ブラウザですぐ</span>
           </div>
-        )}
-        <h1 className="logo">
-          TYPE <span className="logo-burst">BURST</span>
-        </h1>
-        <p className="tagline">
-          TYPE BURST（タイプバースト）は、日本語を打ってブロックを爆破する無料タイピングゲーム。
-          連鎖で盤面を吹き飛ばそう。
-        </p>
+        </div>
+        <div className="hero-demo">
+          {/* 実エンジン(PlayerCore)の自動プレイをそのまま見せ、「面白そう」を1秒で伝える。
+              モバイル誘導ページ(MobileLanding)と同じAttractBoardを流用(D-074)。 */}
+          <AttractBoard reducedMotion={settings.reducedMotion} />
+          <p className="hero-demo-caption">実際のゲーム画面(自動プレイ中)</p>
+        </div>
       </div>
 
       <button className="title-badge-box" onClick={onShowGrowth} title="成長記録を見る">

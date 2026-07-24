@@ -148,6 +148,61 @@ body {
   color: #c3c9e2;
 }
 
+/* デスクトップ・ヒーロー(D-074): 実エンジンの自動プレイデモを右に並べ、
+   「面白そう」を1秒で伝えるファーストビュー。装飾用の浮遊ブロック(.hero-fx)は
+   本物のデモに置き換えたため、このレイアウトでは使わない。 */
+.hero-with-demo {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+  margin-bottom: 4px;
+}
+
+.hero-pitch {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  gap: 12px;
+  max-width: 440px;
+}
+
+.hero-pitch .tagline {
+  margin: 0;
+}
+
+.hero-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.hero-badge {
+  font-size: 12px;
+  font-weight: bold;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(142, 245, 201, 0.12);
+  border: 1px solid rgba(142, 245, 201, 0.32);
+  color: #8ef5c9;
+}
+
+.hero-demo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.hero-demo-caption {
+  font-size: 11px;
+  color: #7d84a3;
+}
+
 .howto {
   display: flex;
   flex-direction: column;

@@ -420,6 +420,39 @@
         transform: rotate(1.4deg);
       }
 
+      .game-stage .showcase-image {
+        display: block;
+        width: 100%;
+        height: auto;
+        border-radius: 17px;
+        background: #090d1c;
+      }
+
+      .game-stage .showcase-caption {
+        display: flex;
+        margin: 11px 4px 0;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        color: #c4cce0;
+        font-size: 0.66rem;
+        font-weight: 800;
+        letter-spacing: 0.02em;
+      }
+
+      .showcase-caption span {
+        flex: 0 0 auto;
+        color: var(--cyan);
+        font-size: 0.59rem;
+        font-weight: 950;
+        letter-spacing: 0.14em;
+      }
+
+      .game-stage .showcase-image ~ .stage-top,
+      .game-stage .showcase-image ~ .board {
+        display: none;
+      }
+
       .game-stage::before {
         position: absolute;
         z-index: -1;
@@ -869,6 +902,33 @@
         background:
           radial-gradient(circle at 84% 12%, rgba(184, 243, 90, 0.09), transparent 36%),
           rgba(13, 18, 34, 0.82);
+      }
+
+      .stat-dashboard .showcase-image {
+        display: block;
+        width: 100%;
+        height: auto;
+        min-width: 0;
+        grid-column: 1 / -1;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 13px;
+        background: #090d1c;
+      }
+
+      .stat-dashboard .showcase-caption {
+        display: flex;
+        margin: 1px 2px 0;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        grid-column: 1 / -1;
+        color: #b8c0d2;
+        font-size: 0.73rem;
+        font-weight: 800;
+      }
+
+      .stat-dashboard .showcase-image ~ .stat {
+        display: none;
       }
 
       .stat {
@@ -1411,6 +1471,8 @@
         </div>
 
         <div class="game-stage" aria-label="TYPE BURSTのゲーム盤面イメージ">
+          <img class="showcase-image" src="/screenshots/gameplay-survival.png" width="1280" height="720" alt="TYPE BURSTの実際のサバイバルプレイ画面。落下する単語ブロックとスコア表示" />
+          <p class="showcase-caption"><span>ACTUAL GAMEPLAY</span>狙う言葉を打って、連鎖をつくる。</p>
           <div class="stage-top">
             <span><strong>SURVIVAL</strong> / NORMAL</span>
             <span class="stage-score">SCORE 84,620</span>
@@ -1530,6 +1592,8 @@
             </p>
           </article>
           <div class="stat-dashboard" aria-label="タイピング分析の表示例">
+            <img class="showcase-image" src="/screenshots/typing-analysis.png" width="1280" height="720" alt="TYPE BURSTの実際のタイピング分析画面。正確率、苦手キー、ペース比較を表示" />
+            <p class="showcase-caption"><span>ACTUAL ANALYSIS</span>結果から、次に伸ばす場所が見えてくる。</p>
             <div class="stat"><small>KEYS PER MINUTE</small><strong>286<span>KPM</span></strong></div>
             <div class="stat"><small>ACCURACY</small><strong>97.4<span>%</span></strong></div>
             <div class="stat"><small>MAX CHAIN</small><strong>8<span>CHAIN</span></strong></div>

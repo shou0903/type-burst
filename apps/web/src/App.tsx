@@ -149,6 +149,7 @@ export function App(): JSX.Element {
           progress={progress}
           dailyProgress={dailyProgress}
           dailyRecord={screen.dailyRecord}
+          reducedMotion={settings.reducedMotion}
           onRetry={(mode) => startGame(mode)}
           onBackToTitle={() => setScreen({ name: "landing" })}
           onShowAnalysis={(analysis, recentHistory) =>

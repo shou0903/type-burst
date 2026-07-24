@@ -25,6 +25,7 @@ interface Props {
   progress: LifetimeProgress;
   dailyProgress: DailyProgress;
   dailyRecord: DailyRecordResult | null;
+  reducedMotion: boolean;
   onRetry: (mode: GameMode) => void;
   onBackToTitle: () => void;
   onShowAnalysis: (analysis: TypingAnalysis, recentHistory: StoredResult[]) => void;
@@ -52,6 +53,7 @@ export function ResultScreen({
   progress,
   dailyProgress,
   dailyRecord,
+  reducedMotion,
   onRetry,
   onBackToTitle,
   onShowAnalysis,
@@ -64,6 +66,14 @@ export function ResultScreen({
       : result.mode === "daily"
         ? { type: "daily", challengeId: result.challengeId, ranked: result.ranked }
         : { type: "duel", difficulty: result.summary.difficulty };
+  const motionReduced =
+    reducedMotion ||
+    (typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  const displayScore = useCountUp(
+    result.mode === "survival" ? result.summary.score : 0,
+    motionReduced,
+  );
 
   useEffect(() => {
     const handler = (e: KeyboardEvent): void => {
@@ -117,62 +127,115 @@ export function ResultScreen({
       (r) => (r.difficulty ?? "normal") === summary.difficulty,
     );
     const previous = sameDifficultyHistory[1];
-    const best = sameDifficultyHistory.reduce((max, r) => Math.max(max, r.score), 0);
-    const isBest = summary.score >= best && summary.score > 0;
+    const previousBest = sameDifficultyHistory
+      .slice(1)
+      .reduce((max, r) => Math.max(max, r.score), 0);
+    const isBest = summary.score > previousBest && summary.score > 0;
     const delta = previous ? summary.score - previous.score : null;
     const hint = buildHint(summary.accuracy, summary.maxChain, summary.kpm, summary.phraseCount);
 
     const rank = rankOf(summary.score);
 
     return (
-      <div ref={ref} style={style} className="screen result">
-        <h2 className="result-title">
-          SURVIVAL RESULT{" "}
-          <span className="duel-sub result-difficulty">
+      <div
+        ref={ref}
+        style={style}
+        className={`screen result survival-result${isBest ? " survival-result-best" : ""}${
+          motionReduced ? " result-motion-reduced" : ""
+        }`}
+      >
+        {isBest && (
+          <div className="result-celebration" aria-hidden="true">
+            <div className="result-best-flash" />
+            <div className="result-confetti">
+              {Array.from({ length: 14 }, (_, index) => <i key={index} />)}
+            </div>
+          </div>
+        )}
+
+        <header className="result-brand">
+          <div className="result-brand-name">
+            TYPE <span>BURST</span>
+          </div>
+          <div className="result-brand-caption">SURVIVAL RESULT</div>
+        </header>
+
+        <div className="result-mode-line" aria-label="プレイ条件">
+          <span className="result-mode-chip">SURVIVAL</span>
+          <span className="result-difficulty-chip">
             {SURVIVAL_DIFFICULTY_LABELS[summary.difficulty]}
           </span>
-        </h2>
-
-        <div className="result-title-badge">称号: {titleLabel}</div>
-
-        <div className="result-score-wrap">
-          <div className={`rank-badge rank-${rank.replace("+", "plus")}`}>{rank}</div>
-          <div className="result-score">{summary.score.toLocaleString()}</div>
-          {isBest && <div className="best-badge">BEST!</div>}
-          {delta !== null && (
-            <div className={delta >= 0 ? "delta delta-up" : "delta delta-down"}>
-              前回比 {delta >= 0 ? "+" : ""}
-              {delta.toLocaleString()}
-            </div>
-          )}
         </div>
 
-        <div className="result-grid">
-          <Item label="生存時間" value={formatTime(summary.survivedMs)} />
-          <Item label="LEVEL" value={String(summary.level)} />
-          <Item label="最大連鎖" value={String(summary.maxChain)} />
+        <section className="result-score-stage" aria-label="今回の結果">
+          <div
+            className={`rank-badge result-rank-badge rank-${rank.replace("+", "plus")}`}
+            aria-label={`ランク ${rank}`}
+          >
+            <span className="result-rank-label">RANK</span>
+            <strong>{rank}</strong>
+          </div>
+          <div className="result-score-panel">
+            <div className="result-score-label">FINAL SCORE</div>
+            <div
+              className="result-score"
+              aria-label={`スコア ${summary.score.toLocaleString()}`}
+              aria-live="off"
+            >
+              {displayScore.toLocaleString()}
+            </div>
+            <div className="result-score-meta">
+              {isBest && (
+                <div className="best-badge">
+                  <span>NEW</span> PERSONAL BEST
+                </div>
+              )}
+              {delta !== null && (
+                <div className={delta >= 0 ? "delta delta-up" : "delta delta-down"}>
+                  前回比 {delta >= 0 ? "+" : ""}
+                  {delta.toLocaleString()}
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+
+        <div className="result-title-badge">
+          <span>獲得称号</span>
+          <strong>{titleLabel}</strong>
+        </div>
+
+        <div className="result-grid result-primary-stats">
           <Item label="KPM" value={String(summary.kpm)} />
           <Item label="正確率" value={`${(summary.accuracy * 100).toFixed(1)}%`} />
-          <Item label="文章完成" value={String(summary.phraseCount)} />
-          <Item label="BURST" value={String(summary.burstCount)} />
+          <Item label="最大連鎖" value={String(summary.maxChain)} />
+          <Item label="生存時間" value={formatTime(summary.survivedMs)} />
+        </div>
+
+        <div className="result-secondary-stats" aria-label="詳細記録">
+          <span>LEVEL <strong>{summary.level}</strong></span>
+          <span>文章完成 <strong>{summary.phraseCount}</strong></span>
+          <span>BURST <strong>{summary.burstCount}</strong></span>
         </div>
 
         {hint && <p className="result-hint">{hint}</p>}
 
         <RankingSubmitBox summary={summary} />
 
-        <button className="btn-primary" onClick={() => onRetry(retryMode)} autoFocus>
-          もう一戦 <span className="btn-sub">Enter</span>
-        </button>
-        <button
-          className="btn-secondary"
-          onClick={() => onShowAnalysis(summary.analysis, sameDifficultyHistory)}
-        >
-          タイピング分析を見る
-        </button>
-        <button className="btn-secondary" onClick={onBackToTitle}>
-          タイトルへ
-        </button>
+        <div className="result-actions">
+          <button className="btn-primary" onClick={() => onRetry(retryMode)} autoFocus>
+            もう一戦 <span className="btn-sub">Enter</span>
+          </button>
+          <button
+            className="btn-secondary"
+            onClick={() => onShowAnalysis(summary.analysis, sameDifficultyHistory)}
+          >
+            タイピング分析を見る
+          </button>
+          <button className="btn-secondary" onClick={onBackToTitle}>
+            タイトルへ
+          </button>
+        </div>
       </div>
     );
   }
@@ -587,6 +650,35 @@ function Item({ label, value }: { label: string; value: string }): JSX.Element {
       <div className="result-value">{value}</div>
     </div>
   );
+}
+
+function useCountUp(score: number, reducedMotion: boolean): number {
+  const [displayScore, setDisplayScore] = useState(reducedMotion ? score : 0);
+
+  useEffect(() => {
+    if (reducedMotion || score <= 0) {
+      setDisplayScore(score);
+      return;
+    }
+
+    let animationFrame = 0;
+    const durationMs = 950;
+    const startedAt = performance.now();
+
+    const tick = (now: number): void => {
+      const progress = Math.min(1, (now - startedAt) / durationMs);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setDisplayScore(Math.round(score * eased));
+      if (progress < 1) {
+        animationFrame = requestAnimationFrame(tick);
+      }
+    };
+
+    animationFrame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(animationFrame);
+  }, [score, reducedMotion]);
+
+  return displayScore;
 }
 
 function rankOf(score: number): string {

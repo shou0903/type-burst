@@ -50,6 +50,7 @@ export function LandingScreen({
   const [difficulty, setDifficulty] = useState<CpuDifficulty>("normal");
   const [survivalDifficulty, setSurvivalDifficulty] = useState<SurvivalDifficulty>("normal");
   const [howtoOpen, setHowtoOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const best = bestScore(results, survivalDifficulty);
   const record = loadDuelRecord();
   const titleProgress = useMemo(() => titleProgressForScore(progress.totalScore), [progress.totalScore]);
@@ -79,6 +80,22 @@ export function LandingScreen({
 
   return (
     <div className="screen landing">
+      <button className="title-badge-box" onClick={onShowGrowth} title="成長記録を見る">
+        <div className="title-badge-label">称号</div>
+        <div className="title-badge-name">{titleProgress.current.label}</div>
+        <div className="title-progress-bar">
+          <div
+            className="title-progress-fill"
+            style={{ width: `${Math.round(titleProgress.progressRatio * 100)}%` }}
+          />
+        </div>
+        <div className="title-badge-next">
+          {titleProgress.next
+            ? `あと${titleProgress.remainingToNext.toLocaleString()}で『${titleProgress.next.label}』`
+            : "最高位の称号に到達しました!"}
+        </div>
+      </button>
+
       <div className="hero hero-with-demo">
         <div className="hero-pitch">
           <h1 className="logo">
@@ -102,34 +119,20 @@ export function LandingScreen({
         </div>
       </div>
 
-      <button className="title-badge-box" onClick={onShowGrowth} title="成長記録を見る">
-        <div className="title-badge-label">称号</div>
-        <div className="title-badge-name">{titleProgress.current.label}</div>
-        <div className="title-progress-bar">
-          <div
-            className="title-progress-fill"
-            style={{ width: `${Math.round(titleProgress.progressRatio * 100)}%` }}
-          />
-        </div>
-        <div className="title-badge-next">
-          {titleProgress.next
-            ? `あと${titleProgress.remainingToNext.toLocaleString()}で『${titleProgress.next.label}』`
-            : "最高位の称号に到達しました!"}
-        </div>
-      </button>
-
       <div className="mode-row">
         <div className="duel-box">
           <button
             className="btn-primary"
             onClick={() => onStart({ type: "survival", difficulty: survivalDifficulty })}
           >
-            サバイバル <span className="btn-sub">Enter</span>
+            <span className="btn-primary-label">サバイバル</span>{" "}
+            <span className="btn-sub">Enter</span>
           </button>
-          <div className="difficulty-row">
-            {(Object.keys(SURVIVAL_DIFFICULTY_LABELS) as SurvivalDifficulty[]).map((d) => (
+          <div className="difficulty-row survival-difficulty-row">
+            {(Object.keys(SURVIVAL_DIFFICULTY_LABELS) as SurvivalDifficulty[]).map((d, i) => (
               <button
                 key={d}
+                data-lv={i + 1}
                 className={d === survivalDifficulty ? "chip chip-active" : "chip"}
                 onClick={() => setSurvivalDifficulty(d)}
               >
@@ -216,45 +219,57 @@ export function LandingScreen({
         </div>
       )}
 
-      <div className="settings-row">
-        <label>
-          <input
-            type="checkbox"
-            checked={settings.soundOn}
-            onChange={(e) => onUpdateSettings({ soundOn: e.target.checked })}
-          />
-          効果音
-        </label>
-        <label>
-          <input
-            type="checkbox"
-            checked={settings.reducedMotion}
-            onChange={(e) => onUpdateSettings({ reducedMotion: e.target.checked })}
-          />
-          演出を控えめにする
-        </label>
-        <label>
-          <input
-            type="checkbox"
-            checked={settings.highContrast}
-            onChange={(e) => onUpdateSettings({ highContrast: e.target.checked })}
-          />
-          High Contrast
-        </label>
-      </div>
+      <button
+        className="btn-howto-toggle btn-settings-toggle"
+        onClick={() => setSettingsOpen((open) => !open)}
+        aria-expanded={settingsOpen}
+      >
+        {settingsOpen ? "設定を閉じる ▲" : "⚙ 設定(音・演出・文字サイズなど) ▼"}
+      </button>
 
-      <div className="settings-row font-scale-row">
-        <span className="font-scale-label">文字サイズ</span>
-        {FONT_SCALE_LABELS.map(({ value, label }) => (
-          <button
-            key={value}
-            className={settings.fontScale === value ? "chip chip-active" : "chip"}
-            onClick={() => onUpdateSettings({ fontScale: value })}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      {settingsOpen && (
+        <>
+          <div className="settings-row">
+            <label>
+              <input
+                type="checkbox"
+                checked={settings.soundOn}
+                onChange={(e) => onUpdateSettings({ soundOn: e.target.checked })}
+              />
+              効果音
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                checked={settings.reducedMotion}
+                onChange={(e) => onUpdateSettings({ reducedMotion: e.target.checked })}
+              />
+              演出を控えめにする
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                checked={settings.highContrast}
+                onChange={(e) => onUpdateSettings({ highContrast: e.target.checked })}
+              />
+              High Contrast
+            </label>
+          </div>
+
+          <div className="settings-row font-scale-row">
+            <span className="font-scale-label">文字サイズ</span>
+            {FONT_SCALE_LABELS.map(({ value, label }) => (
+              <button
+                key={value}
+                className={settings.fontScale === value ? "chip chip-active" : "chip"}
+                onClick={() => onUpdateSettings({ fontScale: value })}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
 
       <p className="ime-note">※ 日本語IMEはOFF(半角英数)にしてプレイしてください。登録は不要です。</p>
 

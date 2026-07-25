@@ -3225,3 +3225,178 @@ body {
     transition: none;
   }
 }
+
+/* ====================================================================
+   D-082: ホーム画面デザイン刷新(「マンガのインパクト表現」路線)
+   集中線・硬いオフセット影・斜体・段階別の色分けで、爆発ゲームらしい
+   ファーストビューへ刷新した。他画面(結果画面・ランキング画面・GameScreen等)と
+   共有する基底クラス(.btn-primary/.chip/.logo/.btn-sub 等)は一切変更せず、
+   必ず `.screen.landing` でスコープした上書きとしてのみ追加する。
+   ==================================================================== */
+
+.screen.landing .hero-with-demo {
+  position: relative;
+  isolation: isolate;
+  padding: 8px;
+}
+
+/* 集中線: ヒーロー背景にのみ描く軽量な装飾。動きは付けずアニメーションレスに */
+.screen.landing .hero-with-demo::before {
+  content: "";
+  position: absolute;
+  inset: -60px -20px;
+  z-index: -1;
+  pointer-events: none;
+  background: repeating-conic-gradient(
+    from 0deg at 72% 45%,
+    rgba(255, 77, 58, 0.1) 0deg 1deg,
+    transparent 1deg 5deg
+  );
+  -webkit-mask-image: radial-gradient(circle at 72% 45%, #000 0%, #000 30%, transparent 62%);
+  mask-image: radial-gradient(circle at 72% 45%, #000 0%, #000 30%, transparent 62%);
+}
+
+.screen.landing .logo {
+  transform: skewX(-8deg);
+  text-shadow: none;
+}
+
+.screen.landing .logo-burst {
+  color: #ff4d3a;
+  text-shadow:
+    3px 3px 0 #7a1f10,
+    6px 6px 0 rgba(0, 0, 0, 0.45);
+}
+
+.screen.landing .hero-badge {
+  transform: skewX(-8deg);
+  border-radius: 3px;
+}
+
+.screen.landing .hero-demo {
+  transform: rotate(-1.4deg);
+}
+
+/* 称号バッジ: ヒーロー上部の横長な計器バーへ(D-082でヒーローより前に移動) */
+.screen.landing .title-badge-box {
+  align-self: stretch;
+  width: min(680px, 100%);
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+  border-radius: 6px;
+  padding: 10px 20px;
+}
+
+.screen.landing .title-badge-label,
+.screen.landing .title-badge-name,
+.screen.landing .title-badge-next {
+  flex-shrink: 0;
+}
+
+.screen.landing .title-progress-bar {
+  flex: 1;
+  width: auto;
+  min-width: 60px;
+}
+
+/* CTA: サバイバル開始ボタンをこのゲーム唯一の「押印」にする。
+   斜体は外枠だけにかけ、中の文字は打ち消しスキューで水平を保ち可読性を落とさない */
+.screen.landing .mode-row .duel-box:first-child .btn-primary {
+  transform: skewX(-6deg);
+  background: linear-gradient(135deg, #ff6a45, #ff3b2f);
+  border-radius: 4px;
+  box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.5);
+  transition: transform 0.09s ease, box-shadow 0.09s ease;
+}
+
+.screen.landing .mode-row .duel-box:first-child .btn-primary:hover {
+  transform: skewX(-6deg) translate(2px, 2px);
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.5);
+}
+
+.screen.landing .mode-row .duel-box:first-child .btn-primary:active {
+  transform: skewX(-6deg) translate(6px, 6px);
+  box-shadow: 0 0 0 rgba(0, 0, 0, 0.5);
+}
+
+.screen.landing .mode-row .duel-box:first-child .btn-primary-label,
+.screen.landing .mode-row .duel-box:first-child .btn-sub {
+  display: inline-block;
+  transform: skewX(6deg);
+}
+
+.screen.landing .btn-duel {
+  border-radius: 4px;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.4);
+}
+
+/* 難易度チップ: 段階が上がるほど色が熱くなる(緑→水色→金→赤) */
+.screen.landing .survival-difficulty-row .chip {
+  border-radius: 3px;
+  font-weight: bold;
+}
+
+.screen.landing .survival-difficulty-row .chip-active[data-lv="1"] {
+  background: #5fe8b6;
+  border-color: #5fe8b6;
+}
+
+.screen.landing .survival-difficulty-row .chip-active[data-lv="2"] {
+  background: #6fc0ff;
+  border-color: #6fc0ff;
+}
+
+.screen.landing .survival-difficulty-row .chip-active[data-lv="3"] {
+  background: #ffd75e;
+  border-color: #ffd75e;
+}
+
+.screen.landing .survival-difficulty-row .chip-active[data-lv="4"] {
+  background: #ff4d3a;
+  border-color: #ff4d3a;
+  color: #fff;
+}
+
+/* 導線ボタン(チュートリアル・世界ランキング・成長記録): 角を締め、硬い影を添える */
+.screen.landing .btn-tutorial-link,
+.screen.landing .btn-growth-link {
+  border-radius: 4px;
+}
+
+.screen.landing .btn-ranking-link {
+  border-radius: 4px;
+  box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.35);
+}
+
+.screen.landing .btn-ranking-link:hover {
+  transform: translate(2px, 2px);
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.35);
+}
+
+/* デイリーチャレンジ・遊び方パネル: 丸みを締めて硬質な印象に統一する
+   (内部のデータ構造・文言・機能は一切変更しない、外枠の見た目のみ) */
+.screen.landing .daily-card,
+.screen.landing .daily-card-main,
+.screen.landing .daily-leaderboard-preview,
+.screen.landing .daily-continuity,
+.screen.landing .daily-calendar,
+.screen.landing .howto {
+  border-radius: 6px;
+}
+
+.screen.landing .daily-card {
+  border-width: 2px;
+}
+
+.screen.landing .btn-daily {
+  border-radius: 4px;
+  box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screen.landing .mode-row .duel-box:first-child .btn-primary,
+  .screen.landing .btn-ranking-link {
+    transition: none;
+  }
+}

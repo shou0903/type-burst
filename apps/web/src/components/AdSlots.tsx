@@ -29,6 +29,10 @@ function AdSlot({ side, slotId }: { side: "left" | "right"; slotId: string }): J
 
   return (
     <div className={`ad-slot ad-slot-${side}`}>
+      {/* ナビゲーションと誤認されないよう、広告であることを明示するラベル(D-081) */}
+      <span className="ad-slot-label" aria-hidden="true">
+        広告
+      </span>
       <ins
         className="adsbygoogle"
         style={{ display: "block", width: 160 }}

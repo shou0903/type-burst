@@ -2202,26 +2202,38 @@ body {
   background: rgba(255, 138, 112, 0.08);
 }
 
-/* ---------- Ad slots ---------- */
+/* ---------- Ad slots ----------
+   D-081: AdSense審査で「サイトの動作: ナビゲーション」の指摘を受けた。
+   従来は position:fixed; top:0; bottom:0 で画面端から端まで貫通する縦帯になっており、
+   ラベルも無かったため、サイドバー型ナビゲーションと視覚的に区別が付かない配置だった。
+   画面の全高を占有せず、明示的に「広告」ラベルを添えた独立したブロックとして配置し直す。 */
 
 .ad-slot {
   position: fixed;
-  top: 0;
-  bottom: 0;
+  top: 50%;
+  transform: translateY(-50%);
   width: 160px;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  gap: 8px;
   z-index: 5;
   pointer-events: auto;
 }
 
 .ad-slot-left {
-  left: 0;
+  left: 20px;
 }
 
 .ad-slot-right {
-  right: 0;
+  right: 20px;
+}
+
+.ad-slot-label {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(237, 244, 255, 0.38);
 }
 
 /* ---------- Consent banner ---------- */

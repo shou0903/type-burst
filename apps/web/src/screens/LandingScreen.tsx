@@ -336,7 +336,8 @@ export function LandingScreen({
       <p className="lp-note">※ 日本語IMEはOFF（半角英数）にしてプレイしてください。登録は不要です。</p>
 
       <footer className="lp-footer">
-        <a href="/about.html">TYPE BURSTとは</a>
+        <a href="/about.html">TYPE BURST（タイプバースト）とは</a>
+        <a href="/guides/">タイピング練習ガイド</a>
         <a href="/terms.html" target="_blank" rel="noreferrer">
           利用規約
         </a>

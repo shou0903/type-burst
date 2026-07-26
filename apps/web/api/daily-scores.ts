@@ -8,6 +8,7 @@ const MAX_CHAIN = 60;
 const MAX_SURVIVED_MS = 121_000;
 const NICKNAME_MAX_LENGTH = 12;
 const RETENTION_SECONDS = 45 * 24 * 60 * 60;
+const DAILY_RULESET_VERSION = 2;
 
 interface DailyEntry {
   playerId: string;
@@ -32,11 +33,11 @@ function getRedis(): Redis {
 }
 
 function leaderboardKey(challengeId: string): string {
-  return `leaderboard:daily:${challengeId}`;
+  return `leaderboard:daily:v${DAILY_RULESET_VERSION}:${challengeId}`;
 }
 
 function entryKey(challengeId: string, playerId: string): string {
-  return `daily-score:${challengeId}:${playerId}`;
+  return `daily-score:v${DAILY_RULESET_VERSION}:${challengeId}:${playerId}`;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {

@@ -14,6 +14,8 @@ export interface SurvivalGameOptions {
   timeLimitMs?: number | null;
   /** デイリー等で難易度とは別のtier構成を使う場合の上書き */
   tierRatio?: GameConfig["tierRatio"];
+  /** 満杯盤面から開始し、全消しのたびに満杯盤面を即補充する2分間スコアアタック */
+  fullBoardScoreAttack?: boolean;
 }
 
 /**
@@ -61,7 +63,24 @@ export class SurvivalGame {
       ...config,
       tierRatio: options.tierRatio ?? profile.tierRatio,
     };
-    this.core = new PlayerCore(seed, phrases, garbagePhrases, effectiveConfig, config.survivalRise);
+    const fullBoardScoreAttack = options.fullBoardScoreAttack === true;
+    this.core = new PlayerCore(
+      seed,
+      phrases,
+      garbagePhrases,
+      effectiveConfig,
+      config.survivalRise,
+      fullBoardScoreAttack
+        ? {
+            initialRows: config.visibleRows,
+            includeInitialSpecials: true,
+            refillRowsOnAllClear: config.visibleRows,
+            includeRefillSpecials: true,
+            pauseRise: true,
+            dangerEnabled: false,
+          }
+        : {},
+    );
   }
 
   advance(deltaMs: number): GameEvent[] {

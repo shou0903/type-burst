@@ -47,6 +47,21 @@ interface IncomingGarbage {
   msLeft: number;
 }
 
+export interface PlayerCoreOptions {
+  /** 初期盤面の行数。未指定ならconfig.initialRows */
+  initialRows?: number;
+  /** 初期盤面へボムとプリズムを1個ずつ確定配置する */
+  includeInitialSpecials?: boolean;
+  /** 全消し直後に指定行数の盤面を即時生成する。nullなら従来どおり行上昇を待つ */
+  refillRowsOnAllClear?: number | null;
+  /** 全消し後の再生成盤面へボムとプリズムを1個ずつ確定配置する */
+  includeRefillSpecials?: boolean;
+  /** 自動の行上昇を停止する固定盤面モード */
+  pauseRise?: boolean;
+  /** 満杯盤面を前提とするモードでは危険表示を無効化する */
+  dangerEnabled?: boolean;
+}
+
 const KEY_PATTERN = /^[a-z'-]$/;
 
 /** タッチタイピングの標準的な運指(D-049: 指ごとの苦手分析用) */
@@ -110,6 +125,9 @@ export class PlayerCore {
   private readonly phrasePool: readonly JapanesePhrase[];
   private readonly garbagePool: readonly JapanesePhrase[];
   private readonly firstKeyCache = new Map<string, string>();
+  private readonly refillRowsOnAllClear: number | null;
+  private readonly includeRefillSpecials: boolean;
+  private readonly dangerEnabled: boolean;
 
   private blocks: Block[] = [];
   private nextBlockId = 1;
@@ -154,6 +172,7 @@ export class PlayerCore {
     garbagePhrases: readonly JapanesePhrase[],
     config: GameConfig,
     rise: RiseConfig,
+    options: PlayerCoreOptions = {},
   ) {
     this.config = config;
     this.rise = rise;
@@ -163,8 +182,19 @@ export class PlayerCore {
     if (this.phrasePool.length < 10) {
       throw new Error("game-core: 問題データが不足しています");
     }
+    this.refillRowsOnAllClear =
+      typeof options.refillRowsOnAllClear === "number"
+        ? Math.max(1, Math.min(config.visibleRows, Math.floor(options.refillRowsOnAllClear)))
+        : null;
+    this.includeRefillSpecials = options.includeRefillSpecials === true;
+    this.dangerEnabled = options.dangerEnabled !== false;
+    this.pauseRise = options.pauseRise === true;
     this.riseTimerMs = rise.startIntervalMs;
-    this.generateInitialBoard();
+    const initialRows =
+      typeof options.initialRows === "number"
+        ? Math.max(1, Math.min(config.visibleRows, Math.floor(options.initialRows)))
+        : config.initialRows;
+    this.generateInitialBoard(initialRows, options.includeInitialSpecials === true);
   }
 
   /** 溜まったイベントを取り出す(取り出した分は消える) */
@@ -643,13 +673,17 @@ export class PlayerCore {
     this.emit({ type: "chainFinished", depth, attackPower, garbageCount, scoreGained: chainScore });
     this.resetSelection();
 
-    // 全消しボーナス。次の行をすぐ降らせて手持ち無沙汰を防ぐ
+    // 全消しボーナス。通常モードは次の行を早め、スコアアタックは満杯盤面を即時補充する。
     if (this.blocks.length === 0) {
       const bonus = this.applyFeverMultiplier(this.config.special.allClearBonus);
       this.score += bonus;
       this.addGauge(this.config.special.allClearGauge);
-      this.riseTimerMs = Math.min(this.riseTimerMs, 600);
       this.emit({ type: "allClear", bonus });
+      if (this.refillRowsOnAllClear !== null) {
+        this.generateInitialBoard(this.refillRowsOnAllClear, this.includeRefillSpecials);
+      } else {
+        this.riseTimerMs = Math.min(this.riseTimerMs, 600);
+      }
     }
     this.updateDanger();
   }
@@ -855,11 +889,26 @@ export class PlayerCore {
     return shuffled[0]!;
   }
 
-  private generateInitialBoard(): void {
-    const { columns, initialRows, visibleRows } = this.config;
-    for (let row = 0; row < initialRows; row++) {
+  private generateInitialBoard(rows: number, includeSpecials: boolean): void {
+    const { columns, visibleRows } = this.config;
+    const cellCount = rows * columns;
+    const specialSlots = new Map<number, "bomb" | "prism">();
+    if (includeSpecials && cellCount >= 2) {
+      const bombSlot = this.rng.int(cellCount);
+      let prismSlot = this.rng.int(cellCount - 1);
+      if (prismSlot >= bombSlot) prismSlot += 1;
+      specialSlots.set(bombSlot, "bomb");
+      specialSlots.set(prismSlot, "prism");
+    }
+
+    for (let row = 0; row < rows; row++) {
       for (let col = 0; col < columns; col++) {
         const phrase = this.pickPhrase();
+        const specialKind = specialSlots.get(row * columns + col);
+        if (specialKind) {
+          this.pushBlock(specialKind, null, phrase, row, col);
+          continue;
+        }
         const block: Block = {
           id: this.nextBlockId++,
           kind: "normal",
@@ -962,7 +1011,7 @@ export class PlayerCore {
   // ------------------------------------------------------------------
 
   private updateDanger(): void {
-    const nowDanger = highestRow(this.blocks) >= this.config.dangerRow;
+    const nowDanger = this.dangerEnabled && highestRow(this.blocks) >= this.config.dangerRow;
     if (nowDanger !== this.danger) {
       this.danger = nowDanger;
       this.emit({ type: "dangerChanged", danger: nowDanger });

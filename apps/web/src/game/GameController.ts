@@ -69,6 +69,7 @@ export class GameController {
         : options.mode.type === "daily"
           ? new SurvivalGame(seed, PHRASES, GARBAGE_PHRASES, "normal", DEFAULT_CONFIG, {
               timeLimitMs: DAILY_TIME_LIMIT_MS,
+              fullBoardScoreAttack: true,
               // 初級と中級の中間を軸に、標準文と長文も少量混ぜる共通条件。
               tierRatio: { micro: 0.35, short: 0.45, standard: 0.15, long: 0.05 },
             })

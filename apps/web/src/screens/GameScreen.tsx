@@ -205,7 +205,13 @@ export function GameScreen({
             </div>
           </div>
 
-          {mode.type !== "tutorial" && (
+          {mode.type === "daily" ? (
+            <div className="hud-block daily-board-rule">
+              <div className="hud-label">FULL BOARD RUSH</div>
+              <strong>全消しで即リフィル</strong>
+              <span>BOMB・PRISM・BURST</span>
+            </div>
+          ) : mode.type !== "tutorial" && (
             <div className="hud-block">
               <div className="hud-label">NEXT ROW</div>
               <div className="rise-bar">

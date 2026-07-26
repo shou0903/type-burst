@@ -1225,6 +1225,26 @@ body {
   box-shadow: 0 0 18px rgba(255, 176, 84, 0.25);
 }
 
+.daily-board-rule {
+  display: grid;
+  gap: 5px;
+  border-color: rgba(255, 176, 84, 0.42);
+  background: rgba(255, 176, 84, 0.07);
+}
+
+.daily-board-rule strong {
+  color: #fff1dc;
+  font-size: 0.9rem;
+  letter-spacing: 0.04em;
+}
+
+.daily-board-rule > span {
+  color: #ffb054;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
 .cpu-panel {
   display: flex;
   flex-direction: column;

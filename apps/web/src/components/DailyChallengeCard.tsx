@@ -40,8 +40,8 @@ export function DailyChallengeCard({ progress, onStart }: Props): JSX.Element {
       <div className="daily-card-grid">
         <div className="daily-card-main">
           <p className="daily-description">
-            全員が同じ条件で挑む、今日だけのステージ。最初の3回がランキングへ記録され、
-            その後は何度でも練習できます。
+            盤面は最初から満杯。ボム・プリズム・TYPE BURSTを使って全消しすると、
+            次の満杯盤面が即スタートします。2分間、止まらずスコアを伸ばそう。
           </p>
 
           <div className="daily-stats">

@@ -2,6 +2,8 @@ import type { SurvivalSummary } from "@type-burst/game-core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   DAILY_RANKED_ATTEMPTS,
+  DAILY_RULESET_VERSION,
+  dailyBestScore,
   dailyAttempts,
   dailyChallengeId,
   loadDailyProgress,
@@ -46,6 +48,33 @@ describe("デイリーチャレンジ", () => {
     const progress = loadDailyProgress();
     expect(dailyAttempts(progress, challengeId)).toBe(3);
     expect(progress.days[challengeId]?.bestScore).toBe(999);
+    expect(progress.days[challengeId]?.rulesetVersion).toBe(DAILY_RULESET_VERSION);
+  });
+
+  it("旧ルールの当日記録は連続記録を保ったまま新ルールの3回へ切り替わる", () => {
+    const challengeId = "2026-07-26";
+    storage.set("typeblast.daily.v1", JSON.stringify({
+      version: 1,
+      currentStreak: 4,
+      bestStreak: 4,
+      freezes: 0,
+      lastPlayedDate: challengeId,
+      playedDates: [challengeId],
+      protectedDates: [],
+      days: {
+        [challengeId]: { attempts: 3, bestScore: 5000, lastPlayedAt: "2026-07-26T00:00:00.000Z" },
+      },
+    }));
+
+    const before = loadDailyProgress();
+    expect(dailyAttempts(before, challengeId)).toBe(0);
+    expect(dailyBestScore(before, challengeId)).toBe(0);
+
+    const result = recordDailyResult(challengeId, summary(7000), true);
+    expect(result.firstPlayToday).toBe(false);
+    expect(result.progress.currentStreak).toBe(4);
+    expect(dailyAttempts(result.progress, challengeId)).toBe(1);
+    expect(dailyBestScore(result.progress, challengeId)).toBe(7000);
   });
 
   it("7日継続で休み券を獲得し、1日の空白を保護できる", () => {

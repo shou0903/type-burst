@@ -2,10 +2,12 @@ import type { SurvivalSummary } from "@type-burst/game-core";
 
 const DAILY_STATE_KEY = "typeblast.daily.v1";
 const DAILY_PLAYER_ID_KEY = "typeblast.daily-player.v1";
+export const DAILY_RULESET_VERSION = 2;
 export const DAILY_RANKED_ATTEMPTS = 3;
 export const DAILY_TIME_LIMIT_MS = 120_000;
 
 export interface DailyDayRecord {
+  rulesetVersion?: number;
   attempts: number;
   bestScore: number;
   lastPlayedAt: string;
@@ -56,7 +58,7 @@ export function dailyChallengeId(date = new Date()): string {
 }
 
 export function dailySeed(challengeId: string): string {
-  return `daily-${challengeId}-v1`;
+  return `daily-${challengeId}-v${DAILY_RULESET_VERSION}`;
 }
 
 export function loadDailyProgress(): DailyProgress {
@@ -88,14 +90,16 @@ export function dailyAttempts(
   progress: DailyProgress,
   challengeId = dailyChallengeId(),
 ): number {
-  return progress.days[challengeId]?.attempts ?? 0;
+  const record = progress.days[challengeId];
+  return record?.rulesetVersion === DAILY_RULESET_VERSION ? record.attempts : 0;
 }
 
 export function dailyBestScore(
   progress: DailyProgress,
   challengeId = dailyChallengeId(),
 ): number {
-  return progress.days[challengeId]?.bestScore ?? 0;
+  const record = progress.days[challengeId];
+  return record?.rulesetVersion === DAILY_RULESET_VERSION ? record.bestScore : 0;
 }
 
 export function isDailyRankedAttempt(
@@ -118,8 +122,10 @@ export function recordDailyResult(
     protectedDates: [...previous.protectedDates],
     days: { ...previous.days },
   };
-  const existing = progress.days[challengeId];
-  const firstPlayToday = !existing;
+  const storedRecord = progress.days[challengeId];
+  const existing =
+    storedRecord?.rulesetVersion === DAILY_RULESET_VERSION ? storedRecord : undefined;
+  const firstPlayToday = !progress.playedDates.includes(challengeId);
   let freezeUsed = false;
   let freezeAwarded = false;
 
@@ -153,6 +159,7 @@ export function recordDailyResult(
   }
 
   progress.days[challengeId] = {
+    rulesetVersion: DAILY_RULESET_VERSION,
     attempts: Math.min(
       DAILY_RANKED_ATTEMPTS,
       (existing?.attempts ?? 0) + (ranked ? 1 : 0),

@@ -80,6 +80,23 @@ describe("初期盤面", () => {
     expect(a1).toBe(a2);
     expect(a1).not.toBe(b);
   });
+
+  it("満杯スコアアタックは60ブロックとボム・プリズム各1個で開始する", () => {
+    const game = new SurvivalGame(
+      "daily-full-board",
+      PHRASES,
+      GARBAGE_PHRASES,
+      "normal",
+      DEFAULT_CONFIG,
+      { timeLimitMs: 120_000, fullBoardScoreAttack: true },
+    );
+    const player = game.getSnapshot().player;
+    expect(player.blocks).toHaveLength(DEFAULT_CONFIG.columns * DEFAULT_CONFIG.visibleRows);
+    expect(player.blocks.filter((item) => item.kind === "bomb")).toHaveLength(1);
+    expect(player.blocks.filter((item) => item.kind === "prism")).toHaveLength(1);
+    expect(player.danger).toBe(false);
+    expect(findAutoGroups(coreBlocks(game), 4, 6, 12)).toHaveLength(0);
+  });
 });
 
 describe("終了条件", () => {
@@ -107,6 +124,29 @@ describe("終了条件", () => {
       expect(finished.summary.survivedMs).toBe(5000);
       expect(finished.summary.timeLimitMs).toBe(5000);
     }
+  });
+
+  it("満杯スコアアタックは行上昇でトップアウトせず制限時間まで続く", () => {
+    const game = new SurvivalGame(
+      "daily-no-rise",
+      PHRASES,
+      GARBAGE_PHRASES,
+      "normal",
+      DEFAULT_CONFIG,
+      { timeLimitMs: 120_000, fullBoardScoreAttack: true },
+    );
+    startPlaying(game);
+
+    expect(game.advance(119_999).some((event) => event.type === "toppedOut")).toBe(false);
+    expect(game.getSnapshot().phase).toBe("playing");
+    expect(game.getSnapshot().player.blocks).toHaveLength(
+      DEFAULT_CONFIG.columns * DEFAULT_CONFIG.visibleRows,
+    );
+
+    const events = game.advance(1);
+    expect(events.some((event) => event.type === "toppedOut")).toBe(false);
+    expect(game.getSnapshot().phase).toBe("ended");
+    expect(game.getSummary().finishReason).toBe("timeLimit");
   });
 
   it("時間では終了しない(トップアウトのみ)", () => {
@@ -384,6 +424,30 @@ describe("ALL CLEAR(v3)", () => {
     // 全消し後は600ms以内に次の行が降ってくる
     const dropEvents = game.advance(700);
     expect(dropEvents.some((e) => e.type === "rowDropped")).toBe(true);
+  });
+
+  it("満杯スコアアタックは全消し直後に満杯盤面を再生成する", () => {
+    const game = new SurvivalGame(
+      "daily-refill",
+      PHRASES,
+      GARBAGE_PHRASES,
+      "normal",
+      DEFAULT_CONFIG,
+      { timeLimitMs: 120_000, fullBoardScoreAttack: true },
+    );
+    startPlaying(game);
+    const trigger = block(0, 0, "fire", 12);
+    setBoard(game, [trigger]);
+
+    typePhrase(game, trigger.readingKana);
+    const events = game.advance(1000);
+    const player = game.getSnapshot().player;
+
+    expect(events.some((event) => event.type === "allClear")).toBe(true);
+    expect(player.blocks).toHaveLength(DEFAULT_CONFIG.columns * DEFAULT_CONFIG.visibleRows);
+    expect(player.blocks.filter((item) => item.kind === "bomb")).toHaveLength(1);
+    expect(player.blocks.filter((item) => item.kind === "prism")).toHaveLength(1);
+    expect(player.danger).toBe(false);
   });
 });
 

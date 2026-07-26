@@ -92,6 +92,7 @@ export function MobileLanding(): JSX.Element {
       <div className="mobile-landing-hero">
         <h1 className="mobile-landing-logo">
           TYPE <span className="mobile-landing-burst">BURST</span>
+          <span className="mobile-landing-logo-ja">タイプバースト</span>
         </h1>
         <p className="mobile-landing-hook">
           速さだけじゃなく<strong>「どこを消すか」</strong>で勝負。

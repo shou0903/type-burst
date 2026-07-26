@@ -187,6 +187,7 @@ export function LandingScreen({
           <h1 className="lp-logo">
             <span className="lp-logo-type">TYPE</span>
             <span className="lp-logo-burst">BURST</span>
+            <span className="lp-logo-ja">タイプバースト</span>
           </h1>
 
           <p className="lp-lede">

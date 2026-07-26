@@ -2859,12 +2859,25 @@ body {
   font-size: clamp(34px, 9.6vw, 42px);
   letter-spacing: 3px;
   white-space: nowrap;
+  text-align: center;
   text-shadow: 0 0 24px rgba(110, 140, 255, 0.5);
 }
 
 .mobile-landing-burst {
   color: #ff8a70;
   text-shadow: 0 0 24px rgba(255, 110, 80, 0.6);
+}
+
+.mobile-landing-logo-ja {
+  display: block;
+  margin-top: 8px;
+  color: rgba(237, 244, 255, 0.76);
+  font-family: "Noto Sans JP", "Yu Gothic", sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.24em;
+  line-height: 1;
+  text-shadow: none;
 }
 
 .mobile-landing-hook {
@@ -3418,6 +3431,18 @@ body {
   display: block;
   color: var(--fire-lit);
   text-shadow: 0 5px 0 var(--fire-dk);
+}
+
+.lp-logo-ja {
+  display: block;
+  margin-top: 14px;
+  color: rgba(237, 244, 255, 0.72);
+  font-family: "Noto Sans JP", "Yu Gothic", sans-serif;
+  font-size: clamp(13px, 1.15vw, 16px);
+  font-weight: 800;
+  letter-spacing: 0.28em;
+  line-height: 1;
+  text-shadow: none;
 }
 
 .lp-lede {

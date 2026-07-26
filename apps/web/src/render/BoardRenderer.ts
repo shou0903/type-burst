@@ -50,6 +50,19 @@ export const ATTRACT_RENDERER_OPTIONS: RendererOptions = {
   overlays: false,
 };
 
+/**
+ * PC版ホーム画面のヒーロー用(D-084)。実際の盤面をファーストビューの主役として
+ * 見せるため、モバイル用(ATTRACT_RENDERER_OPTIONS)より一回り大きい。
+ * canvasは実寸で描くため、CSSの拡大縮小によるぼやけが起きない。
+ */
+export const HERO_RENDERER_OPTIONS: RendererOptions = {
+  cellW: 62,
+  cellH: 48,
+  pad: 10,
+  drawText: true,
+  overlays: false,
+};
+
 export function canvasSize(opts: RendererOptions): { w: number; h: number } {
   return {
     w: BOARD_COLS * opts.cellW + opts.pad * 2,

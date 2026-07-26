@@ -2,11 +2,18 @@ import { useEffect, useRef } from "react";
 import { DEFAULT_CONFIG, PlayerCore, Prng } from "@type-burst/game-core";
 import { GARBAGE_PHRASES, PHRASES } from "@type-burst/phrase-content";
 import { AttractDemoDriver } from "../game/attractDemoDriver";
-import { ATTRACT_RENDERER_OPTIONS, BoardRenderer, type FrameMeta } from "../render/BoardRenderer";
+import {
+  ATTRACT_RENDERER_OPTIONS,
+  BoardRenderer,
+  type FrameMeta,
+  type RendererOptions,
+} from "../render/BoardRenderer";
 
 interface Props {
   /** true の場合はループアニメを一切動かさず、初期盤面を1枚だけ静止画として描く */
   reducedMotion: boolean;
+  /** 描画サイズ。未指定ならモバイル誘導ページ向けの既定値(D-084で追加) */
+  options?: RendererOptions;
 }
 
 /** アトラクトモード用の固定シード(D-057)。乱数選択は行わず、この配列を順番に巡回する
@@ -35,14 +42,14 @@ function createRound(seedIndex: number): { core: PlayerCore; driver: AttractDemo
  * (packages/game-core の PlayerCore)をそのまま「自動プレイ」させて描画する
  * 無音・ループのデモ盤面。プレイ不可(タップでは操作できない)、見せるだけの用途。
  */
-export function AttractBoard({ reducedMotion }: Props): JSX.Element {
+export function AttractBoard({ reducedMotion, options }: Props): JSX.Element {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const renderer = new BoardRenderer(canvas, ATTRACT_RENDERER_OPTIONS);
+    const renderer = new BoardRenderer(canvas, options ?? ATTRACT_RENDERER_OPTIONS);
     renderer.reducedMotion = reducedMotion;
 
     if (reducedMotion) {
@@ -105,7 +112,7 @@ export function AttractBoard({ reducedMotion }: Props): JSX.Element {
       document.removeEventListener("visibilitychange", handleVisibility);
       if (rafId !== 0) cancelAnimationFrame(rafId);
     };
-  }, [reducedMotion]);
+  }, [reducedMotion, options]);
 
   return <canvas ref={canvasRef} className="attract-board-canvas" aria-hidden="true" />;
 }

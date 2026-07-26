@@ -6,6 +6,8 @@ import { bestScore, loadDuelRecord, type FontScale, type Settings, type StoredRe
 import type { DailyProgress } from "../daily";
 import { DailyChallengeCard } from "../components/DailyChallengeCard";
 import { AttractBoard } from "../components/AttractBoard";
+import { RomajiTicker } from "../components/RomajiTicker";
+import { HERO_RENDERER_OPTIONS } from "../render/BoardRenderer";
 
 const FONT_SCALE_LABELS: Array<{ value: FontScale; label: string }> = [
   { value: 1, label: "標準" },
@@ -30,22 +32,25 @@ const DIFFICULTY_LABELS: Record<CpuDifficulty, string> = {
   hard: "強い",
 };
 
-const SURVIVAL_DIFFICULTY_LABELS: Record<SurvivalDifficulty, string> = {
-  easy: "初級",
-  normal: "中級",
-  hard: "上級",
-  god: "神級",
-};
+/**
+ * サバイバル難易度の表示定義。
+ *
+ * 形と色は盤面の4属性(BoardRenderer の ATTRIBUTE_STYLES)からそのまま借りている。
+ * 風◆(緑) → 水●(青) → 光★(金) → 火▲(赤) の順で、段が上がるほど色が熱くなる。
+ * 新しい色や記号を発明せず、ゲーム本体の語彙だけでUIを組むための選択。
+ */
+const SURVIVAL_TIERS: Array<{
+  id: SurvivalDifficulty;
+  label: string;
+  glyph: string;
+  hint: string;
+}> = [
+  { id: "easy", label: "初級", glyph: "◆", hint: "単語だけ。はじめての人へ" },
+  { id: "normal", label: "中級", glyph: "●", hint: "短文中心。標準の手応え" },
+  { id: "hard", label: "上級", glyph: "★", hint: "標準文中心。慣れた人へ" },
+  { id: "god", label: "神級", glyph: "▲", hint: "長文のみ。容赦なし" },
+];
 
-/** 難易度ごとの一言。段が上がるほど要求される文章が長くなることを明示する */
-const SURVIVAL_DIFFICULTY_HINTS: Record<SurvivalDifficulty, string> = {
-  easy: "単語だけ・はじめての人へ",
-  normal: "短文中心・標準の手応え",
-  hard: "標準文中心・慣れた人へ",
-  god: "長文のみ・容赦なし",
-};
-
-const SURVIVAL_ORDER: SurvivalDifficulty[] = ["easy", "normal", "hard", "god"];
 const CPU_ORDER: CpuDifficulty[] = ["easy", "normal", "hard"];
 
 export function LandingScreen({
@@ -65,6 +70,7 @@ export function LandingScreen({
   const best = bestScore(results, survivalDifficulty);
   const record = loadDuelRecord();
   const titleProgress = useMemo(() => titleProgressForScore(progress.totalScore), [progress.totalScore]);
+  const activeTier = SURVIVAL_TIERS.find((t) => t.id === survivalDifficulty) ?? SURVIVAL_TIERS[1]!;
 
   useEffect(() => {
     const handler = (e: KeyboardEvent): void => {
@@ -91,9 +97,9 @@ export function LandingScreen({
 
   return (
     <div className="screen landing lp">
-      {/* ── 計器バー: ブランド・称号の進捗・設定 ───────────────── */}
-      <header className="lp-bar">
-        <div className="lp-bar-brand">
+      {/* ── 上部レール ──────────────────────────────────────── */}
+      <header className="lp-rail">
+        <div className="lp-mark">
           TYPE<span>BURST</span>
         </div>
 
@@ -108,8 +114,8 @@ export function LandingScreen({
           </span>
           <span className="lp-rank-next">
             {titleProgress.next
-              ? `あと ${titleProgress.remainingToNext.toLocaleString()}`
-              : "最高位に到達"}
+              ? `NEXT ${titleProgress.remainingToNext.toLocaleString()}`
+              : "MAX"}
           </span>
         </button>
 
@@ -153,7 +159,7 @@ export function LandingScreen({
           </div>
           <div className="lp-settings-group">
             <span className="lp-settings-label">文字サイズ</span>
-            <div className="lp-seg lp-seg-sm" role="group" aria-label="文字サイズ">
+            <div className="lp-pills" role="group" aria-label="文字サイズ">
               {FONT_SCALE_LABELS.map(({ value, label }) => (
                 <button
                   key={value}
@@ -169,55 +175,63 @@ export function LandingScreen({
         </section>
       )}
 
-      {/* ── ヒーロー: 主張と実演を横並びにする ─────────────────── */}
+      {/* ── ヒーロー ────────────────────────────────────────── */}
       <section className="lp-hero">
-        <div className="lp-hero-main">
+        <div className="lp-hero-copy">
           <h1 className="lp-logo">
-            TYPE
+            <span className="lp-logo-type">TYPE</span>
             <span className="lp-logo-burst">BURST</span>
           </h1>
 
-          <p className="lp-tagline">
+          <p className="lp-lede">
             TYPE BURST（タイプバースト）は、日本語を打ってブロックを爆破する無料タイピングゲーム。
             <strong>速さだけでなく「どこを消すか」</strong>で盤面が変わる、連鎖パズルです。
           </p>
 
-          <ul className="lp-badges">
+          <ul className="lp-facts">
             <li>完全無料</li>
             <li>登録不要</li>
             <li>ブラウザですぐ</li>
           </ul>
 
+          {/* 主行動: 盤面のブロックと同じ質感で描き、押すと沈んで「爆破」する */}
           <button
-            className="lp-cta"
+            className="lp-play"
             onClick={() => onStart({ type: "survival", difficulty: survivalDifficulty })}
           >
-            <span className="lp-cta-play" aria-hidden="true" />
-            <span className="lp-cta-text">サバイバルを始める</span>
-            <span className="lp-cta-key">ENTER</span>
+            <span className="lp-play-face">
+              <span className="lp-play-glyph" aria-hidden="true">
+                ▲
+              </span>
+              <span className="lp-play-label">サバイバルを始める</span>
+              <span className="lp-play-key">ENTER</span>
+            </span>
           </button>
 
-          <div className="lp-seg" role="group" aria-label="サバイバルの難易度">
-            {SURVIVAL_ORDER.map((d, i) => (
+          <div className="lp-tiers" role="group" aria-label="サバイバルの難易度">
+            {SURVIVAL_TIERS.map((tier, i) => (
               <button
-                key={d}
+                key={tier.id}
                 type="button"
+                className="lp-tier"
                 data-lv={i + 1}
-                aria-pressed={d === survivalDifficulty}
-                onClick={() => setSurvivalDifficulty(d)}
+                aria-pressed={tier.id === survivalDifficulty}
+                onClick={() => setSurvivalDifficulty(tier.id)}
               >
-                {SURVIVAL_DIFFICULTY_LABELS[d]}
+                <span className="lp-tier-glyph" aria-hidden="true">
+                  {tier.glyph}
+                </span>
+                <span className="lp-tier-label">{tier.label}</span>
               </button>
             ))}
           </div>
 
-          <p className="lp-hint">
-            <span className="lp-hint-dot" data-lv={SURVIVAL_ORDER.indexOf(survivalDifficulty) + 1} />
-            {SURVIVAL_DIFFICULTY_HINTS[survivalDifficulty]}
+          <p className="lp-tier-hint" data-lv={SURVIVAL_TIERS.indexOf(activeTier) + 1}>
+            {activeTier.hint}
             {best > 0 && (
               <>
-                <span className="lp-hint-sep" aria-hidden="true">
-                  /
+                <span className="lp-sep" aria-hidden="true">
+                  ・
                 </span>
                 自己ベスト <strong>{best.toLocaleString()}</strong>
               </>
@@ -225,25 +239,28 @@ export function LandingScreen({
           </p>
         </div>
 
-        <figure className="lp-stage">
-          {/* 実エンジン(PlayerCore)の自動プレイ。モバイル誘導ページと同じ
-              AttractBoardを流用し、「面白そう」を1秒で伝える(D-074) */}
-          <AttractBoard reducedMotion={settings.reducedMotion} />
-          <figcaption>
+        <div className="lp-hero-stage">
+          <div className="lp-stage-frame">
+            {/* 実エンジン(PlayerCore)の自動プレイ。動画やモックではなく本物(D-074) */}
+            <AttractBoard reducedMotion={settings.reducedMotion} options={HERO_RENDERER_OPTIONS} />
+          </div>
+          {/* このゲームにしかない画: 打った所と残りのローマ字 */}
+          <RomajiTicker reducedMotion={settings.reducedMotion} />
+          <p className="lp-stage-note">
             <span className="lp-stage-live" aria-hidden="true" />
             実際のゲーム画面（自動プレイ中）
-          </figcaption>
-        </figure>
+          </p>
+        </div>
       </section>
 
-      {/* ── 副次導線: 対戦と3つの入口 ─────────────────────────── */}
-      <section className="lp-tiles">
-        <div className="lp-tile lp-tile-duel">
-          <div className="lp-tile-top">
-            <span className="lp-tile-kicker">VS CPU</span>
-            <h2 className="lp-tile-name">CPUと対戦</h2>
+      {/* ── 副次導線 ────────────────────────────────────────── */}
+      <section className="lp-decks">
+        <div className="lp-deck lp-deck-duel">
+          <div className="lp-deck-head">
+            <span className="lp-deck-kicker">VS CPU</span>
+            <h2 className="lp-deck-title">CPUと対戦</h2>
           </div>
-          <div className="lp-seg lp-seg-sm" role="group" aria-label="CPUの強さ">
+          <div className="lp-pills" role="group" aria-label="CPUの強さ">
             {CPU_ORDER.map((d) => (
               <button
                 key={d}
@@ -255,43 +272,42 @@ export function LandingScreen({
               </button>
             ))}
           </div>
-          <p className="lp-tile-meta">
-            {DIFFICULTY_LABELS[difficulty]}
-            <span> / {record[difficulty].wins}勝 {record[difficulty].losses}敗</span>
+          <p className="lp-deck-meta">
+            {DIFFICULTY_LABELS[difficulty]} ・ {record[difficulty].wins}勝 {record[difficulty].losses}敗
           </p>
-          <button className="lp-tile-go" onClick={() => onStart({ type: "duel", difficulty })}>
+          <button className="lp-deck-go" onClick={() => onStart({ type: "duel", difficulty })}>
             対戦する
           </button>
         </div>
 
-        <button className="lp-tile lp-tile-link" onClick={onShowRanking}>
-          <span className="lp-tile-icon" aria-hidden="true">
-            🏆
+        <button className="lp-deck lp-deck-link" onClick={onShowRanking}>
+          <span className="lp-deck-glyph lp-glyph-light" aria-hidden="true">
+            ★
           </span>
-          <span className="lp-tile-name">世界ランキング</span>
-          <span className="lp-tile-sub">難易度別・全期間</span>
+          <span className="lp-deck-title">世界ランキング</span>
+          <span className="lp-deck-sub">難易度別・全期間</span>
         </button>
 
-        <button className="lp-tile lp-tile-link" onClick={onShowGrowth}>
-          <span className="lp-tile-icon" aria-hidden="true">
-            📈
+        <button className="lp-deck lp-deck-link" onClick={onShowGrowth}>
+          <span className="lp-deck-glyph lp-glyph-wind" aria-hidden="true">
+            ◆
           </span>
-          <span className="lp-tile-name">成長記録</span>
-          <span className="lp-tile-sub">KPM・正確率の推移</span>
+          <span className="lp-deck-title">成長記録</span>
+          <span className="lp-deck-sub">KPM・正確率の推移</span>
         </button>
 
-        <button className="lp-tile lp-tile-link" onClick={() => onStart({ type: "tutorial" })}>
-          <span className="lp-tile-icon" aria-hidden="true">
-            📖
+        <button className="lp-deck lp-deck-link" onClick={() => onStart({ type: "tutorial" })}>
+          <span className="lp-deck-glyph lp-glyph-water" aria-hidden="true">
+            ●
           </span>
-          <span className="lp-tile-name">チュートリアル</span>
-          <span className="lp-tile-sub">7ステップで基本を</span>
+          <span className="lp-deck-title">チュートリアル</span>
+          <span className="lp-deck-sub">7ステップで基本を</span>
         </button>
       </section>
 
       <DailyChallengeCard progress={dailyProgress} onStart={onStart} />
 
-      {/* ── 遊び方 ─────────────────────────────────────────────── */}
+      {/* ── 遊び方 ──────────────────────────────────────────── */}
       <button
         className="lp-disclosure"
         onClick={() => setHowtoOpen((open) => !open)}

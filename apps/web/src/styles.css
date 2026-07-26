@@ -3152,60 +3152,92 @@ body {
 
 
 /* ====================================================================
-   D-083: ホーム画面の全面リデザイン(専用名前空間 `lp-`)
-   D-082では既存クラス(.btn-primary/.chip/.btn-duel/.btn-ranking-link 等)への
-   部分的な上書きで見た目を変えたため、旧来の光沢グラデーション・ぼかし影と、
-   新しい硬い影・斜体が混在し、視覚言語が3種類同居する結果になっていた。
-   ここではモバイル誘導ページ(.mobile-landing-*, D-057)と同じ方針を採り、
-   ホーム画面専用のクラス名前空間を用意して1つの体系で組み直す。
-   共有クラスへの上書きは行わないため、結果画面・ランキング画面・分析画面へ
-   影響しない。
+   D-084: ホーム画面 —「盤面そのものをUIにする」
+   ------------------------------------------------------------------
+   設計の起点: このゲームにしか無い画は「日本語が乗った色付きブロック」と
+   「打った所と残りのローマ字」。外から様式を借りるのをやめ、盤面の語彙だけで
+   画面を組む。
+
+   ・色は一切発明しない。BoardRenderer の ATTRIBUTE_STYLES の実値をそのまま使う
+     (火 #c2402f / 水 #1f6dc2 / 風 #1f9e74 / 光 #c29a1f と各 bright / dark)。
+   ・形も発明しない。属性の形 ▲●◆★ をそのまま記号として使う。
+   ・主行動(プレイ)は「これから爆破するブロック」として描く。明るい上端・本体・
+     厚みのある暗い下端という、BoardRenderer がブロックを描くのと同じ構造。
+   ・専用名前空間 `lp-` のみを使い、共有クラスには一切触れない(D-083の方針を継承)。
    ==================================================================== */
 
 .screen.landing.lp {
-  --lp-panel: #12141e;
-  --lp-panel-2: #191c29;
-  --lp-line: rgba(255, 255, 255, 0.09);
-  --lp-line-hi: rgba(255, 255, 255, 0.2);
-  --lp-text: #edf0f9;
-  --lp-dim: #99a1bd;
-  --lp-faint: #6b7291;
-  --lp-accent: #ff4d2e;
-  --lp-accent-hi: #ff6a4d;
-  --lp-accent-deep: #a32615;
-  --lp-gold: #ffc93c;
-  /* 難易度の段階色: 上がるほど熱くなる(風→水→光→火)。盤面の属性色を流用する */
-  --lp-lv1: #4fe0a8;
-  --lp-lv2: #59b4ff;
-  --lp-lv3: #ffc93c;
-  --lp-lv4: #ff4d2e;
+  /* 盤面の実配色(BoardRenderer.ATTRIBUTE_STYLES と同値) */
+  --fire: #c2402f;
+  --fire-lit: #ff8a70;
+  --fire-dk: #7c2418;
+  --water: #1f6dc2;
+  --water-lit: #6fc0ff;
+  --water-dk: #123f7a;
+  --wind: #1f9e74;
+  --wind-lit: #5fe8b6;
+  --wind-dk: #116048;
+  --light: #c29a1f;
+  --light-lit: #ffdf70;
+  --light-dk: #7a5f10;
 
-  gap: 16px;
-  padding: 0 20px 56px;
+  --ink: #0b0e18;
+  --panel: rgba(255, 255, 255, 0.038);
+  --panel-2: rgba(255, 255, 255, 0.06);
+  --line: rgba(255, 255, 255, 0.1);
+  --line-hi: rgba(255, 255, 255, 0.24);
+  --text: #eef1fb;
+  --dim: #949dba;
+  --faint: #5f6784;
+
+  position: relative;
+  gap: 18px;
+  padding: 0 20px 60px;
 }
 
-/* ---------- 計器バー ---------- */
+/* 盤面の升目(62×48 = ヒーロー盤面のセル実寸)を、ごく薄い地紋として敷く。
+   画面全体が同じ格子の上に載っていることを暗に示す。 */
+.screen.landing.lp::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.032) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.032) 1px, transparent 1px);
+  background-size: 62px 48px;
+  -webkit-mask-image: radial-gradient(ellipse 78% 52% at 50% 0%, #000, transparent 100%);
+  mask-image: radial-gradient(ellipse 78% 52% at 50% 0%, #000, transparent 100%);
+}
 
-.lp-bar {
-  width: min(1060px, 100%);
+.screen.landing.lp > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---------- 上部レール ---------- */
+
+.lp-rail {
+  width: min(1120px, 100%);
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 13px 4px;
-  border-bottom: 1px solid var(--lp-line);
+  padding: 14px 2px;
+  border-bottom: 1px solid var(--line);
 }
 
-.lp-bar-brand {
+.lp-mark {
   flex: none;
   font-family: "Arial Black", sans-serif;
   font-size: 15px;
-  letter-spacing: 0.01em;
+  letter-spacing: -0.01em;
   white-space: nowrap;
 }
 
-.lp-bar-brand span {
+.lp-mark span {
   margin-left: 5px;
-  color: var(--lp-accent);
+  color: var(--fire-lit);
 }
 
 .lp-rank {
@@ -3213,11 +3245,11 @@ body {
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 12px;
+  gap: 11px;
+  padding: 7px 13px;
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: 9px;
   color: inherit;
   font: inherit;
   text-align: left;
@@ -3225,30 +3257,30 @@ body {
 }
 
 .lp-rank:hover {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: var(--lp-line);
+  background: var(--panel);
+  border-color: var(--line);
 }
 
 .lp-rank-label {
   flex: none;
   font-size: 10px;
-  letter-spacing: 0.18em;
-  color: var(--lp-faint);
+  letter-spacing: 0.2em;
+  color: var(--faint);
 }
 
 .lp-rank-name {
   flex: none;
   font-size: 13px;
   font-weight: bold;
-  color: var(--lp-gold);
+  color: var(--light-lit);
   white-space: nowrap;
 }
 
 .lp-rank-track {
   flex: 1;
   min-width: 40px;
-  height: 6px;
-  background: rgba(0, 0, 0, 0.5);
+  height: 5px;
+  background: rgba(0, 0, 0, 0.55);
   border-radius: 99px;
   overflow: hidden;
 }
@@ -3256,14 +3288,14 @@ body {
 .lp-rank-fill {
   display: block;
   height: 100%;
-  background: var(--lp-gold);
-  transition: width 0.2s ease;
+  background: linear-gradient(90deg, var(--light), var(--light-lit));
 }
 
 .lp-rank-next {
   flex: none;
-  font-size: 11px;
-  color: var(--lp-faint);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--faint);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
@@ -3275,32 +3307,32 @@ body {
   display: grid;
   place-items: center;
   font-size: 15px;
-  color: var(--lp-dim);
+  color: var(--dim);
   background: transparent;
-  border: 1px solid var(--lp-line);
-  border-radius: 8px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
   cursor: pointer;
 }
 
 .lp-gear:hover,
 .lp-gear-on {
-  color: var(--lp-text);
-  background: rgba(255, 255, 255, 0.05);
-  border-color: var(--lp-line-hi);
+  color: var(--text);
+  background: var(--panel-2);
+  border-color: var(--line-hi);
 }
 
-/* ---------- 設定パネル(歯車の折りたたみ) ---------- */
+/* ---------- 設定 ---------- */
 
 .lp-settings {
-  width: min(1060px, 100%);
+  width: min(1120px, 100%);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 14px 30px;
-  padding: 14px 16px;
-  background: var(--lp-panel);
-  border: 1px solid var(--lp-line);
-  border-radius: 10px;
+  padding: 15px 17px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
 }
 
 .lp-settings-group {
@@ -3312,7 +3344,7 @@ body {
 
 .lp-settings-label {
   font-size: 12px;
-  color: var(--lp-dim);
+  color: var(--dim);
 }
 
 .lp-check {
@@ -3320,7 +3352,7 @@ body {
   align-items: center;
   gap: 7px;
   font-size: 13px;
-  color: var(--lp-text);
+  color: var(--text);
   cursor: pointer;
 }
 
@@ -3331,50 +3363,58 @@ body {
 /* ---------- ヒーロー ---------- */
 
 .lp-hero {
-  width: min(1060px, 100%);
+  width: min(1120px, 100%);
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 44px;
+  gap: 56px;
   align-items: center;
-  padding: 22px 4px 6px;
+  padding: 30px 2px 14px;
 }
 
-.lp-hero-main {
+.lp-hero-copy {
   min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 15px;
+  gap: 17px;
 }
 
+/* 欧文は詰め、和文は開く。日本語のプロダクトで組版に緊張感を出す常道 */
 .lp-logo {
   margin: 0;
   font-family: "Arial Black", sans-serif;
-  font-size: clamp(50px, 6.2vw, 82px);
-  line-height: 0.88;
-  letter-spacing: -0.035em;
-  color: var(--lp-text);
+  font-size: clamp(54px, 6.6vw, 88px);
+  line-height: 0.84;
+  letter-spacing: -0.045em;
 }
 
+.lp-logo-type {
+  display: block;
+  color: var(--text);
+}
+
+/* ロゴにもブロックの「厚み」を与え、盤面と同じ物体感で統一する */
 .lp-logo-burst {
   display: block;
-  color: var(--lp-accent);
+  color: var(--fire-lit);
+  text-shadow: 0 5px 0 var(--fire-dk);
 }
 
-.lp-tagline {
+.lp-lede {
   margin: 0;
-  max-width: 40ch;
+  max-width: 38ch;
   font-size: 15px;
-  line-height: 1.85;
-  color: var(--lp-dim);
+  line-height: 1.95;
+  letter-spacing: 0.02em;
+  color: var(--dim);
 }
 
-.lp-tagline strong {
-  color: var(--lp-text);
+.lp-lede strong {
+  color: var(--text);
   font-weight: bold;
 }
 
-.lp-badges {
+.lp-facts {
   display: flex;
   flex-wrap: wrap;
   gap: 7px;
@@ -3383,214 +3423,282 @@ body {
   list-style: none;
 }
 
-.lp-badges li {
-  padding: 5px 11px;
+.lp-facts li {
+  padding: 5px 12px;
   font-size: 11.5px;
   font-weight: bold;
-  color: var(--lp-dim);
-  border: 1px solid var(--lp-line);
+  letter-spacing: 0.04em;
+  color: var(--dim);
+  border: 1px solid var(--line);
   border-radius: 99px;
 }
 
-/* 主行動。ページ内で唯一「物理的な厚み」を持つ要素にして視線を集める */
-.lp-cta {
+/* ---------- 主行動: 火属性のブロックそのもの ---------- */
+
+.lp-play {
   width: 100%;
-  max-width: 420px;
+  max-width: 440px;
+  margin-top: 3px;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 13px;
+  cursor: pointer;
+  /* 下端の暗い面 = ブロックの厚み。BoardRendererの描き方に合わせる */
+  box-shadow:
+    0 7px 0 var(--fire-dk),
+    0 10px 26px rgba(0, 0, 0, 0.5);
+  transition: transform 0.07s ease, box-shadow 0.07s ease;
+}
+
+.lp-play-face {
   display: flex;
   align-items: center;
   gap: 14px;
   padding: 18px 22px;
+  border-radius: 13px;
+  border-top: 2px solid rgba(255, 255, 255, 0.32);
+  background: linear-gradient(180deg, #d9553f 0%, var(--fire) 45%, #ad3826 100%);
   color: #fff;
-  background: var(--lp-accent);
-  border: none;
-  border-radius: 10px;
-  font-family: inherit;
-  font-size: 19px;
-  font-weight: 800;
-  cursor: pointer;
-  box-shadow: 0 5px 0 var(--lp-accent-deep);
-  transition: background 0.12s ease, transform 0.08s ease, box-shadow 0.08s ease;
 }
 
-.lp-cta:hover {
-  background: var(--lp-accent-hi);
+.lp-play:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 9px 0 var(--fire-dk),
+    0 14px 30px rgba(0, 0, 0, 0.55);
 }
 
-.lp-cta:active {
-  transform: translateY(4px);
-  box-shadow: 0 1px 0 var(--lp-accent-deep);
+/* 押すと沈む = ブロックが潰れて爆発する感触 */
+.lp-play:active {
+  transform: translateY(7px);
+  box-shadow:
+    0 0 0 var(--fire-dk),
+    0 2px 8px rgba(0, 0, 0, 0.5);
 }
 
-.lp-cta:focus-visible {
-  outline: 2px solid var(--lp-text);
-  outline-offset: 3px;
+.lp-play:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 4px;
 }
 
-.lp-cta-play {
+.lp-play-glyph {
   flex: none;
-  width: 0;
-  height: 0;
-  border-left: 15px solid currentColor;
-  border-top: 9px solid transparent;
-  border-bottom: 9px solid transparent;
+  font-size: 15px;
+  line-height: 1;
+  opacity: 0.9;
 }
 
-.lp-cta-text {
+.lp-play-label {
   flex: 1;
   text-align: left;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
 }
 
-.lp-cta-key {
+.lp-play-key {
   flex: none;
   padding: 5px 9px;
   font-size: 10px;
   font-weight: bold;
-  letter-spacing: 0.14em;
-  border: 1.5px solid rgba(255, 255, 255, 0.55);
+  letter-spacing: 0.16em;
+  border: 1.5px solid rgba(255, 255, 255, 0.5);
   border-radius: 5px;
 }
 
-/* ---------- セグメント選択(難易度・文字サイズ) ---------- */
+/* ---------- 難易度: 4属性の形と色で段階を示す ---------- */
 
-.lp-seg {
+.lp-tiers {
   width: 100%;
-  max-width: 420px;
+  max-width: 440px;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  border: 1px solid var(--lp-line-hi);
+  gap: 7px;
+}
+
+.lp-tier {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 9px 4px 8px;
+  color: var(--dim);
+  background: var(--panel);
+  border: 1px solid var(--line);
   border-radius: 9px;
-  overflow: hidden;
-}
-
-.lp-seg button {
-  padding: 11px 4px;
-  color: var(--lp-dim);
-  background: transparent;
-  border: none;
-  border-right: 1px solid var(--lp-line);
   font-family: inherit;
-  font-size: 13.5px;
-  font-weight: bold;
   cursor: pointer;
-  transition: background 0.1s ease, color 0.1s ease;
+  transition: transform 0.08s ease, background 0.12s ease, color 0.12s ease;
 }
 
-.lp-seg button:last-child {
-  border-right: none;
+.lp-tier:hover {
+  color: var(--text);
+  background: var(--panel-2);
+  transform: translateY(-2px);
 }
 
-.lp-seg button:hover {
-  color: var(--lp-text);
-  background: rgba(255, 255, 255, 0.06);
+.lp-tier:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
 }
 
-.lp-seg button:focus-visible {
-  outline: 2px solid var(--lp-text);
-  outline-offset: -3px;
+.lp-tier-glyph {
+  font-size: 12px;
+  line-height: 1;
 }
 
-.lp-seg button[aria-pressed="true"] {
-  color: #0a0b12;
+.lp-tier-label {
+  font-size: 13px;
+  font-weight: bold;
+  letter-spacing: 0.04em;
 }
 
-.lp-seg button[aria-pressed="true"][data-lv="1"] {
-  background: var(--lp-lv1);
+/* 選択中は属性色のブロックになる(bright を面、dark を厚みに) */
+.lp-tier[aria-pressed="true"] {
+  color: #0c0e16;
+  border-color: transparent;
 }
 
-.lp-seg button[aria-pressed="true"][data-lv="2"] {
-  background: var(--lp-lv2);
+.lp-tier[aria-pressed="true"][data-lv="1"] {
+  background: var(--wind-lit);
+  box-shadow: 0 3px 0 var(--wind-dk);
 }
 
-.lp-seg button[aria-pressed="true"][data-lv="3"] {
-  background: var(--lp-lv3);
+.lp-tier[aria-pressed="true"][data-lv="2"] {
+  background: var(--water-lit);
+  box-shadow: 0 3px 0 var(--water-dk);
 }
 
-.lp-seg button[aria-pressed="true"][data-lv="4"] {
-  background: var(--lp-lv4);
-  color: #fff;
+.lp-tier[aria-pressed="true"][data-lv="3"] {
+  background: var(--light-lit);
+  box-shadow: 0 3px 0 var(--light-dk);
 }
 
-/* 3項目版(CPUの強さ・文字サイズ)。段階色は持たせず白で選択を示す */
-.lp-seg-sm {
-  max-width: none;
-  grid-template-columns: repeat(3, 1fr);
-  border-radius: 7px;
+.lp-tier[aria-pressed="true"][data-lv="4"] {
+  background: var(--fire-lit);
+  box-shadow: 0 3px 0 var(--fire-dk);
 }
 
-.lp-seg-sm button {
-  padding: 8px 4px;
-  font-size: 12.5px;
-}
-
-.lp-seg-sm button[aria-pressed="true"] {
-  color: #0a0b12;
-  background: var(--lp-text);
-}
-
-/* ---------- 難易度の補足 ---------- */
-
-.lp-hint {
+.lp-tier-hint {
   margin: 0;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 9px;
+  gap: 7px;
   font-size: 12.5px;
-  color: var(--lp-dim);
+  letter-spacing: 0.02em;
+  color: var(--dim);
 }
 
-.lp-hint-dot {
-  flex: none;
-  width: 9px;
-  height: 9px;
+.lp-tier-hint::before {
+  content: "";
+  width: 8px;
+  height: 8px;
   border-radius: 2px;
+  flex: none;
 }
 
-.lp-hint-dot[data-lv="1"] {
-  background: var(--lp-lv1);
+.lp-tier-hint[data-lv="1"]::before {
+  background: var(--wind-lit);
 }
 
-.lp-hint-dot[data-lv="2"] {
-  background: var(--lp-lv2);
+.lp-tier-hint[data-lv="2"]::before {
+  background: var(--water-lit);
 }
 
-.lp-hint-dot[data-lv="3"] {
-  background: var(--lp-lv3);
+.lp-tier-hint[data-lv="3"]::before {
+  background: var(--light-lit);
 }
 
-.lp-hint-dot[data-lv="4"] {
-  background: var(--lp-lv4);
+.lp-tier-hint[data-lv="4"]::before {
+  background: var(--fire-lit);
 }
 
-.lp-hint strong {
-  color: var(--lp-gold);
+.lp-tier-hint strong {
+  color: var(--light-lit);
   font-variant-numeric: tabular-nums;
 }
 
-.lp-hint-sep {
-  color: var(--lp-faint);
+.lp-sep {
+  color: var(--faint);
 }
 
-/* ---------- 実演(自動プレイ盤面) ---------- */
+/* ---------- 実演: 盤面を主役として据える ---------- */
 
-.lp-stage {
+.lp-hero-stage {
   flex: none;
-  margin: 0;
-  padding: 18px 16px 10px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 9px;
-  /* 盤面の背後にだけ熱を置き、視線を集める。UI側には光を使わない */
-  background: radial-gradient(ellipse at 50% 42%, rgba(255, 77, 46, 0.15), transparent 70%);
+  gap: 12px;
 }
 
-.lp-stage figcaption {
+.lp-stage-frame {
+  position: relative;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.015));
+  box-shadow: 0 26px 64px rgba(0, 0, 0, 0.55);
+}
+
+/* 盤面の背後にだけ熱を置く。UI側には一切グローを使わない */
+.lp-stage-frame::before {
+  content: "";
+  position: absolute;
+  inset: -14%;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 45%, rgba(255, 138, 112, 0.16), transparent 68%);
+}
+
+/* このゲームにしかない画: 打った所(火色) と 残り(灰) */
+.lp-ticker {
+  width: 100%;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 9px 13px;
+  background: rgba(6, 8, 14, 0.72);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+}
+
+.lp-ticker-jp {
+  flex: none;
+  font-size: 12.5px;
+  font-weight: bold;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.lp-ticker-romaji {
+  min-width: 0;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.lp-ticker-done {
+  color: var(--fire-lit);
+  border-right: 2px solid var(--fire-lit);
+  padding-right: 2px;
+}
+
+.lp-ticker-rest {
+  color: var(--faint);
+}
+
+.lp-stage-note {
   display: flex;
   align-items: center;
   gap: 7px;
   font-size: 11px;
-  color: var(--lp-faint);
+  letter-spacing: 0.04em;
+  color: var(--faint);
 }
 
 .lp-stage-live {
@@ -3598,117 +3706,175 @@ body {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--lp-accent);
+  background: var(--fire-lit);
 }
 
-/* ---------- 副次導線タイル ---------- */
+/* ---------- 副次導線 ---------- */
 
-.lp-tiles {
-  width: min(1060px, 100%);
+.lp-decks {
+  width: min(1120px, 100%);
   display: grid;
-  grid-template-columns: 1.55fr 1fr 1fr 1fr;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr;
   gap: 12px;
 }
 
-.lp-tile {
+.lp-deck {
   display: flex;
   flex-direction: column;
-  padding: 16px;
-  background: var(--lp-panel);
-  border: 1px solid var(--lp-line);
-  border-radius: 12px;
+  padding: 17px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 13px;
   text-align: left;
 }
 
-.lp-tile-link {
-  gap: 6px;
+.lp-deck-link {
+  gap: 7px;
   align-items: flex-start;
   justify-content: center;
   color: inherit;
   font-family: inherit;
   cursor: pointer;
-  transition: transform 0.1s ease, border-color 0.1s ease, background 0.1s ease;
+  transition: transform 0.1s ease, background 0.12s ease, border-color 0.12s ease;
 }
 
-.lp-tile-link:hover {
+.lp-deck-link:hover {
   transform: translateY(-3px);
-  background: var(--lp-panel-2);
-  border-color: var(--lp-line-hi);
+  background: var(--panel-2);
+  border-color: var(--line-hi);
 }
 
-.lp-tile-link:focus-visible {
-  outline: 2px solid var(--lp-text);
+.lp-deck-link:focus-visible {
+  outline: 2px solid var(--text);
   outline-offset: 2px;
 }
 
-.lp-tile-icon {
-  font-size: 22px;
+.lp-deck-glyph {
+  font-size: 17px;
   line-height: 1;
 }
 
-.lp-tile-name {
+.lp-glyph-light {
+  color: var(--light-lit);
+}
+
+.lp-glyph-wind {
+  color: var(--wind-lit);
+}
+
+.lp-glyph-water {
+  color: var(--water-lit);
+}
+
+.lp-deck-title {
   margin: 0;
   font-size: 14.5px;
   font-weight: bold;
-  color: var(--lp-text);
+  letter-spacing: 0.03em;
+  color: var(--text);
 }
 
-.lp-tile-sub {
+.lp-deck-sub {
   font-size: 11.5px;
-  color: var(--lp-faint);
+  color: var(--faint);
 }
 
-.lp-tile-duel {
+.lp-deck-duel {
   gap: 11px;
 }
 
-.lp-tile-top {
+.lp-deck-head {
   display: flex;
   flex-direction: column;
   gap: 3px;
 }
 
-.lp-tile-kicker {
+.lp-deck-kicker {
   font-size: 9.5px;
   font-weight: 800;
-  letter-spacing: 0.2em;
-  color: var(--lp-lv2);
+  letter-spacing: 0.22em;
+  color: var(--water-lit);
 }
 
-.lp-tile-meta {
+.lp-deck-meta {
   margin: 0;
   font-size: 11.5px;
-  color: var(--lp-faint);
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
 }
 
-.lp-tile-go {
+.lp-deck-go {
   margin-top: auto;
   padding: 10px;
-  color: var(--lp-lv2);
+  color: var(--water-lit);
   background: transparent;
-  border: 1px solid var(--lp-lv2);
-  border-radius: 8px;
+  border: 1px solid var(--water);
+  border-radius: 9px;
   font-family: inherit;
   font-size: 13.5px;
   font-weight: bold;
+  letter-spacing: 0.04em;
   cursor: pointer;
-  transition: background 0.1s ease, color 0.1s ease;
+  transition: background 0.12s ease, color 0.12s ease;
 }
 
-.lp-tile-go:hover {
-  color: #0a0b12;
-  background: var(--lp-lv2);
+.lp-deck-go:hover {
+  color: #061018;
+  background: var(--water-lit);
 }
 
-/* ---------- デイリーチャレンジ(既存コンポーネントの外観だけ合わせる) ---------- */
+/* ---------- 小さな連結ピル(CPUの強さ・文字サイズ) ---------- */
+
+.lp-pills {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  border: 1px solid var(--line-hi);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.lp-pills button {
+  padding: 8px 10px;
+  color: var(--dim);
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--line);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.lp-pills button:last-child {
+  border-right: none;
+}
+
+.lp-pills button:hover {
+  color: var(--text);
+  background: var(--panel-2);
+}
+
+.lp-pills button:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: -3px;
+}
+
+.lp-pills button[aria-pressed="true"] {
+  color: #0c0e16;
+  background: var(--text);
+}
+
+/* ---------- デイリー(既存コンポーネントの外観を合わせる) ---------- */
 
 .landing.lp .daily-card {
-  width: min(1060px, 100%);
+  width: min(1120px, 100%);
   gap: 16px;
-  padding: 20px;
-  background: var(--lp-panel);
-  border: 1px solid var(--lp-line);
-  border-radius: 14px;
+  padding: 21px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 15px;
   box-shadow: none;
 }
 
@@ -3716,79 +3882,82 @@ body {
 .landing.lp .daily-leaderboard-preview,
 .landing.lp .daily-continuity,
 .landing.lp .daily-calendar {
-  background: var(--lp-panel-2);
-  border-color: var(--lp-line);
-  border-radius: 10px;
+  background: rgba(6, 8, 14, 0.5);
+  border-color: var(--line);
+  border-radius: 11px;
 }
 
 .landing.lp .daily-kicker {
-  color: var(--lp-gold);
+  color: var(--light-lit);
 }
 
 .landing.lp .daily-title {
-  letter-spacing: 0;
+  letter-spacing: 0.01em;
 }
 
+/* デイリーは光属性のブロックとして描く(主行動の火と役割を色で分ける) */
 .landing.lp .btn-daily {
-  color: #1a1405;
-  background: var(--lp-gold);
-  border-radius: 9px;
-  box-shadow: 0 4px 0 #a37a10;
-  transition: background 0.12s ease, transform 0.08s ease, box-shadow 0.08s ease;
+  color: #1c1503;
+  background: linear-gradient(180deg, #ffe79a 0%, var(--light-lit) 45%, #e2b93f 100%);
+  border-top: 2px solid rgba(255, 255, 255, 0.42);
+  border-radius: 10px;
+  box-shadow: 0 5px 0 var(--light-dk);
+  transition: transform 0.07s ease, box-shadow 0.07s ease;
 }
 
 .landing.lp .btn-daily:hover {
-  transform: none;
+  transform: translateY(-2px);
   filter: none;
-  background: #ffd45c;
+  box-shadow: 0 7px 0 var(--light-dk);
 }
 
 .landing.lp .btn-daily:active {
-  transform: translateY(3px);
-  box-shadow: 0 1px 0 #a37a10;
+  transform: translateY(5px);
+  box-shadow: 0 0 0 var(--light-dk);
 }
 
 /* ---------- 遊び方・注記・フッター ---------- */
 
 .lp-disclosure {
-  padding: 6px 10px;
-  color: var(--lp-dim);
+  padding: 7px 11px;
+  color: var(--dim);
   background: none;
   border: none;
-  border-radius: 7px;
+  border-radius: 8px;
   font-family: inherit;
   font-size: 13px;
   cursor: pointer;
 }
 
 .lp-disclosure:hover {
-  color: var(--lp-text);
-  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  background: var(--panel);
 }
 
 .lp-howto {
-  width: min(760px, 100%);
+  width: min(780px, 100%);
   margin: 0;
-  padding: 18px 22px 18px 44px;
+  padding: 20px 24px 20px 46px;
   display: flex;
   flex-direction: column;
-  gap: 9px;
-  background: var(--lp-panel);
-  border: 1px solid var(--lp-line);
-  border-radius: 12px;
+  gap: 10px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 13px;
   font-size: 14px;
-  line-height: 1.75;
-  color: var(--lp-dim);
+  line-height: 1.8;
+  letter-spacing: 0.02em;
+  color: var(--dim);
 }
 
 .lp-howto li::marker {
-  color: var(--lp-accent);
+  color: var(--fire-lit);
   font-weight: 800;
 }
 
 .lp-note {
   font-size: 11.5px;
-  color: var(--lp-faint);
+  color: var(--faint);
 }
 
 .lp-footer {
@@ -3800,51 +3969,61 @@ body {
 }
 
 .lp-footer a {
-  color: var(--lp-faint);
+  color: var(--faint);
   text-decoration: none;
 }
 
 .lp-footer a:hover {
-  color: var(--lp-text);
+  color: var(--text);
   text-decoration: underline;
 }
 
-/* ---------- レスポンシブ(1024px未満はSmallScreenGuardが別画面を出すため保険) ---------- */
+/* ---------- 狭い画面(1024px未満はSmallScreenGuardが別画面を出すため保険) ---------- */
 
-@media (max-width: 980px) {
+@media (max-width: 1040px) {
   .lp-hero {
     grid-template-columns: minmax(0, 1fr);
-    gap: 26px;
+    gap: 30px;
   }
 
-  .lp-tiles {
+  .lp-decks {
     grid-template-columns: 1fr 1fr;
   }
 }
 
 /* ---------- アクセシビリティ ---------- */
 
-:root.high-contrast .lp-tile,
+:root.high-contrast .lp-deck,
 :root.high-contrast .lp-howto,
-:root.high-contrast .lp-settings {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.35);
+:root.high-contrast .lp-settings,
+:root.high-contrast .lp-tier {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.38);
 }
 
-:root.high-contrast .lp-tagline,
+:root.high-contrast .lp-lede,
 :root.high-contrast .lp-note,
-:root.high-contrast .lp-tile-sub,
-:root.high-contrast .lp-rank-next {
+:root.high-contrast .lp-deck-sub,
+:root.high-contrast .lp-rank-next,
+:root.high-contrast .lp-stage-note,
+:root.high-contrast .lp-ticker-rest {
   color: #c9cfe4;
 }
 
+:root.high-contrast .screen.landing.lp::before {
+  display: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .lp-cta,
-  .lp-tile-link,
-  .lp-tile-go,
-  .lp-seg button,
-  .lp-rank-fill,
-  .landing.lp .btn-daily {
+  .lp-play,
+  .lp-tier,
+  .lp-deck-link,
+  .lp-deck-go,
+  .lp-pills button {
     transition: none;
+  }
+
+  .lp-ticker-done {
+    border-right-color: transparent;
   }
 }

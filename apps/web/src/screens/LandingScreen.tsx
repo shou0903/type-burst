@@ -337,7 +337,7 @@ export function LandingScreen({
 
       <footer className="lp-footer">
         <a href="/about.html">TYPE BURST（タイプバースト）とは</a>
-        <a href="/guides/">タイピング練習ガイド</a>
+        <a href="/guides">タイピング練習ガイド</a>
         <a href="/terms.html" target="_blank" rel="noreferrer">
           利用規約
         </a>

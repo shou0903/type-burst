@@ -161,7 +161,7 @@ export function MobileLanding(): JSX.Element {
       <div className="mobile-landing-footer">
         <a href="/about.html">TYPE BURST（タイプバースト）とは</a>
         <span aria-hidden="true">・</span>
-        <a href="/guides/">練習ガイド</a>
+        <a href="/guides">練習ガイド</a>
         <span aria-hidden="true">・</span>
         <a href="/terms.html" target="_blank" rel="noreferrer">
           利用規約

@@ -177,6 +177,12 @@ export function LandingScreen({
 
       {/* ── ヒーロー ────────────────────────────────────────── */}
       <section className="lp-hero">
+        {/* 環境演出: 盤面の爆発パーティクルと同じ属性色の残り火が立ち上る。
+            装飾のみ・CSSアニメーションのみで、reduced-motion時は消える(D-085) */}
+        <div className="lp-embers" aria-hidden="true">
+          <span /><span /><span /><span /><span /><span /><span />
+        </div>
+
         <div className="lp-hero-copy">
           <h1 className="lp-logo">
             <span className="lp-logo-type">TYPE</span>

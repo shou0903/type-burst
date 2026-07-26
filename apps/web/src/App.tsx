@@ -62,7 +62,11 @@ export function App(): JSX.Element {
   useEffect(() => {
     document.documentElement.style.setProperty("--font-scale", String(settings.fontScale));
     document.documentElement.classList.toggle("high-contrast", settings.highContrast);
-  }, [settings.fontScale, settings.highContrast]);
+    // CSSアニメーション(ホーム画面の登場演出・環境演出)もアプリ内の
+    // 「演出を控えめにする」設定に従わせるためのフック(D-085)。
+    // OS側の prefers-reduced-motion とは独立に、ユーザーが明示的に切れるようにする。
+    document.documentElement.classList.toggle("reduced-motion", settings.reducedMotion);
+  }, [settings.fontScale, settings.highContrast, settings.reducedMotion]);
 
   const updateSettings = (patch: Partial<Settings>): void => {
     setSettings((prev) => {

@@ -5,7 +5,15 @@
 export class SoundEngine {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
+  private musicBus: GainNode | null = null;
+  private musicMode: "home" | "game" | null = null;
+  private requestedMusicMode: "home" | "game" | null = null;
+  private musicTimer: number | null = null;
+  private musicNextAt = 0;
+  private musicStep = 0;
+  private musicGeneration = 0;
   enabled = true;
+  musicEnabled = true;
 
   /** ユーザー操作イベント内で呼ぶこと */
   unlock(): void {
@@ -18,9 +26,115 @@ export class SoundEngine {
       this.master = this.ctx.createGain();
       this.master.gain.value = 0.5;
       this.master.connect(this.ctx.destination);
+      this.musicBus = this.ctx.createGain();
+      this.musicBus.gain.value = 0.001;
+      this.musicBus.connect(this.master);
+      this.applyRequestedMusic();
     } catch {
       this.ctx = null;
     }
+  }
+
+  /** BGMは効果音と個別にオン・オフできる。 */
+  setMusicEnabled(enabled: boolean): void {
+    this.musicEnabled = enabled;
+    if (enabled) this.applyRequestedMusic();
+    else this.stopMusic();
+  }
+
+  /** 画面に応じて、軽量なシンセBGMを切り替える。 */
+  setMusic(mode: "home" | "game" | null): void {
+    this.requestedMusicMode = mode;
+    this.applyRequestedMusic();
+  }
+
+  private applyRequestedMusic(): void {
+    const mode = this.requestedMusicMode;
+    if (!mode || !this.musicEnabled || !this.ctx || !this.musicBus) {
+      this.stopMusic();
+      return;
+    }
+    if (this.musicMode === mode && this.musicTimer !== null) return;
+
+    this.stopMusic();
+    this.musicMode = mode;
+    const generation = ++this.musicGeneration;
+    const now = this.ctx.currentTime;
+    this.musicBus.gain.cancelScheduledValues(now);
+    this.musicBus.gain.setValueAtTime(0.001, now);
+    this.musicBus.gain.exponentialRampToValueAtTime(mode === "home" ? 0.09 : 0.07, now + 0.28);
+    this.musicNextAt = now + 0.04;
+    this.musicStep = 0;
+    this.scheduleMusic(generation);
+  }
+
+  private stopMusic(): void {
+    this.musicGeneration += 1;
+    this.musicMode = null;
+    if (this.musicTimer !== null) {
+      window.clearTimeout(this.musicTimer);
+      this.musicTimer = null;
+    }
+    if (!this.ctx || !this.musicBus) return;
+    const now = this.ctx.currentTime;
+    this.musicBus.gain.cancelScheduledValues(now);
+    this.musicBus.gain.setValueAtTime(Math.max(0.001, this.musicBus.gain.value), now);
+    this.musicBus.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+  }
+
+  private scheduleMusic(generation: number): void {
+    const mode = this.musicMode;
+    if (!mode || generation !== this.musicGeneration || !this.ctx) return;
+    const stepSeconds = 60 / (mode === "home" ? 92 : 116) / 2;
+    while (this.musicNextAt < this.ctx.currentTime + 0.35) {
+      if (mode === "home") this.scheduleHomeStep(this.musicNextAt, this.musicStep);
+      else this.scheduleGameStep(this.musicNextAt, this.musicStep);
+      this.musicNextAt += stepSeconds;
+      this.musicStep += 1;
+    }
+    this.musicTimer = window.setTimeout(() => this.scheduleMusic(generation), 100);
+  }
+
+  private scheduleHomeStep(at: number, step: number): void {
+    const roots = [220, 196, 174.61, 196];
+    const root = roots[Math.floor(step / 8) % roots.length] ?? 220;
+    const intervals = [0, 7, 12, 7, 4, 7, 11, 7];
+    const interval = intervals[step % intervals.length] ?? 0;
+    this.musicTone(root * 2 ** (interval / 12), 0.28, at, "triangle", 0.024);
+    if (step % 8 === 0) {
+      this.musicTone(root / 2, 1.45, at, "sine", 0.017);
+      this.musicTone(root * 2, 0.68, at + 0.32, "sine", 0.008);
+    }
+  }
+
+  private scheduleGameStep(at: number, step: number): void {
+    const roots = [174.61, 196, 220, 196];
+    const root = roots[Math.floor(step / 8) % roots.length] ?? 174.61;
+    const intervals = [0, 3, 7, 10, 7, 3, 5, 7];
+    const interval = intervals[step % intervals.length] ?? 0;
+    if (step % 2 === 0) this.musicTone(root * 2 ** (interval / 12) * 2, 0.12, at, "triangle", 0.018);
+    if (step % 4 === 0) this.musicTone(root / 2, 0.2, at, "sine", 0.018);
+    if (step % 8 === 4) this.musicTone(root * 2, 0.3, at, "sine", 0.009);
+  }
+
+  private musicTone(
+    freq: number,
+    durationSeconds: number,
+    start: number,
+    type: OscillatorType,
+    gain: number,
+  ): void {
+    if (!this.ctx || !this.musicBus || !this.musicEnabled) return;
+    const oscillator = this.ctx.createOscillator();
+    const envelope = this.ctx.createGain();
+    oscillator.type = type;
+    oscillator.frequency.setValueAtTime(freq, start);
+    envelope.gain.setValueAtTime(0.001, start);
+    envelope.gain.exponentialRampToValueAtTime(gain, start + 0.018);
+    envelope.gain.exponentialRampToValueAtTime(0.001, start + durationSeconds);
+    oscillator.connect(envelope).connect(this.musicBus);
+    oscillator.start(start);
+    oscillator.stop(start + durationSeconds + 0.03);
   }
 
   private now(): number {

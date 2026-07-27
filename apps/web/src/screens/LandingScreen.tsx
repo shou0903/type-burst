@@ -167,6 +167,14 @@ export function LandingScreen({
             <label className="lp-check">
               <input
                 type="checkbox"
+                checked={settings.bgmOn}
+                onChange={(e) => onUpdateSettings({ bgmOn: e.target.checked })}
+              />
+              BGM
+            </label>
+            <label className="lp-check">
+              <input
+                type="checkbox"
                 checked={settings.reducedMotion}
                 onChange={(e) => onUpdateSettings({ reducedMotion: e.target.checked })}
               />

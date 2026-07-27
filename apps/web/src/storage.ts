@@ -31,6 +31,7 @@ const MAX_STORED_RESULTS = 60;
 
 export interface Settings {
   soundOn: boolean;
+  bgmOn: boolean;
   reducedMotion: boolean;
   highContrast: boolean;
   fontScale: FontScale;
@@ -60,6 +61,7 @@ function prefersReducedMotion(): boolean {
 function defaultSettings(): Settings {
   return {
     soundOn: true,
+    bgmOn: true,
     // 仕様書§20: OS側のアニメーション削減設定を初回起動時の既定値に反映する
     reducedMotion: prefersReducedMotion(),
     highContrast: false,

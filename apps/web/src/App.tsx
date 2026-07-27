@@ -61,6 +61,25 @@ export function App(): JSX.Element {
   sound.enabled = settings.soundOn;
 
   useEffect(() => {
+    sound.setMusicEnabled(settings.bgmOn);
+  }, [settings.bgmOn, sound]);
+
+  useEffect(() => {
+    const mode = screen.name === "landing" ? "home" : screen.name === "game" ? "game" : null;
+    sound.setMusic(settings.bgmOn ? mode : null);
+  }, [screen.name, settings.bgmOn, sound]);
+
+  useEffect(() => {
+    const unlockAudio = (): void => sound.unlock();
+    window.addEventListener("pointerdown", unlockAudio, { once: true });
+    window.addEventListener("keydown", unlockAudio, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", unlockAudio);
+      window.removeEventListener("keydown", unlockAudio);
+    };
+  }, [sound]);
+
+  useEffect(() => {
     document.documentElement.style.setProperty("--font-scale", String(settings.fontScale));
     document.documentElement.classList.toggle("high-contrast", settings.highContrast);
     // CSSアニメーション(ホーム画面の登場演出・環境演出)もアプリ内の
@@ -79,6 +98,7 @@ export function App(): JSX.Element {
 
   const startGame = (mode: GameMode): void => {
     sound.unlock();
+    sound.setMusic(settings.bgmOn ? "game" : null);
     const resolvedMode =
       mode.type === "daily"
         ? {

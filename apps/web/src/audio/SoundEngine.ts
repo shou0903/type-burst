@@ -49,25 +49,24 @@ export class SoundEngine {
     try {
       this.ctx = new AudioContext();
       this.master = this.ctx.createGain();
-      this.master.gain.value = 0.62;
+      this.master.gain.value = 0.5;
 
-      // 高域を丸める(D-087)。矩形波の高次倍音やノイズのヒス成分が
-      // 「キンキンする」原因なので、6kHz以上をなだらかに落として
-      // 寿司打のような木質・中低域中心の質感に寄せる。
-      const tone = this.ctx.createBiquadFilter();
-      tone.type = "lowpass";
-      tone.frequency.value = 6000;
-      tone.Q.value = 0.7;
-
-      // リミッター。ピークを抑えて全体の密度を上げる
-      const limiter = this.ctx.createDynamicsCompressor();
-      limiter.threshold.value = -16;
-      limiter.knee.value = 10;
-      limiter.ratio.value = 8;
-      limiter.attack.value = 0.003;
-      limiter.release.value = 0.14;
-
-      this.master.connect(tone).connect(limiter).connect(this.ctx.destination);
+      /*
+       * D-088: マスターの後段(D-086のリミッター、D-087の6kHzローパス)を全て撤去し、
+       * D-086以前と同じ「master → destination」だけの経路へ戻した。
+       *
+       * 撤去した理由:
+       *  1. ローパスは矩形波の高次倍音を削るため、打鍵音が元の音にならない。
+       *  2. リミッターは小音量を素通りさせる想定だったが、実測すると打鍵音の
+       *     ピークを 0.0164 → 0.0068 (約59%減)まで落としていた。しきい値を
+       *     -3dBまで上げても減衰し、DynamicsCompressorは意図した動作をしない。
+       *  3. そもそもクリッピング対策が不要だった。最も大きいTYPE BURSTでも
+       *     ピークは約0.254で、1.0に対して十分な余裕がある。
+       *
+       * 効果音の音量バランスを変えたくなったら、マスターに処理を足すのではなく
+       * 各メソッドの gain を個別に調整すること。
+       */
+      this.master.connect(this.ctx.destination);
     } catch {
       this.ctx = null;
     }
@@ -143,36 +142,25 @@ export class SoundEngine {
   // ------------------------------------------------------------------
 
   /**
-   * 正解キー。1試合で数百回鳴るため、短く・軽く・毎回わずかに高さを散らす。
+   * 正解キー。
    *
-   * D-087: 以前は highpass 3400Hz のノイズ + 矩形波1420Hz で作っていたが、
-   * 実測でエネルギーの35%が1.5kHz以上に集中し「キンキンした甲高い音」に
-   * なっていた(矩形波は4.2k/7.1k/9.9kHzに強い倍音が立つ)。
-   * 寿司打のような木を叩く「コッ」に寄せるため、ノイズはlowpassで胴鳴りに、
-   * 音程は三角波の中低域に置き換えた。
+   * D-088: D-086で2層構成に作り直し、D-087で中低域へ寄せたが、ユーザーの
+   * 判断で元の音へ差し戻した。ここはD-086以前と完全に同一の実装であり、
+   * 今後この2つ(keyTap / keyMiss)を「良くしよう」として変更しないこと。
+   * 打鍵音は好みが強く出る部分で、既にこの音が選ばれている。
    */
   keyTap(): void {
-    this.noise(24, { gain: 0.06, filter: "lowpass", freq: 1500, decay: 2.6 });
-    this.tone(700, 36, { type: "triangle", gain: 0.055, endFreq: 400, jitter: 0.05 });
+    this.tone(1150 + Math.random() * 120, 40, { type: "square", gain: 0.035 });
   }
 
-  /**
-   * ミスキー。正解音と絶対に混同させないことを最優先する。
-   * ・正解より低く・長く・大きくして、埋もれないようにする
-   * ・ごく近い2音を重ねた「うなり」で濁らせる(不協和は倍音ではなくビートで作る)
-   * ・はっきり下降させて「外した」ことを示す
-   * D-087: 矩形波520Hzを廃止。高次倍音が耳に刺さる原因だった。
-   */
+  /** ミスキー。D-088でD-086以前の実装へ差し戻し済み(keyTapと同じ理由) */
   keyMiss(): void {
-    this.noise(90, { gain: 0.1, filter: "lowpass", freq: 850, decay: 2 });
-    this.tone(185, 175, { type: "triangle", gain: 0.12, endFreq: 118 });
-    this.tone(196, 175, { type: "triangle", gain: 0.1, endFreq: 125 });
+    this.tone(150, 80, { type: "triangle", gain: 0.05 });
   }
 
   targetLock(): void {
-    this.noise(16, { gain: 0.035, filter: "lowpass", freq: 1800, decay: 2.6 });
-    this.tone(620, 70, { type: "sine", gain: 0.07 });
-    this.tone(930, 90, { type: "sine", gain: 0.045, delayMs: 45 });
+    this.tone(720, 60, { type: "sine", gain: 0.07 });
+    this.tone(1080, 70, { type: "sine", gain: 0.05, delayMs: 40 });
   }
 
   // ------------------------------------------------------------------

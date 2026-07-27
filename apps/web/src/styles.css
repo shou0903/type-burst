@@ -5196,3 +5196,96 @@ body {
     display: none;
   }
 }
+
+/* ====================================================================
+   D-087: 副次導線タイルを従来の高さへ戻し、密度を上げる
+   D-086で中身を入れた結果タイルが縦に伸びてしまったため、余白・行間・
+   スパークラインの高さを詰め、情報量は保ったまま元の背丈に収める。
+   タイル全体の高さは最も背の高い「CPUと対戦」で決まるので、そちらも縮める。
+   ==================================================================== */
+
+.screen.landing.lp .lp-deck {
+  padding: 12px 13px 11px;
+}
+
+.screen.landing.lp .lp-deck-duel {
+  gap: 7px;
+}
+
+.screen.landing.lp .lp-deck-go {
+  padding: 7px;
+  font-size: 12.5px;
+}
+
+.screen.landing.lp .lp-pills button {
+  padding: 6px 8px;
+  font-size: 12px;
+}
+
+.screen.landing.lp .lp-deck-rich {
+  gap: 7px;
+  padding: 12px 13px 11px;
+}
+
+.screen.landing.lp .lp-deck-top .lp-deck-title {
+  font-size: 13px;
+}
+
+.screen.landing.lp .lp-deck-kicker {
+  font-size: 9px;
+}
+
+/* 「→」の行は独立させず、右端の小さな矢印に畳んで1行ぶん節約する */
+.screen.landing.lp .lp-deck-foot {
+  padding-top: 0;
+  font-size: 10px;
+}
+
+.screen.landing.lp .lp-podium {
+  gap: 4px;
+}
+
+.screen.landing.lp .lp-podium-row {
+  padding: 3px 6px;
+}
+
+.screen.landing.lp .lp-medal {
+  width: 16px;
+  height: 16px;
+  font-size: 9.5px;
+}
+
+.screen.landing.lp .lp-podium-name,
+.screen.landing.lp .lp-podium-score {
+  font-size: 11px;
+}
+
+.screen.landing.lp .lp-spark-wrap {
+  min-height: 34px;
+}
+
+.screen.landing.lp .lp-spark {
+  height: 34px;
+}
+
+.screen.landing.lp .lp-microstats > span {
+  padding: 4px 7px;
+}
+
+.screen.landing.lp .lp-microstats b {
+  font-size: 14px;
+}
+
+.screen.landing.lp .lp-learn {
+  gap: 4px;
+}
+
+.screen.landing.lp .lp-learn-item {
+  padding: 4px 5px;
+  font-size: 10px;
+}
+
+.screen.landing.lp .lp-deck-empty {
+  font-size: 11px;
+  line-height: 1.6;
+}

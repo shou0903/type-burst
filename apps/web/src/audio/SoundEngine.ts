@@ -51,6 +51,14 @@ export class SoundEngine {
       this.master = this.ctx.createGain();
       this.master.gain.value = 0.62;
 
+      // 高域を丸める(D-087)。矩形波の高次倍音やノイズのヒス成分が
+      // 「キンキンする」原因なので、6kHz以上をなだらかに落として
+      // 寿司打のような木質・中低域中心の質感に寄せる。
+      const tone = this.ctx.createBiquadFilter();
+      tone.type = "lowpass";
+      tone.frequency.value = 6000;
+      tone.Q.value = 0.7;
+
       // リミッター。ピークを抑えて全体の密度を上げる
       const limiter = this.ctx.createDynamicsCompressor();
       limiter.threshold.value = -16;
@@ -59,7 +67,7 @@ export class SoundEngine {
       limiter.attack.value = 0.003;
       limiter.release.value = 0.14;
 
-      this.master.connect(limiter).connect(this.ctx.destination);
+      this.master.connect(tone).connect(limiter).connect(this.ctx.destination);
     } catch {
       this.ctx = null;
     }
@@ -136,32 +144,35 @@ export class SoundEngine {
 
   /**
    * 正解キー。1試合で数百回鳴るため、短く・軽く・毎回わずかに高さを散らす。
-   * 「カチッ」という立ち上がりのノイズ + 高めの短い胴体、の2層。
+   *
+   * D-087: 以前は highpass 3400Hz のノイズ + 矩形波1420Hz で作っていたが、
+   * 実測でエネルギーの35%が1.5kHz以上に集中し「キンキンした甲高い音」に
+   * なっていた(矩形波は4.2k/7.1k/9.9kHzに強い倍音が立つ)。
+   * 寿司打のような木を叩く「コッ」に寄せるため、ノイズはlowpassで胴鳴りに、
+   * 音程は三角波の中低域に置き換えた。
    */
   keyTap(): void {
-    this.noise(16, { gain: 0.05, filter: "highpass", freq: 3400, decay: 3 });
-    this.tone(1420, 26, { type: "square", gain: 0.028, endFreq: 940, jitter: 0.07 });
+    this.noise(24, { gain: 0.06, filter: "lowpass", freq: 1500, decay: 2.6 });
+    this.tone(700, 36, { type: "triangle", gain: 0.055, endFreq: 400, jitter: 0.05 });
   }
 
   /**
    * ミスキー。正解音と絶対に混同させないことを最優先する。
-   * ・帯域を低くする(正解は高域、ミスは中低域)
-   * ・半音差の2音を重ねて「うなり」を作り、濁った質感にする
+   * ・正解より低く・長く・大きくして、埋もれないようにする
+   * ・ごく近い2音を重ねた「うなり」で濁らせる(不協和は倍音ではなくビートで作る)
    * ・はっきり下降させて「外した」ことを示す
-   * 連打されても痛くないよう、長さは130ms程度に抑える。
+   * D-087: 矩形波520Hzを廃止。高次倍音が耳に刺さる原因だった。
    */
   keyMiss(): void {
-    this.noise(80, { gain: 0.1, filter: "bandpass", freq: 700, q: 1.4, decay: 2 });
-    // 半音差 = 不協和。2音のうなりで「濁り」を作る
-    this.tone(233, 150, { type: "sawtooth", gain: 0.075, endFreq: 150 });
-    this.tone(220, 150, { type: "sawtooth", gain: 0.075, endFreq: 142 });
-    this.tone(520, 90, { type: "square", gain: 0.05, endFreq: 190 });
+    this.noise(90, { gain: 0.1, filter: "lowpass", freq: 850, decay: 2 });
+    this.tone(185, 175, { type: "triangle", gain: 0.12, endFreq: 118 });
+    this.tone(196, 175, { type: "triangle", gain: 0.1, endFreq: 125 });
   }
 
   targetLock(): void {
-    this.noise(12, { gain: 0.03, filter: "highpass", freq: 4000, decay: 3 });
-    this.tone(760, 70, { type: "sine", gain: 0.07 });
-    this.tone(1140, 90, { type: "sine", gain: 0.05, delayMs: 45 });
+    this.noise(16, { gain: 0.035, filter: "lowpass", freq: 1800, decay: 2.6 });
+    this.tone(620, 70, { type: "sine", gain: 0.07 });
+    this.tone(930, 90, { type: "sine", gain: 0.045, delayMs: 45 });
   }
 
   // ------------------------------------------------------------------
@@ -172,7 +183,7 @@ export class SoundEngine {
   explosion(chain: number): void {
     const depth = Math.min(chain, 8);
     // 1. 空気を切る立ち上がり
-    this.noise(70, { gain: 0.16 + depth * 0.012, filter: "highpass", freq: 1600, decay: 2.6 });
+    this.noise(70, { gain: 0.16 + depth * 0.012, filter: "bandpass", freq: 1600, decay: 2.6 });
     // 2. 胴体(こもった破裂音)
     this.noise(180 + depth * 22, {
       gain: 0.16 + depth * 0.014,
@@ -200,7 +211,7 @@ export class SoundEngine {
     const freq = scale[idx] ?? 523;
     const boost = Math.min(chain, 9) / 9;
 
-    this.noise(14, { gain: 0.04 + boost * 0.05, filter: "highpass", freq: 4200, decay: 3 });
+    this.noise(14, { gain: 0.04 + boost * 0.05, filter: "bandpass", freq: 2000, decay: 3 });
     this.tone(freq, 190, { type: "triangle", gain: 0.11 + boost * 0.06 });
     this.tone(freq * 1.5, 230, { type: "sine", gain: 0.05 + boost * 0.05, delayMs: 55 });
     // 深い連鎖では1オクターブ上を重ねて煌めきを足す
@@ -223,14 +234,14 @@ export class SoundEngine {
     this.tone(880, 100, { type: "triangle", gain: 0.1 });
     this.tone(1109, 100, { type: "triangle", gain: 0.1, delayMs: 85 });
     this.tone(1319, 220, { type: "triangle", gain: 0.13, delayMs: 170 });
-    this.noise(18, { gain: 0.05, filter: "highpass", freq: 4000, decay: 3, delayMs: 170 });
+    this.noise(18, { gain: 0.05, filter: "bandpass", freq: 2000, decay: 3, delayMs: 170 });
   }
 
   /** TYPE BURST 発動。ゲーム中で最も大きい音 */
   burst(): void {
     // 吸い込み → 放出、の順で「溜めて出す」印象にする
     this.tone(300, 130, { type: "sine", gain: 0.1, endFreq: 1500 });
-    this.noise(90, { gain: 0.22, filter: "highpass", freq: 2200, decay: 2.4, delayMs: 110 });
+    this.noise(90, { gain: 0.22, filter: "bandpass", freq: 1700, decay: 2.4, delayMs: 110 });
     this.noise(520, { gain: 0.3, filter: "lowpass", freq: 2000, decay: 1.4, delayMs: 120 });
     this.tone(150, 620, { type: "sawtooth", gain: 0.3, endFreq: 30, delayMs: 120 });
     this.tone(70, 640, { type: "sine", gain: 0.26, endFreq: 26, delayMs: 130 });
@@ -245,7 +256,7 @@ export class SoundEngine {
     notes.forEach((f, i) =>
       this.tone(f * 2, 200, { type: "sine", gain: 0.05, delayMs: i * 85 + 30 }),
     );
-    this.noise(320, { gain: 0.1, filter: "highpass", freq: 3000, decay: 1.6, delayMs: 340 });
+    this.noise(320, { gain: 0.1, filter: "bandpass", freq: 1800, decay: 1.6, delayMs: 340 });
   }
 
   /** フィーバータイム開始(単発SFX。ループBGMは使わない, D-052) */
@@ -254,7 +265,7 @@ export class SoundEngine {
     notes.forEach((f, i) =>
       this.tone(f, 150, { type: "sawtooth", gain: 0.13, delayMs: i * 65 }),
     );
-    this.noise(240, { gain: 0.14, filter: "highpass", freq: 1800, decay: 1.8, delayMs: 80 });
+    this.noise(240, { gain: 0.14, filter: "bandpass", freq: 1800, decay: 1.8, delayMs: 80 });
     this.tone(110, 420, { type: "sine", gain: 0.18, endFreq: 55, delayMs: 60 });
   }
 
@@ -265,7 +276,7 @@ export class SoundEngine {
   }
 
   levelUp(): void {
-    this.noise(14, { gain: 0.04, filter: "highpass", freq: 4200, decay: 3 });
+    this.noise(14, { gain: 0.04, filter: "bandpass", freq: 2000, decay: 3 });
     this.tone(659, 130, { type: "triangle", gain: 0.1 });
     this.tone(880, 210, { type: "triangle", gain: 0.12, delayMs: 105 });
     this.tone(1319, 220, { type: "sine", gain: 0.05, delayMs: 105 });
@@ -277,7 +288,7 @@ export class SoundEngine {
 
   garbageSend(): void {
     this.tone(300, 230, { type: "sawtooth", gain: 0.085, endFreq: 950 });
-    this.noise(60, { gain: 0.05, filter: "highpass", freq: 2400, decay: 2, delayMs: 150 });
+    this.noise(60, { gain: 0.05, filter: "bandpass", freq: 1600, decay: 2, delayMs: 150 });
   }
 
   garbageLand(): void {
@@ -311,7 +322,7 @@ export class SoundEngine {
   }
 
   gameStart(): void {
-    this.noise(24, { gain: 0.07, filter: "highpass", freq: 3000, decay: 2.6 });
+    this.noise(24, { gain: 0.07, filter: "bandpass", freq: 1800, decay: 2.6 });
     this.tone(880, 190, { type: "sine", gain: 0.14 });
     this.tone(1320, 260, { type: "sine", gain: 0.1, delayMs: 90 });
   }
@@ -327,7 +338,7 @@ export class SoundEngine {
     notes.forEach((f, i) =>
       this.tone(f, 270, { type: "triangle", gain: 0.13, delayMs: i * 125 }),
     );
-    this.noise(280, { gain: 0.09, filter: "highpass", freq: 3200, decay: 1.6, delayMs: 500 });
+    this.noise(280, { gain: 0.09, filter: "bandpass", freq: 1900, decay: 1.6, delayMs: 500 });
   }
 
   lose(): void {

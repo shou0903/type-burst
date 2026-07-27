@@ -6,6 +6,5 @@ TYPE BURST 報道関係者向け素材
 サービスURL: https://type-burst.com/
 連絡先: typeblast.official@outlook.jp
 
-素材の使い分け:
+素材:
 - type-burst-logo-key-visual.png: 背景入りのロゴキービジュアル。記事のアイキャッチやサムネイル向け。
-- type-burst-logo-light.png / type-burst-logo-dark.png / type-burst-logo.svg: ロゴ単体を配置する場合向け。

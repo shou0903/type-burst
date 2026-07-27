@@ -44,8 +44,8 @@
       .shell { width: min(1120px, calc(100% - 40px)); margin: 0 auto; }
       .topbar { border-bottom: 1px solid var(--line); background: rgba(255,255,255,.92); backdrop-filter: blur(18px); }
       .topbar-inner { min-height: 72px; display: flex; align-items: center; justify-content: space-between; gap: 18px; }
-      .wordmark { display: inline-flex; align-items: center; text-decoration: none; }
-      .wordmark img { display: block; width: 186px; height: auto; }
+      .wordmark { display: inline-flex; align-items: center; color: var(--ink); font-family: "Arial Black", Impact, sans-serif; font-size: 1.18rem; letter-spacing: .04em; text-decoration: none; }
+      .wordmark span { color: var(--coral); }
       .top-link { color: var(--muted); font-size: .9rem; }
       .top-link:hover { color: var(--ink); }
       main { padding: 72px 0 76px; }
@@ -68,9 +68,9 @@
       section { margin-top: 68px; }
       .section-intro { max-width: 760px; color: var(--muted); }
       .copy-grid { display: grid; gap: 16px; }
-      .copy-card, .asset-card, .video-card, .logo-card { border: 1px solid var(--line); border-radius: 18px; background: var(--panel); }
+      .copy-card, .asset-card { border: 1px solid var(--line); border-radius: 18px; background: var(--panel); }
       .copy-card { padding: 22px; }
-      .copy-head, .asset-footer, .video-head, .logo-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+      .copy-head, .asset-footer, .logo-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
       .copy-head { margin-bottom: 14px; }
       .copy-label { color: var(--cyan); font-size: .82rem; font-weight: 900; letter-spacing: .08em; }
       .copy-text { margin: 0; white-space: pre-wrap; color: #3f4b60; font-size: .97rem; }
@@ -89,16 +89,6 @@
       .asset-meta { color: var(--muted); font-size: .8rem; }
       .download-link { color: var(--cyan); font-size: .88rem; font-weight: 800; white-space: nowrap; }
       .download-link:hover { color: var(--ink); }
-      .video-grid, .logo-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
-      .video-card { padding: 15px; }
-      .video-card video { display: block; width: 100%; margin: 14px 0; border: 1px solid var(--line); border-radius: 12px; background: #000; }
-      .video-note { margin: 0; color: var(--muted); font-size: .86rem; }
-      .logo-card { overflow: hidden; }
-      .logo-preview { display: grid; min-height: 188px; place-items: center; padding: 34px; }
-      .logo-preview.light { background: #eff3fa; }
-      .logo-preview.dark { background: #0b1020; }
-      .logo-preview img { width: min(100%, 400px); }
-      .logo-card .logo-head { padding: 14px 16px; }
       .logo-key-visual { overflow: hidden; margin-bottom: 18px; border: 1px solid var(--line); border-radius: 18px; background: var(--panel); }
       .logo-key-visual > a { display: block; background: #070914; }
       .logo-key-visual img { display: block; width: 100%; max-height: 480px; object-fit: cover; object-position: center; }
@@ -114,7 +104,7 @@
         .topbar-inner { min-height: 62px; }
         .top-link { font-size: .78rem; }
         main { padding-top: 44px; }
-        .permission ul, .asset-grid, .video-grid, .logo-grid { grid-template-columns: 1fr; }
+        .permission ul, .asset-grid { grid-template-columns: 1fr; }
         .fact-table th, .fact-table td { display: block; width: 100%; padding: 11px 14px; }
         .fact-table th { padding-bottom: 2px; border-bottom: 0; }
         .fact-table td { padding-top: 2px; }
@@ -124,7 +114,7 @@
   <body>
     <header class="topbar">
       <div class="shell topbar-inner">
-        <a class="wordmark" href="/" aria-label="TYPE BURST トップページ"><img src="/press/logos/type-burst-logo-light.png" alt="TYPE BURST" /></a>
+        <a class="wordmark" href="/" aria-label="TYPE BURST トップページ">TYPE <span>BURST</span></a>
         <a class="top-link" href="https://type-burst.com/">サービスを開く ↗</a>
       </div>
     </header>
@@ -201,27 +191,13 @@
         </div>
       </section>
 
-      <section aria-labelledby="video-title">
-        <p class="eyebrow">VIDEO</p>
-        <h2 id="video-title">動画素材</h2>
-        <div class="video-grid">
-          <article class="video-card"><div class="video-head"><strong>紹介動画（音声あり）</strong><a class="download-link" href="/press/video/TYPE_BURST_PV_20s.mp4" download>MP4をDL ↓</a></div><video controls preload="metadata" poster="/press/images/chain-1920x1204.png"><source src="/press/video/TYPE_BURST_PV_20s.mp4" type="video/mp4" />お使いのブラウザは動画再生に対応していません。</video><p class="video-note">20秒の紹介動画です。SNS投稿や動画記事の素材としてご利用いただけます。</p></article>
-          <article class="video-card"><div class="video-head"><strong>紹介動画（無音版）</strong><a class="download-link" href="/press/video/TYPE_BURST_PV_20s_無音版.mp4" download>MP4をDL ↓</a></div><video controls muted preload="metadata" poster="/press/images/chain-1920x1204.png"><source src="/press/video/TYPE_BURST_PV_20s_無音版.mp4" type="video/mp4" />お使いのブラウザは動画再生に対応していません。</video><p class="video-note">記事埋め込み用の無音版です。媒体側の音声・ナレーションに合わせやすい素材です。</p></article>
-        </div>
-      </section>
-
       <section aria-labelledby="logo-title">
         <p class="eyebrow">LOGO</p>
-        <h2 id="logo-title">ロゴ素材</h2>
+        <h2 id="logo-title">ロゴキービジュアル</h2>
         <article class="logo-key-visual">
           <a href="/press/logos/type-burst-logo-key-visual.png" download><img src="/press/logos/type-burst-logo-key-visual.png" alt="TYPE BURSTのロゴキービジュアル。青とオレンジの爆発を背景に、TYPE BURSTの文字とタイピングキーが描かれている" /></a>
           <div class="logo-head"><span><strong>ロゴキービジュアル PNG</strong><br /><span class="asset-meta">背景入り・アイキャッチ／サムネイル向け</span></span><a class="download-link" href="/press/logos/type-burst-logo-key-visual.png" download>原寸DL ↓</a></div>
         </article>
-        <div class="logo-grid">
-          <article class="logo-card"><div class="logo-preview light"><img src="/press/logos/type-burst-logo-light.png" alt="明るい背景用TYPE BURSTロゴ" /></div><div class="logo-head"><span><strong>明るい背景用 PNG</strong><br /><span class="asset-meta">背景透過</span></span><a class="download-link" href="/press/logos/type-burst-logo-light.png" download>DL ↓</a></div></article>
-          <article class="logo-card"><div class="logo-preview dark"><img src="/press/logos/type-burst-logo-dark.png" alt="暗い背景用TYPE BURSTロゴ" /></div><div class="logo-head"><span><strong>暗い背景用 PNG</strong><br /><span class="asset-meta">背景透過</span></span><a class="download-link" href="/press/logos/type-burst-logo-dark.png" download>DL ↓</a></div></article>
-          <article class="logo-card"><div class="logo-preview dark"><img src="/press/logos/type-burst-logo.svg" alt="TYPE BURSTロゴ SVG" /></div><div class="logo-head"><span><strong>SVG</strong><br /><span class="asset-meta">ベクター形式</span></span><a class="download-link" href="/press/logos/type-burst-logo.svg" download>DL ↓</a></div></article>
-        </div>
       </section>
 
       <section class="contact" aria-labelledby="contact-title">

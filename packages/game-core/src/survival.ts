@@ -57,7 +57,13 @@ export class SurvivalGame {
         : null;
     const profile = config.survivalDifficulty[difficulty];
     this.countdownMsLeft = config.countdownMs;
-    this.lastCountdownSecond = Math.ceil(config.countdownMs / 1000);
+    // D-089: 最初の数字(既定では「3」)の分だけ音が鳴らないバグの修正。
+    // 以前はここを Math.ceil(countdownMs / 1000) で初期化していたため、
+    // 1フレーム目に計算される second と値が一致し「変化なし」と判定され、
+    // countdownTick が発火しなかった。表示は 3→2→1 の3つなのに音は2つとなり、
+    // 音が1つ遅れているように聞こえていた。
+    // 絶対に一致しない番兵値にして、1フレーム目から必ず発火させる。
+    this.lastCountdownSecond = -1;
     // 行上昇(config.survivalRise)は共通のまま、文章の長さ配分だけ難易度で変える(D-033, D-039)
     const effectiveConfig: GameConfig = {
       ...config,

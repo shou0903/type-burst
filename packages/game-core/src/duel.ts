@@ -168,7 +168,9 @@ export class DuelGame {
     this.difficulty = difficulty;
     this.config = config;
     this.countdownMsLeft = config.countdownMs;
-    this.lastCountdownSecond = Math.ceil(config.countdownMs / 1000);
+    // D-089: サバイバルと同じく、最初の数字の分だけ音が鳴らないバグの修正。
+    // 詳細は survival.ts の同じ箇所のコメントを参照。
+    this.lastCountdownSecond = -1;
     this.player = new PlayerCore(`${seed}:p1`, phrases, garbagePhrases, config, config.duelRise);
     this.cpu = new PlayerCore(`${seed}:p2`, phrases, garbagePhrases, config, config.duelRise);
     this.cpuDriver = new CpuDriver(this.cpu, new Prng(`${seed}:cpu`), config.cpu[difficulty], config);

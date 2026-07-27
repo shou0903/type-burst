@@ -858,3 +858,40 @@ describe("タイピング分析(D-048)", () => {
     );
   });
 });
+
+describe("開始カウントダウン(D-089)", () => {
+  /** 実際のrAFに近い刻みで1フレームずつ進め、発火したtickと画面表示を並べて集める */
+  function collectCountdown(game: SurvivalGame): { ticks: number[]; shown: number[] } {
+    const ticks: number[] = [];
+    const shown: number[] = [];
+    for (let i = 0; i < 240; i++) {
+      for (const event of game.advance(16.7)) {
+        if (event.type === "countdownTick") ticks.push(event.secondsLeft);
+      }
+      const snapshot = game.getSnapshot();
+      if (snapshot.phase !== "countdown") break;
+      // BoardRenderer.drawOverlay と同じ式で「画面に出ている数字」を再現する
+      shown.push(Math.max(1, Math.ceil(snapshot.countdownMsLeft / 1000)));
+    }
+    return { ticks, shown };
+  }
+
+  it("表示される数字と同じ回数・同じ値の音が鳴る(3・2・1)", () => {
+    const { ticks, shown } = collectCountdown(newGame("countdown-sync"));
+
+    // 画面に出る数字は 3 → 2 → 1 の3種類
+    expect([...new Set(shown)]).toEqual([3, 2, 1]);
+    // 音も同じ3回・同じ値。以前は最初の「3」だけ鳴らず [2, 1] になっていた
+    expect(ticks).toEqual([3, 2, 1]);
+  });
+
+  it("カウントダウン終了時にstartedが発火し、プレイ状態へ移る", () => {
+    const game = newGame("countdown-start");
+    const events: GameEvent[] = [];
+    for (let i = 0; i < 240 && game.getSnapshot().phase === "countdown"; i++) {
+      events.push(...game.advance(16.7));
+    }
+    expect(events.filter((e) => e.type === "started")).toHaveLength(1);
+    expect(game.getSnapshot().phase).toBe("playing");
+  });
+});

@@ -54,6 +54,20 @@ const SURVIVAL_TIERS: Array<{
 
 const CPU_ORDER: CpuDifficulty[] = ["easy", "normal", "hard"];
 
+/**
+ * 記事から来た人には、本文で案内した難易度を最初から選択して見せる。
+ * 音声の有効化と誤操作防止のため、ゲーム開始自体は必ず本人のクリックに任せる。
+ */
+function guideSurvivalDifficulty(): SurvivalDifficulty | null {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("mode") !== "survival") return null;
+
+  const difficulty = params.get("difficulty");
+  return difficulty === "easy" || difficulty === "normal" || difficulty === "hard" || difficulty === "god"
+    ? difficulty
+    : null;
+}
+
 export function LandingScreen({
   settings,
   results,
@@ -64,8 +78,11 @@ export function LandingScreen({
   onShowRanking,
   onShowGrowth,
 }: Props): JSX.Element {
+  const [guideDifficulty] = useState<SurvivalDifficulty | null>(guideSurvivalDifficulty);
   const [difficulty, setDifficulty] = useState<CpuDifficulty>("normal");
-  const [survivalDifficulty, setSurvivalDifficulty] = useState<SurvivalDifficulty>("normal");
+  const [survivalDifficulty, setSurvivalDifficulty] = useState<SurvivalDifficulty>(
+    () => guideDifficulty ?? "normal",
+  );
   const [howtoOpen, setHowtoOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const best = bestScore(results, survivalDifficulty);
@@ -95,6 +112,11 @@ export function LandingScreen({
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [onStart, survivalDifficulty]);
+
+  useEffect(() => {
+    if (guideDifficulty === null) return;
+    document.getElementById("play")?.focus({ preventScroll: true });
+  }, [guideDifficulty]);
 
   return (
     <div className="screen landing lp">
@@ -204,6 +226,7 @@ export function LandingScreen({
 
           {/* 主行動: 盤面のブロックと同じ質感で描き、押すと沈んで「爆破」する */}
           <button
+            id="play"
             className="lp-play"
             onClick={() => onStart({ type: "survival", difficulty: survivalDifficulty })}
           >

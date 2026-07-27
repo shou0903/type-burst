@@ -623,6 +623,32 @@ td {
   margin: 0 auto 22px;
 }
 
+.cta-route {
+  width: min(100%, 520px);
+  margin: 22px auto !important;
+  border: 1px solid #d9e2ec;
+  border-radius: 10px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.82);
+  color: #445168;
+  font-size: 14px;
+  text-align: left;
+}
+
+.cta-route strong {
+  color: var(--text);
+}
+
+.cta-route span {
+  display: inline-block;
+  margin-right: 10px;
+  color: var(--blue);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+}
+
 .cta-button {
   display: inline-flex;
   min-height: 48px;
@@ -773,6 +799,10 @@ td {
   .worksheet-row {
     grid-template-columns: 1fr;
     gap: 2px;
+  }
+
+  .cta-route {
+    padding: 13px 14px;
   }
 
   th,

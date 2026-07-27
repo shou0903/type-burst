@@ -62,7 +62,8 @@ export class SoundEngine {
     const now = this.ctx.currentTime;
     this.musicBus.gain.cancelScheduledValues(now);
     this.musicBus.gain.setValueAtTime(0.001, now);
-    this.musicBus.gain.exponentialRampToValueAtTime(mode === "home" ? 0.09 : 0.07, now + 0.28);
+    // 各ノートの音量と掛け合わせても聞き取れる、ただし効果音より小さいBGM専用の音量。
+    this.musicBus.gain.exponentialRampToValueAtTime(mode === "home" ? 0.38 : 0.32, now + 0.28);
     this.musicNextAt = now + 0.04;
     this.musicStep = 0;
     this.scheduleMusic(generation);
@@ -100,10 +101,10 @@ export class SoundEngine {
     const root = roots[Math.floor(step / 8) % roots.length] ?? 220;
     const intervals = [0, 7, 12, 7, 4, 7, 11, 7];
     const interval = intervals[step % intervals.length] ?? 0;
-    this.musicTone(root * 2 ** (interval / 12), 0.28, at, "triangle", 0.024);
+    this.musicTone(root * 2 ** (interval / 12), 0.28, at, "triangle", 0.075);
     if (step % 8 === 0) {
-      this.musicTone(root / 2, 1.45, at, "sine", 0.017);
-      this.musicTone(root * 2, 0.68, at + 0.32, "sine", 0.008);
+      this.musicTone(root / 2, 1.45, at, "sine", 0.045);
+      this.musicTone(root * 2, 0.68, at + 0.32, "sine", 0.018);
     }
   }
 
@@ -112,9 +113,9 @@ export class SoundEngine {
     const root = roots[Math.floor(step / 8) % roots.length] ?? 174.61;
     const intervals = [0, 3, 7, 10, 7, 3, 5, 7];
     const interval = intervals[step % intervals.length] ?? 0;
-    if (step % 2 === 0) this.musicTone(root * 2 ** (interval / 12) * 2, 0.12, at, "triangle", 0.018);
-    if (step % 4 === 0) this.musicTone(root / 2, 0.2, at, "sine", 0.018);
-    if (step % 8 === 4) this.musicTone(root * 2, 0.3, at, "sine", 0.009);
+    if (step % 2 === 0) this.musicTone(root * 2 ** (interval / 12) * 2, 0.12, at, "triangle", 0.07);
+    if (step % 4 === 0) this.musicTone(root / 2, 0.2, at, "sine", 0.045);
+    if (step % 8 === 4) this.musicTone(root * 2, 0.3, at, "sine", 0.025);
   }
 
   private musicTone(

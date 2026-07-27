@@ -4562,3 +4562,637 @@ body {
     display: none;
   }
 }
+
+/* ====================================================================
+   D-086: 副次導線タイルに実データを載せる
+   アイコンと見出しだけで間延びしていた3枚(世界ランキング/成長記録/
+   チュートリアル)を、実際の中身を持つカードにした。
+   ==================================================================== */
+
+.lp-decks {
+  grid-template-columns: 1.15fr 1fr 1fr 1fr;
+  align-items: stretch;
+}
+
+.lp-deck-rich {
+  gap: 11px;
+  padding: 15px 16px 13px;
+  color: inherit;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: transform 0.1s ease, background 0.12s ease, border-color 0.12s ease;
+}
+
+.lp-deck-rich:hover {
+  transform: translateY(-3px);
+  background: var(--panel-2);
+  border-color: var(--line-hi);
+}
+
+.lp-deck-rich:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+.lp-deck-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lp-deck-top .lp-deck-glyph {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.lp-deck-top .lp-deck-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lp-deck-tag {
+  flex: none;
+  padding: 2px 7px;
+  font-size: 10px;
+  font-weight: bold;
+  letter-spacing: 0.06em;
+  color: var(--dim);
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: 999px;
+}
+
+.lp-deck-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  font-size: 11.5px;
+  line-height: 1.7;
+  color: var(--faint);
+}
+
+.lp-deck-foot {
+  margin-top: auto;
+  padding-top: 3px;
+  font-size: 11px;
+  font-weight: bold;
+  color: var(--dim);
+}
+
+.lp-deck-rich:hover .lp-deck-foot {
+  color: var(--text);
+}
+
+/* ---------- 世界ランキング: 上位3件 ---------- */
+
+.lp-podium {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  justify-content: center;
+}
+
+.lp-podium-row {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  background: rgba(0, 0, 0, 0.24);
+  border-radius: 6px;
+}
+
+.lp-medal {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #0c0e16;
+}
+
+.lp-medal-1 {
+  background: var(--light-lit);
+}
+.lp-medal-2 {
+  background: #d6dae8;
+}
+.lp-medal-3 {
+  background: #d99a5c;
+}
+
+.lp-podium-name {
+  font-size: 11.5px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lp-podium-score {
+  font-size: 11.5px;
+  font-weight: bold;
+  color: var(--light-lit);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 成長記録: 直近のスコア推移 ---------- */
+
+.lp-spark-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+.lp-spark {
+  width: 100%;
+  height: 44px;
+  display: block;
+  overflow: visible;
+}
+
+.lp-spark-area {
+  fill: rgba(95, 232, 182, 0.14);
+}
+
+.lp-spark-line {
+  fill: none;
+  stroke: var(--wind-lit);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.lp-spark-dot {
+  fill: var(--wind-lit);
+}
+
+.lp-spark-thin {
+  font-size: 11px;
+  color: var(--faint);
+}
+
+.lp-microstats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.lp-microstats > span {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 5px 8px;
+  background: rgba(0, 0, 0, 0.24);
+  border-radius: 6px;
+}
+
+.lp-microstats b {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.lp-microstats i {
+  font-style: normal;
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  color: var(--faint);
+}
+
+/* ---------- チュートリアル: 何を覚えられるか ---------- */
+
+.lp-learn {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  align-content: center;
+}
+
+.lp-learn-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 6px;
+  font-size: 10.5px;
+  color: var(--dim);
+  background: rgba(0, 0, 0, 0.24);
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.lp-learn-item i {
+  font-style: normal;
+  font-size: 9px;
+  line-height: 1;
+}
+
+.lp-glyph-fire {
+  color: var(--fire-lit);
+}
+
+/* 狭い画面では2列に畳む */
+@media (max-width: 1040px) {
+  .lp-decks {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-deck-rich {
+    transition: none;
+  }
+}
+
+:root.reduced-motion .lp-deck-rich {
+  transition: none;
+}
+
+:root.high-contrast .lp-deck-rich {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.38);
+}
+
+/* ====================================================================
+   D-086: 世界ランキング画面(専用名前空間 `rk-`)
+   順位表を並べるだけだった画面を、上位3名の表彰台 + 4位以降のリストに分けた。
+   色・記号はホーム画面と同じく盤面の4属性から借りる。
+   ==================================================================== */
+
+.screen.ranking.rk {
+  --fire: #c2402f;
+  --fire-lit: #ff8a70;
+  --water: #1f6dc2;
+  --water-lit: #6fc0ff;
+  --wind-lit: #5fe8b6;
+  --light: #c29a1f;
+  --light-lit: #ffdf70;
+  --panel: rgba(255, 255, 255, 0.04);
+  --panel-2: rgba(255, 255, 255, 0.07);
+  --line: rgba(255, 255, 255, 0.1);
+  --line-hi: rgba(255, 255, 255, 0.24);
+  --text: #eef1fb;
+  --dim: #949dba;
+  --faint: #5f6784;
+
+  gap: 16px;
+  padding: 22px 20px 44px;
+}
+
+.rk-head {
+  width: min(940px, 100%);
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  padding-bottom: 13px;
+  border-bottom: 1px solid var(--line);
+}
+
+.rk-kicker {
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  color: var(--light-lit);
+}
+
+.rk-title {
+  margin: 4px 0 0;
+  font-size: 27px;
+  letter-spacing: 0.04em;
+}
+
+.rk-back {
+  flex: none;
+  padding: 9px 16px;
+  color: var(--dim);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.rk-back:hover {
+  color: var(--text);
+  background: var(--panel-2);
+  border-color: var(--line-hi);
+}
+
+.rk-key {
+  margin-left: 6px;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  opacity: 0.7;
+}
+
+/* ---------- 難易度タブ ---------- */
+
+.rk-tabs {
+  width: min(940px, 100%);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border: 1px solid var(--line-hi);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.rk-tabs button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 11px 4px;
+  color: var(--dim);
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--line);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.rk-tabs button:last-child {
+  border-right: none;
+}
+
+.rk-tabs button span {
+  font-size: 11px;
+}
+
+.rk-tabs button:hover {
+  color: var(--text);
+  background: var(--panel-2);
+}
+
+.rk-tabs button:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: -3px;
+}
+
+.rk-tabs button[aria-pressed="true"] {
+  color: #0c0e16;
+}
+
+.rk-tabs button[aria-pressed="true"][data-lv="1"] {
+  background: var(--wind-lit);
+}
+.rk-tabs button[aria-pressed="true"][data-lv="2"] {
+  background: var(--water-lit);
+}
+.rk-tabs button[aria-pressed="true"][data-lv="3"] {
+  background: var(--light-lit);
+}
+.rk-tabs button[aria-pressed="true"][data-lv="4"] {
+  background: var(--fire-lit);
+}
+
+.rk-status {
+  padding: 26px 0;
+  font-size: 14px;
+  color: var(--dim);
+}
+
+.rk-status-error {
+  color: var(--fire-lit);
+}
+
+.rk-mine {
+  width: min(940px, 100%);
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--dim);
+  background: rgba(255, 223, 112, 0.08);
+  border: 1px solid rgba(255, 223, 112, 0.3);
+  border-radius: 9px;
+}
+
+.rk-mine strong {
+  color: var(--light-lit);
+  font-size: 15px;
+}
+
+/* ---------- 表彰台 ---------- */
+
+.rk-podium {
+  width: min(940px, 100%);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  align-items: end;
+}
+
+.rk-plinth {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 16px 12px 0;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-bottom: none;
+  border-radius: 14px 14px 0 0;
+  text-align: center;
+  overflow: hidden;
+}
+
+.rk-plinth-empty {
+  background: none;
+  border: none;
+}
+
+/* 1位を一段高くして、視線を中央へ集める */
+.rk-plinth-1 {
+  padding-top: 22px;
+  border-color: rgba(255, 223, 112, 0.45);
+  background: linear-gradient(180deg, rgba(255, 223, 112, 0.14), rgba(255, 255, 255, 0.03));
+}
+
+.rk-plinth-2 {
+  border-color: rgba(214, 218, 232, 0.32);
+}
+
+.rk-plinth-3 {
+  border-color: rgba(217, 154, 92, 0.32);
+}
+
+.rk-crown {
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--dim);
+}
+
+.rk-plinth-1 .rk-crown {
+  font-size: 26px;
+}
+
+.rk-plinth-name {
+  max-width: 100%;
+  font-size: 13.5px;
+  font-weight: bold;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rk-plinth-score {
+  font-family: "Arial Black", sans-serif;
+  font-size: 22px;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--light-lit);
+}
+
+.rk-plinth-1 .rk-plinth-score {
+  font-size: 28px;
+}
+
+.rk-plinth-meta {
+  display: flex;
+  gap: 10px;
+  font-size: 10.5px;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 台座。順位ごとに高さを変えて表彰台の形にする */
+.rk-base {
+  width: 100%;
+  margin-top: 10px;
+  display: grid;
+  place-items: center;
+  font-family: "Arial Black", sans-serif;
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.42);
+  background: rgba(255, 255, 255, 0.05);
+  border-top: 1px solid var(--line);
+}
+
+.rk-plinth-1 .rk-base {
+  height: 56px;
+  background: rgba(255, 223, 112, 0.14);
+}
+
+.rk-plinth-2 .rk-base {
+  height: 38px;
+}
+
+.rk-plinth-3 .rk-base {
+  height: 26px;
+}
+
+.rk-is-me {
+  outline: 2px solid var(--wind-lit);
+  outline-offset: -2px;
+}
+
+/* ---------- 4位以降 ---------- */
+
+.rk-list {
+  width: min(940px, 100%);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.rk-list-head,
+.rk-row {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) 110px 78px 68px;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+}
+
+.rk-list-head {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--faint);
+  background: rgba(0, 0, 0, 0.25);
+  border-bottom: 1px solid var(--line);
+}
+
+.rk-list-head span:nth-child(n + 3),
+.rk-row span:nth-child(n + 3) {
+  text-align: right;
+}
+
+.rk-list-body {
+  max-height: 46vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #4a5270 rgba(255, 255, 255, 0.04);
+}
+
+.rk-row {
+  font-size: 13px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.rk-row:last-child {
+  border-bottom: none;
+}
+
+.rk-row:nth-child(odd) {
+  background: rgba(255, 255, 255, 0.018);
+}
+
+.rk-row:hover {
+  background: var(--panel-2);
+}
+
+.rk-rank {
+  font-family: "Arial Black", sans-serif;
+  font-size: 12px;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.rk-name {
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rk-score {
+  font-weight: bold;
+  color: var(--light-lit);
+  font-variant-numeric: tabular-nums;
+}
+
+.rk-chain,
+.rk-time {
+  color: var(--dim);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 720px) {
+  .rk-list-head,
+  .rk-row {
+    grid-template-columns: 40px minmax(0, 1fr) 92px;
+  }
+
+  .rk-chain,
+  .rk-time,
+  .rk-list-head span:nth-child(4),
+  .rk-list-head span:nth-child(5) {
+    display: none;
+  }
+}

@@ -7,6 +7,7 @@ import type { DailyProgress } from "../daily";
 import { DailyChallengeCard } from "../components/DailyChallengeCard";
 import { AttractBoard } from "../components/AttractBoard";
 import { RomajiTicker } from "../components/RomajiTicker";
+import { GrowthDeck, RankingDeck, TutorialDeck } from "../components/HomeDecks";
 import { HERO_RENDERER_OPTIONS } from "../render/BoardRenderer";
 
 const FONT_SCALE_LABELS: Array<{ value: FontScale; label: string }> = [
@@ -287,29 +288,9 @@ export function LandingScreen({
           </button>
         </div>
 
-        <button className="lp-deck lp-deck-link" onClick={onShowRanking}>
-          <span className="lp-deck-glyph lp-glyph-light" aria-hidden="true">
-            ★
-          </span>
-          <span className="lp-deck-title">世界ランキング</span>
-          <span className="lp-deck-sub">難易度別・全期間</span>
-        </button>
-
-        <button className="lp-deck lp-deck-link" onClick={onShowGrowth}>
-          <span className="lp-deck-glyph lp-glyph-wind" aria-hidden="true">
-            ◆
-          </span>
-          <span className="lp-deck-title">成長記録</span>
-          <span className="lp-deck-sub">KPM・正確率の推移</span>
-        </button>
-
-        <button className="lp-deck lp-deck-link" onClick={() => onStart({ type: "tutorial" })}>
-          <span className="lp-deck-glyph lp-glyph-water" aria-hidden="true">
-            ●
-          </span>
-          <span className="lp-deck-title">チュートリアル</span>
-          <span className="lp-deck-sub">7ステップで基本を</span>
-        </button>
+        <RankingDeck difficulty={survivalDifficulty} onOpen={onShowRanking} />
+        <GrowthDeck progress={progress} results={results} onOpen={onShowGrowth} />
+        <TutorialDeck onOpen={() => onStart({ type: "tutorial" })} />
       </section>
 
       <DailyChallengeCard progress={dailyProgress} onStart={onStart} />

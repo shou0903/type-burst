@@ -355,9 +355,7 @@ export class PlayerCore {
       this.wrongKeys += 1;
       this.phraseAttemptMissed = true;
       this.logKey(key, false);
-      this.resetSelection();
       this.emit({ type: "keyRejected" });
-      this.emit({ type: "selectionReset" });
       return;
     }
 

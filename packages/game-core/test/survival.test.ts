@@ -407,6 +407,39 @@ describe("選択キャンセル(v3)", () => {
   });
 });
 
+describe("候補入力中のミス", () => {
+  it("同じ入力で候補が複数残っている途中にミスしても、入力済みの候補を解除しない", () => {
+    const game = newGame("keep-ambiguous-selection-after-miss");
+    startPlaying(game);
+    const first: Block = {
+      id: 9_997,
+      kind: "normal",
+      attribute: "fire",
+      phraseId: "duplicate-reading-a",
+      displayText: "あいうえお",
+      readingKana: "あいうえお",
+      row: 0,
+      col: 0,
+    };
+    const second: Block = { ...first, id: 9_998, phraseId: "duplicate-reading-b", col: 1 };
+    setBoard(game, [first, second]);
+
+    game.feedKey("a");
+    expect(game.getSnapshot().player.candidateBlockIds).toEqual([first.id, second.id]);
+    expect(game.getSnapshot().player.typedRomaji).toBe("a");
+
+    const events = game.feedKey("z");
+    const afterMiss = game.getSnapshot().player;
+    expect(events.some((event) => event.type === "keyRejected")).toBe(true);
+    expect(events.some((event) => event.type === "selectionReset")).toBe(false);
+    expect(afterMiss.candidateBlockIds).toEqual([first.id, second.id]);
+    expect(afterMiss.typedRomaji).toBe("a");
+
+    game.feedKey("i");
+    expect(game.getSnapshot().player.typedRomaji).toBe("ai");
+  });
+});
+
 describe("ALL CLEAR(v3)", () => {
   it("全消しでボーナスとゲージ回復、次の行がすぐ降る", () => {
     const game = newGame();

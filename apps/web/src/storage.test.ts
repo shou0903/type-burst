@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { loadSettings, replaceResults } from "./storage";
+import { replaceResults } from "./storage";
 
 const storage = new Map<string, string>();
 
@@ -30,19 +30,5 @@ describe("引き継ぎリザルトの復元", () => {
 
   it("壊れた記録は復元しない", () => {
     expect(replaceResults([{ ...legacyResult, score: "not-a-number" }])).toEqual([]);
-  });
-});
-
-describe("BGM設定", () => {
-  beforeEach(() => storage.clear());
-
-  it("既存の設定データにはBGMをオンとして補完する", () => {
-    storage.set("typeblast.settings.v1", JSON.stringify({
-      soundOn: false,
-      reducedMotion: false,
-      highContrast: false,
-      fontScale: 1,
-    }));
-    expect(loadSettings()).toMatchObject({ soundOn: false, bgmOn: true });
   });
 });

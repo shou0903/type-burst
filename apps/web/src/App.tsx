@@ -26,6 +26,7 @@ import {
   type DailyProgress,
   type DailyRecordResult,
 } from "./daily";
+import { queueSnapshotUpload } from "./playerData";
 
 type ResultScreenState = {
   name: "result";
@@ -113,6 +114,8 @@ export function App(): JSX.Element {
     }
     // appendResult/recordDuel は生涯累計(称号・アンロックの元データ)も更新済みなので読み直す
     setProgress(loadProgress());
+    // UIを待たせず、失敗時も静かに無視する匿名スナップショット保存。
+    queueSnapshotUpload();
   };
 
   switch (screen.name) {

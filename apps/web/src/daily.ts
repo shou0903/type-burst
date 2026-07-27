@@ -1,7 +1,7 @@
 import type { SurvivalSummary } from "@type-burst/game-core";
+import { loadPlayerId } from "./playerId";
 
 const DAILY_STATE_KEY = "typeblast.daily.v1";
-const DAILY_PLAYER_ID_KEY = "typeblast.daily-player.v1";
 export const DAILY_RULESET_VERSION = 2;
 export const DAILY_RANKED_ATTEMPTS = 3;
 export const DAILY_TIME_LIMIT_MS = 120_000;
@@ -78,12 +78,31 @@ export function loadDailyProgress(): DailyProgress {
   }
 }
 
-function saveDailyProgress(progress: DailyProgress): void {
+export function saveDailyProgress(progress: DailyProgress): void {
   try {
     localStorage.setItem(DAILY_STATE_KEY, JSON.stringify(progress));
   } catch {
     // 保存不可でもゲーム本編は続行する。
   }
+}
+
+/** 引き継ぎ復元時だけ使用する。通常プレイでは recordDailyResult を使う。 */
+export function replaceDailyProgress(value: unknown): DailyProgress {
+  const parsed = value && typeof value === "object" ? (value as Partial<DailyProgress>) : {};
+  const next: DailyProgress = {
+    ...emptyProgress(),
+    ...parsed,
+    version: 1,
+    currentStreak: finiteNonNegative(parsed.currentStreak),
+    bestStreak: finiteNonNegative(parsed.bestStreak),
+    freezes: Math.min(2, finiteNonNegative(parsed.freezes)),
+    lastPlayedDate: typeof parsed.lastPlayedDate === "string" ? parsed.lastPlayedDate : null,
+    playedDates: Array.isArray(parsed.playedDates) ? parsed.playedDates.filter((date): date is string => typeof date === "string").slice(-90) : [],
+    protectedDates: Array.isArray(parsed.protectedDates) ? parsed.protectedDates.filter((date): date is string => typeof date === "string").slice(-90) : [],
+    days: parsed.days && typeof parsed.days === "object" ? parsed.days as Record<string, DailyDayRecord> : {},
+  };
+  saveDailyProgress(next);
+  return next;
 }
 
 export function dailyAttempts(
@@ -179,18 +198,11 @@ export function recordDailyResult(
 }
 
 export function loadDailyPlayerId(): string {
-  try {
-    const existing = localStorage.getItem(DAILY_PLAYER_ID_KEY);
-    if (existing) return existing;
-    const created =
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `player-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
-    localStorage.setItem(DAILY_PLAYER_ID_KEY, created);
-    return created;
-  } catch {
-    return `session-${Math.random().toString(36).slice(2)}`;
-  }
+  return loadPlayerId();
+}
+
+function finiteNonNegative(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
 }
 
 function daysBetween(from: string, to: string): number {

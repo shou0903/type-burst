@@ -5,6 +5,7 @@ import type { GameMode } from "../game/GameController";
 import { bestScore, loadDuelRecord, type FontScale, type Settings, type StoredResult } from "../storage";
 import type { DailyProgress } from "../daily";
 import { DailyChallengeCard } from "../components/DailyChallengeCard";
+import { DataTransferSection } from "../components/DataTransferSection";
 import { AttractBoard } from "../components/AttractBoard";
 import { RomajiTicker } from "../components/RomajiTicker";
 import { GrowthDeck, RankingDeck, TutorialDeck } from "../components/HomeDecks";
@@ -195,6 +196,7 @@ export function LandingScreen({
               ))}
             </div>
           </div>
+          <DataTransferSection />
         </section>
       )}
 

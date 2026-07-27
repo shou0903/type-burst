@@ -7,6 +7,7 @@ import {
   dailyAttempts,
   dailyChallengeId,
   loadDailyProgress,
+  loadDailyPlayerId,
   recordDailyResult,
 } from "./daily";
 
@@ -27,6 +28,16 @@ function summary(score: number): SurvivalSummary {
     finishReason: "timeLimit",
   } as SurvivalSummary;
 }
+
+describe("player id migration", () => {
+  it("reuses the legacy daily player id for the shared player id", () => {
+    const legacyId = "8b5f2a0c-03a8-4f7a-9a77-123456789abc";
+    storage.clear();
+    storage.set("typeblast.daily-player.v1", legacyId);
+    expect(loadDailyPlayerId()).toBe(legacyId);
+    expect(storage.get("typeblast.player-id.v1")).toBe(legacyId);
+  });
+});
 
 describe("デイリーチャレンジ", () => {
   beforeEach(() => {

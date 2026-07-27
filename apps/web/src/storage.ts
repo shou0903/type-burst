@@ -101,6 +101,19 @@ export function loadResults(): StoredResult[] {
   }
 }
 
+/** 引き継ぎ復元時だけ使用する。端末の既存記録との自動マージはしない。 */
+export function replaceResults(value: unknown): StoredResult[] {
+  const results = Array.isArray(value)
+    ? value.flatMap(normalizeStoredResult).slice(0, MAX_STORED_RESULTS)
+    : [];
+  try {
+    localStorage.setItem(RESULTS_KEY, JSON.stringify(results));
+  } catch {
+    // localStorage が使えない場合もゲームは継続する。
+  }
+  return results;
+}
+
 /** サバイバル結果を直近 MAX_STORED_RESULTS 件だけ保持する(設計書 §27, D-054で10→60件に拡大) */
 export function appendResult(summary: SurvivalSummary): StoredResult[] {
   const results = loadResults();
@@ -146,6 +159,26 @@ export function loadDuelRecord(): DuelRecord {
   }
 }
 
+/** 引き継ぎ復元時だけ使用する。 */
+export function replaceDuelRecord(value: unknown): DuelRecord {
+  const source = value && typeof value === "object" ? value as Partial<DuelRecord> : {};
+  const record: DuelRecord = structuredClone(DEFAULT_DUEL_RECORD);
+  for (const difficulty of ["easy", "normal", "hard"] as const) {
+    const item = source[difficulty];
+    if (!item) continue;
+    record[difficulty] = {
+      wins: safeCount(item.wins),
+      losses: safeCount(item.losses),
+    };
+  }
+  try {
+    localStorage.setItem(DUEL_RECORD_KEY, JSON.stringify(record));
+  } catch {
+    // localStorage が使えない場合もゲームは継続する。
+  }
+  return record;
+}
+
 export function recordDuel(summary: DuelSummary): DuelRecord {
   const record = loadDuelRecord();
   const entry = record[summary.difficulty];
@@ -173,6 +206,13 @@ export function loadProgress(): LifetimeProgress {
   } catch {
     return defaultLifetimeProgress();
   }
+}
+
+/** 引き継ぎ復元時だけ使用する。 */
+export function replaceProgress(value: unknown): LifetimeProgress {
+  const progress = mergeLifetimeProgress(value);
+  saveProgress(progress);
+  return progress;
 }
 
 function saveProgress(progress: LifetimeProgress): void {
@@ -211,4 +251,43 @@ export function saveNickname(nickname: string): void {
   } catch {
     // 保存失敗は無視
   }
+}
+
+export function replaceNickname(nickname: string | null): void {
+  try {
+    if (nickname) localStorage.setItem(NICKNAME_KEY, nickname.trim().slice(0, 12));
+    else localStorage.removeItem(NICKNAME_KEY);
+  } catch {
+    // localStorage が使えない場合もゲームは継続する。
+  }
+}
+
+function safeCount(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+}
+
+function normalizeStoredResult(value: unknown): StoredResult[] {
+  if (!value || typeof value !== "object") return [];
+  const result = value as Partial<StoredResult>;
+  const difficulty = result.difficulty;
+  if (!(
+    typeof result.score === "number" && Number.isFinite(result.score) &&
+    typeof result.maxChain === "number" && Number.isFinite(result.maxChain) &&
+    typeof result.kpm === "number" && Number.isFinite(result.kpm) &&
+    typeof result.accuracy === "number" && Number.isFinite(result.accuracy) &&
+    typeof result.phraseCount === "number" && Number.isFinite(result.phraseCount) &&
+    typeof result.survivedMs === "number" && Number.isFinite(result.survivedMs) &&
+    typeof result.playedAt === "string" &&
+    (difficulty === undefined || difficulty === "easy" || difficulty === "normal" || difficulty === "hard" || difficulty === "god")
+  )) return [];
+  return [{
+    score: result.score,
+    maxChain: result.maxChain,
+    kpm: result.kpm,
+    accuracy: result.accuracy,
+    phraseCount: result.phraseCount,
+    survivedMs: result.survivedMs,
+    playedAt: result.playedAt,
+    difficulty: difficulty ?? "normal",
+  }];
 }

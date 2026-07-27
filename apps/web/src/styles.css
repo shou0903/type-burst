@@ -5289,3 +5289,695 @@ body {
   font-size: 11px;
   line-height: 1.6;
 }
+
+/* ====================================================================
+   D-090: 成長記録・タイピング分析画面(専用名前空間 `an-`)
+   同じ体裁の箱を縦に並べるだけで「情報の一覧」に見えていたので、
+   称号 → 自己ベスト → 伸びの推移 → 今回の詳細、という順に組み直した。
+   色は盤面の4属性(ホーム画面・ランキング画面と共通の語彙)から借りる。
+   ==================================================================== */
+
+.screen.analysis.an {
+  --fire: #c2402f;
+  --fire-lit: #ff8a70;
+  --water: #1f6dc2;
+  --water-lit: #6fc0ff;
+  --wind: #1f9e74;
+  --wind-lit: #5fe8b6;
+  --light: #c29a1f;
+  --light-lit: #ffdf70;
+
+  --panel: rgba(255, 255, 255, 0.04);
+  --panel-2: rgba(255, 255, 255, 0.07);
+  --line: rgba(255, 255, 255, 0.1);
+  --line-hi: rgba(255, 255, 255, 0.24);
+  --text: #eef1fb;
+  --dim: #949dba;
+  --faint: #5f6784;
+
+  gap: 16px;
+  padding: 22px 20px 48px;
+}
+
+/* 属性ごとの色。トーンだけを差し替えて使い回す */
+.an-tone-fire {
+  --tone: var(--fire-lit);
+  --tone-deep: var(--fire);
+}
+.an-tone-water {
+  --tone: var(--water-lit);
+  --tone-deep: var(--water);
+}
+.an-tone-wind {
+  --tone: var(--wind-lit);
+  --tone-deep: var(--wind);
+}
+.an-tone-light {
+  --tone: var(--light-lit);
+  --tone-deep: var(--light);
+}
+
+/* ---------- 見出し ---------- */
+
+.an-head {
+  width: min(1000px, 100%);
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  padding-bottom: 13px;
+  border-bottom: 1px solid var(--line);
+}
+
+.an-kicker {
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  color: var(--wind-lit);
+}
+
+.an-title {
+  margin: 4px 0 0;
+  font-size: 26px;
+  letter-spacing: 0.04em;
+}
+
+.an-back {
+  flex: none;
+  padding: 9px 16px;
+  color: var(--dim);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.an-back:hover {
+  color: var(--text);
+  background: var(--panel-2);
+  border-color: var(--line-hi);
+}
+
+.an-key {
+  margin-left: 6px;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  opacity: 0.7;
+}
+
+/* ---------- 称号 ---------- */
+
+.an-rank {
+  width: min(1000px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 16px 18px;
+  background: linear-gradient(135deg, rgba(255, 223, 112, 0.12), rgba(255, 255, 255, 0.03));
+  border: 1px solid rgba(255, 223, 112, 0.32);
+  border-radius: 13px;
+}
+
+.an-rank-top {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.an-rank-label {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--faint);
+}
+
+.an-rank-name {
+  font-size: 22px;
+  font-weight: bold;
+  color: var(--light-lit);
+}
+
+.an-rank-track {
+  height: 8px;
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.an-rank-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--light), var(--light-lit));
+  transition: width 0.3s ease;
+}
+
+.an-rank-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  font-size: 11.5px;
+  color: var(--dim);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 自己ベスト ---------- */
+
+.an-records {
+  width: min(1000px, 100%);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 11px;
+}
+
+.an-record {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 15px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  /* 属性色は左端の帯だけに使い、面は落ち着かせる */
+  border-left: 3px solid var(--tone);
+  border-radius: 11px;
+}
+
+.an-record-label {
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  color: var(--faint);
+}
+
+.an-record-value {
+  font-family: "Arial Black", sans-serif;
+  font-size: 25px;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: var(--tone);
+  font-variant-numeric: tabular-nums;
+}
+
+.an-totals {
+  width: min(1000px, 100%);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 11px;
+}
+
+.an-totals > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 14px;
+  background: rgba(0, 0, 0, 0.24);
+  border-radius: 9px;
+}
+
+.an-totals b {
+  font-size: 16px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.an-totals i {
+  font-style: normal;
+  font-size: 10px;
+  color: var(--faint);
+}
+
+/* ---------- セクション見出し ---------- */
+
+.an-growth,
+.an-detail {
+  width: min(1000px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.an-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.an-section-head h2 {
+  margin: 0;
+  font-size: 15px;
+  letter-spacing: 0.05em;
+}
+
+.an-section-note {
+  font-size: 11px;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 成長グラフ ---------- */
+
+.an-charts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.an-chart {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 14px 15px 10px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.an-chart-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.an-chart-label {
+  font-size: 11.5px;
+  font-weight: bold;
+  letter-spacing: 0.06em;
+  color: var(--dim);
+}
+
+/* 伸びのバッジ。上達を数字で言い切る、この画面の主役 */
+.an-delta {
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 800;
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums;
+}
+
+.an-delta-up {
+  color: #06281c;
+  background: var(--wind-lit);
+}
+
+.an-delta-down {
+  color: var(--fire-lit);
+  background: rgba(255, 138, 112, 0.14);
+}
+
+.an-delta-flat {
+  color: var(--dim);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.an-chart-now {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+}
+
+.an-chart-now strong {
+  font-family: "Arial Black", sans-serif;
+  font-size: 23px;
+  letter-spacing: -0.02em;
+  color: var(--tone);
+  font-variant-numeric: tabular-nums;
+}
+
+.an-chart-now span {
+  font-size: 10.5px;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.an-chart-svg {
+  width: 100%;
+  height: 84px;
+  display: block;
+  overflow: visible;
+}
+
+.an-chart-best {
+  stroke: rgba(255, 255, 255, 0.16);
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+  vector-effect: non-scaling-stroke;
+}
+
+.an-chart-area {
+  fill: color-mix(in srgb, var(--tone) 16%, transparent);
+}
+
+.an-chart-line {
+  fill: none;
+  stroke: var(--tone);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.an-chart-dot {
+  fill: var(--tone);
+}
+
+.an-insight,
+.an-note {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--wind-lit);
+}
+
+.an-note {
+  color: var(--dim);
+}
+
+.an-empty {
+  width: min(1000px, 100%);
+  margin: 0;
+  padding: 20px;
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--dim);
+  background: var(--panel);
+  border: 1px dashed var(--line-hi);
+  border-radius: 12px;
+  text-align: center;
+}
+
+.an-empty-note {
+  border-style: solid;
+}
+
+/* ---------- 次に意識すること ---------- */
+
+.an-focus {
+  width: min(1000px, 100%);
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  padding: 15px 17px;
+  background: linear-gradient(135deg, rgba(111, 192, 255, 0.13), rgba(255, 255, 255, 0.03));
+  border: 1px solid rgba(111, 192, 255, 0.34);
+  border-radius: 12px;
+}
+
+.an-focus-badge {
+  flex: none;
+  padding: 5px 11px;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #04121f;
+  background: var(--water-lit);
+  border-radius: 999px;
+}
+
+.an-focus p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.8;
+  color: var(--text);
+}
+
+/* ---------- 今回のプレイ ---------- */
+
+.an-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.an-card {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  padding: 15px 16px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  min-width: 0;
+}
+
+.an-card-wide {
+  grid-column: 1 / -1;
+}
+
+.an-card-title {
+  font-size: 11.5px;
+  font-weight: bold;
+  letter-spacing: 0.08em;
+  color: var(--dim);
+}
+
+/* キーボード */
+
+.an-keyboard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.an-key-row {
+  display: flex;
+  gap: 6px;
+}
+
+.an-key {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: bold;
+  user-select: none;
+  cursor: default;
+}
+
+.an-key-none {
+  color: #454c68;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid var(--line);
+}
+
+.an-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+  font-size: 11px;
+  color: var(--dim);
+}
+
+.an-legend span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.an-legend i {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+.an-legend-none {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--line-hi);
+}
+
+/* 苦手キーを実際のキーキャップとして見せる */
+
+.an-caps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 9px;
+}
+
+.an-cap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 9px 4px 8px;
+  background: rgba(0, 0, 0, 0.26);
+  border-radius: 9px;
+}
+
+.an-cap-key {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  /* キーキャップらしい厚み */
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.45);
+  color: #10131f;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.an-cap-rate {
+  font-size: 12px;
+  font-weight: bold;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.an-cap-finger {
+  font-size: 9.5px;
+  color: var(--faint);
+  white-space: nowrap;
+}
+
+/* 前半 / 後半 */
+
+.an-halves {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.an-half {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 11px 13px;
+  background: rgba(0, 0, 0, 0.26);
+  border-radius: 9px;
+}
+
+.an-half-label {
+  font-size: 10.5px;
+  color: var(--faint);
+}
+
+.an-half-value {
+  font-family: "Arial Black", sans-serif;
+  font-size: 22px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.an-half-sub {
+  font-size: 10.5px;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.an-halves-arrow {
+  flex: none;
+  color: var(--faint);
+  font-size: 15px;
+}
+
+/* 手・指のミス率 */
+
+.an-hands,
+.an-fingers {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.an-fingers {
+  padding-top: 3px;
+  border-top: 1px solid var(--line);
+}
+
+.an-bar {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr) 40px;
+  align-items: center;
+  gap: 10px;
+}
+
+.an-bar-label {
+  font-size: 11.5px;
+  color: var(--dim);
+  white-space: nowrap;
+}
+
+.an-bar-strong .an-bar-label {
+  color: var(--text);
+  font-weight: bold;
+}
+
+.an-bar-track {
+  height: 7px;
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.an-bar-strong .an-bar-track {
+  height: 10px;
+}
+
+.an-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.25s ease;
+}
+
+.an-bar-rate {
+  font-size: 11.5px;
+  color: var(--dim);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 狭い画面 ---------- */
+
+@media (max-width: 900px) {
+  .an-records,
+  .an-totals {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .an-charts {
+    grid-template-columns: 1fr;
+  }
+
+  .an-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- アクセシビリティ ---------- */
+
+:root.high-contrast .an-card,
+:root.high-contrast .an-chart,
+:root.high-contrast .an-record,
+:root.high-contrast .an-empty {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.38);
+}
+
+:root.high-contrast .an-record-label,
+:root.high-contrast .an-cap-finger,
+:root.high-contrast .an-half-sub,
+:root.high-contrast .an-section-note,
+:root.high-contrast .an-totals i {
+  color: #c9cfe4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .an-rank-fill,
+  .an-bar-fill {
+    transition: none;
+  }
+}
+
+:root.reduced-motion .an-rank-fill,
+:root.reduced-motion .an-bar-fill {
+  transition: none;
+}

@@ -60,6 +60,17 @@ const FINGER_LABEL_OF_KEY: Record<string, string> = {
 const MIN_FINGER_ATTEMPTS = 3;
 const MIN_SEGMENT_KEYSTROKES = 10;
 
+/**
+ * 成長記録・タイピング分析画面(D-090で全面改修)。
+ *
+ * 以前は同じ体裁の箱を縦に並べるだけで「情報の一覧」に見えていた。
+ * この画面の主役は「自分が伸びていること」なので、
+ *  1. 称号の進捗を見出しとして最初に置く
+ *  2. 自己ベストを盤面の属性色を使った「記録」として大きく見せる
+ *  3. グラフに開始時からの伸び(%)を必ず添え、上達を数字で言い切る
+ * という順で組み直した。プレイ単位の詳細分析はその下に置く。
+ * 集計ロジック・文言生成は一切変更していない(見せ方だけの変更)。
+ */
 export function AnalysisScreen({ analysis, recentHistory, progress, onBack }: Props): JSX.Element {
   useEffect(() => {
     const handler = (e: KeyboardEvent): void => {
@@ -84,207 +95,267 @@ export function AnalysisScreen({ analysis, recentHistory, progress, onBack }: Pr
   const paceInsight = analysis ? buildPaceInsight(analysis) : null;
   const trendInsight = buildTrendInsight(recentHistory);
   const titleProgress = titleProgressForScore(progress.totalScore);
+  const played = progress.totalGames > 0;
 
   return (
-    <div className="screen analysis">
-      <header className="analysis-header">
-        <h1 className="logo analysis-title">{analysis ? "TYPING ANALYSIS" : "成長記録"}</h1>
-        <p className="analysis-lead">
-          {analysis ? "今回の打鍵を振り返り、次のプレイで意識するポイントを確認できます。" : "これまでの記録と上達の推移を確認できます。"}
-        </p>
+    <div className="screen analysis an">
+      <header className="an-head">
+        <div>
+          <span className="an-kicker">{analysis ? "TYPING ANALYSIS" : "GROWTH RECORD"}</span>
+          <h1 className="an-title">{analysis ? "タイピング分析" : "成長記録"}</h1>
+        </div>
+        <button className="an-back" onClick={onBack}>
+          戻る <span className="an-key">Esc</span>
+        </button>
       </header>
 
-      <div className="analysis-overview-grid">
-        <div className="analysis-section growth-lifetime-section">
-          <div className="analysis-section-title">称号 / 生涯累計成績</div>
-          <div className="title-progress-bar title-progress-bar-wide">
-            <div
-              className="title-progress-fill"
-              style={{ width: `${Math.round(titleProgress.progressRatio * 100)}%` }}
-            />
-          </div>
-          <div className="title-badge-name">{titleProgress.current.label}</div>
-          <div className="title-badge-next">
+      {/* ── 称号: この画面の見出しとして最初に置く ───────────────── */}
+      <section className="an-rank" aria-label="称号">
+        <div className="an-rank-top">
+          <span className="an-rank-label">現在の称号</span>
+          <strong className="an-rank-name">{titleProgress.current.label}</strong>
+        </div>
+        <div className="an-rank-track">
+          <div
+            className="an-rank-fill"
+            style={{ width: `${Math.round(titleProgress.progressRatio * 100)}%` }}
+          />
+        </div>
+        <div className="an-rank-foot">
+          <span>累計 {progress.totalScore.toLocaleString()}</span>
+          <span>
             {titleProgress.next
-              ? `あと${titleProgress.remainingToNext.toLocaleString()}で『${titleProgress.next.label}』`
-              : "最高位の称号に到達しました!"}
-          </div>
-          <div className="result-grid lifetime-grid">
-            <Item label="累計プレイ" value={`${progress.totalGames}回`} />
-            <Item label="累計スコア" value={progress.totalScore.toLocaleString()} />
-            <Item label="ベストスコア" value={progress.bestScore.toLocaleString()} />
-            <Item label="ベストKPM" value={String(Math.round(progress.bestKpm))} />
-            <Item label="ベスト正確率" value={`${(progress.bestAccuracy * 100).toFixed(1)}%`} />
-            <Item label="最大連鎖" value={String(progress.maxChainEver)} />
-            <Item label="総文章数" value={`${progress.totalPhrases}文`} />
-            <Item label="総プレイ時間" value={formatDuration(progress.totalPlaytimeMs)} />
-          </div>
+              ? `あと ${titleProgress.remainingToNext.toLocaleString()} で『${titleProgress.next.label}』`
+              : "最高位に到達しました"}
+          </span>
+        </div>
+      </section>
+
+      {/* ── 自己ベスト: 盤面の属性色を使った「記録」として見せる ──── */}
+      <section className="an-records" aria-label="自己ベスト">
+        <Record tone="light" label="ベストスコア" value={progress.bestScore.toLocaleString()} />
+        <Record tone="water" label="ベストKPM" value={String(Math.round(progress.bestKpm))} />
+        <Record
+          tone="wind"
+          label="ベスト正確率"
+          value={`${(progress.bestAccuracy * 100).toFixed(1)}%`}
+        />
+        <Record tone="fire" label="最大連鎖" value={String(progress.maxChainEver)} />
+      </section>
+
+      <section className="an-totals" aria-label="累計">
+        <span>
+          <b>{progress.totalGames}</b>
+          <i>プレイ回数</i>
+        </span>
+        <span>
+          <b>{progress.totalPhrases.toLocaleString()}</b>
+          <i>打った文章</i>
+        </span>
+        <span>
+          <b>{formatDuration(progress.totalPlaytimeMs)}</b>
+          <i>総プレイ時間</i>
+        </span>
+        <span>
+          <b>{progress.totalScore.toLocaleString()}</b>
+          <i>累計スコア</i>
+        </span>
+      </section>
+
+      {/* ── 成長グラフ: 「伸び」を数字で言い切る ──────────────── */}
+      <section className="an-growth" aria-label="成長の推移">
+        <div className="an-section-head">
+          <h2>成長の推移</h2>
+          {recentHistory.length >= 2 && (
+            <span className="an-section-note">
+              直近{Math.min(recentHistory.length, MAX_GROWTH_POINTS)}戦・古い→新しい
+            </span>
+          )}
         </div>
 
         {recentHistory.length >= 2 ? (
-          <div className="analysis-section growth-chart-section">
-            <div className="analysis-section-title">
-              成長グラフ(直近{Math.min(recentHistory.length, MAX_GROWTH_POINTS)}件・古い→新しい)
+          <>
+            <div className="an-charts">
+              <GrowthChart
+                label="スコア"
+                values={chronological(recentHistory, (r) => r.score)}
+                tone="light"
+                format={(v) => Math.round(v).toLocaleString()}
+              />
+              <GrowthChart
+                label="KPM"
+                values={chronological(recentHistory, (r) => r.kpm)}
+                tone="water"
+                format={(v) => String(Math.round(v))}
+              />
+              <GrowthChart
+                label="正確率"
+                values={chronological(recentHistory, (r) => r.accuracy * 100)}
+                tone="wind"
+                format={(v) => `${v.toFixed(1)}%`}
+                pointDelta
+              />
             </div>
-            <GrowthChart
-              label="スコア"
-              values={chronological(recentHistory, (r) => r.score)}
-              color="#ffd75e"
-              format={(v) => Math.round(v).toLocaleString()}
-            />
-            <GrowthChart
-              label="KPM"
-              values={chronological(recentHistory, (r) => r.kpm)}
-              color="#6fc0ff"
-              format={(v) => String(Math.round(v))}
-            />
-            <GrowthChart
-              label="正確率"
-              values={chronological(recentHistory, (r) => r.accuracy * 100)}
-              color="#8ef5c9"
-              format={(v) => `${v.toFixed(1)}%`}
-            />
-            {trendInsight && <p className="analysis-insight">{trendInsight}</p>}
-          </div>
+            {trendInsight && <p className="an-insight">{trendInsight}</p>}
+          </>
         ) : (
-          <div className="analysis-section analysis-empty-section">
-            <div className="analysis-section-title">成長グラフ</div>
-            <p className="ranking-status">
-              2回以上プレイすると、スコア・KPM・正確率の推移が表示されます。
-            </p>
-          </div>
+          <p className="an-empty">
+            {played
+              ? "あと1回プレイすると、スコア・KPM・正確率の推移がここに描かれます。"
+              : "プレイすると、ここに上達の記録が積み上がっていきます。"}
+          </p>
         )}
-      </div>
+      </section>
 
+      {/* ── 今回のプレイの詳細分析 ────────────────────────── */}
       {!hasPlayData && (
-        <p className="ranking-status analysis-empty-note">
-          プレイするとキーボードのヒートマップやペース比較など、より詳しい分析も表示されます。
+        <p className="an-empty an-empty-note">
+          プレイ後にこの画面を開くと、キーボードのヒートマップや前半・後半のペース比較など、
+          その回だけの詳しい分析も表示されます。
         </p>
       )}
 
       {hasPlayData && analysis && (
-        <section className="analysis-detail" aria-label="今回のタイピング分析">
-          <div className="result-grid analysis-metrics">
-            <Item label="総打鍵数" value={String(analysis.totalKeystrokes)} />
-            <Item label="正確率" value={`${(analysis.accuracy * 100).toFixed(1)}%`} />
-            <Item label="ミス数" value={String(analysis.incorrectKeystrokes)} />
-            <Item label="平均打鍵間隔" value={`${Math.round(analysis.averageIntervalMs)}ms`} />
-          </div>
-
+        <>
           {focus && (
-            <div className="focus-box">
-              <div className="focus-title">次に意識すること</div>
-              <div className="focus-text">{focus}</div>
-            </div>
+            <section className="an-focus">
+              <span className="an-focus-badge">次に意識すること</span>
+              <p>{focus}</p>
+            </section>
           )}
 
-          <div className="analysis-dashboard-grid">
-            <div className="analysis-keyboard-wrap analysis-dashboard-wide">
-            <div className="analysis-keyboard">
-              {KEYBOARD_ROWS.map((row, i) => (
-                <div key={i} className="analysis-key-row" style={{ marginLeft: `${i * 18}px` }}>
-                  {row.map((k) => (
-                    <KeyTile key={k} keyChar={k} stat={statsByKey.get(k)} referenceMs={analysis.averageIntervalMs} />
-                  ))}
-                </div>
-              ))}
-              <div className="analysis-key-row">
-                <KeyTile
-                  keyChar="-"
-                  label="ー"
-                  stat={statsByKey.get("-")}
-                  referenceMs={analysis.averageIntervalMs}
-                />
-              </div>
-            </div>
-            <div className="analysis-legend">
-              <span className="legend-item">
-                <span className="legend-swatch" style={{ background: heatColor(0) }} />
-                得意
+          <section className="an-detail" aria-label="今回のタイピング分析">
+            <div className="an-section-head">
+              <h2>今回のプレイ</h2>
+              <span className="an-section-note">
+                {analysis.totalKeystrokes}打鍵 ・ ミス{analysis.incorrectKeystrokes} ・ 平均
+                {Math.round(analysis.averageIntervalMs)}ms
               </span>
-              <span className="legend-item">
-                <span className="legend-swatch" style={{ background: heatColor(0.5) }} />
-                普通
-              </span>
-              <span className="legend-item">
-                <span className="legend-swatch" style={{ background: heatColor(1) }} />
-                苦手
-              </span>
-              <span className="legend-item">
-                <span className="legend-swatch legend-none" />
-                未使用
-              </span>
-            </div>
             </div>
 
-            {analysis.weakKeys.length > 0 && (
-            <div className="weak-keys-box">
-              <div className="weak-keys-title">苦手なキー TOP{analysis.weakKeys.length}</div>
-              <div className="weak-keys-list">
-                {analysis.weakKeys.map((k) => (
-                  <div key={k.key} className="weak-key-item">
-                    <span className="weak-key-char">{k.key === "-" ? "ー" : k.key.toUpperCase()}</span>
-                    <span className="weak-key-detail">
-                      ミス率 {Math.round(k.missRate * 100)}% ・ 平均 {Math.round(k.avgIntervalMs)}ms
-                      <br />
-                      {FINGER_LABEL_OF_KEY[k.key] ?? ""}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            )}
-
-            <div className="analysis-section">
-            <div className="analysis-section-title">前半 / 後半のペース比較</div>
-            <div className="pace-compare">
-              <PaceCard label="前半" segment={analysis.firstHalf} />
-              <PaceCard label="後半" segment={analysis.secondHalf} />
-            </div>
-            {paceInsight && <p className="analysis-insight">{paceInsight}</p>}
-            </div>
-
-            <div className="analysis-section">
-            <div className="analysis-section-title">手・指ごとのミス率</div>
-            <div className="hand-compare">
-              <HandBar label="左手" stat={leftHand} />
-              <HandBar label="右手" stat={rightHand} />
-            </div>
-            {usedFingers.length > 0 && (
-              <div className="finger-list">
-                {usedFingers
-                  .slice()
-                  .sort((a, b) => b.missRate - a.missRate)
-                  .map((f) => (
-                    <div key={f.finger} className="finger-item">
-                      <span className="finger-label">{f.label}</span>
-                      <span className="finger-bar-wrap">
-                        <span
-                          className="finger-bar"
-                          style={{
-                            width: `${Math.round(f.missRate * 100)}%`,
-                            background: heatColor(f.missRate),
-                          }}
+            <div className="an-grid">
+              {/* キーボードのヒートマップ */}
+              <div className="an-card an-card-wide">
+                <div className="an-card-title">キー別の苦手度</div>
+                <div className="an-keyboard">
+                  {KEYBOARD_ROWS.map((row, i) => (
+                    <div key={i} className="an-key-row" style={{ marginLeft: `${i * 17}px` }}>
+                      {row.map((k) => (
+                        <KeyTile
+                          key={k}
+                          keyChar={k}
+                          stat={statsByKey.get(k)}
+                          referenceMs={analysis.averageIntervalMs}
                         />
-                      </span>
-                      <span className="finger-rate">{Math.round(f.missRate * 100)}%</span>
+                      ))}
                     </div>
                   ))}
+                  <div className="an-key-row">
+                    <KeyTile
+                      keyChar="-"
+                      label="ー"
+                      stat={statsByKey.get("-")}
+                      referenceMs={analysis.averageIntervalMs}
+                    />
+                  </div>
+                </div>
+                <div className="an-legend">
+                  <span>
+                    <i style={{ background: heatColor(0) }} />
+                    得意
+                  </span>
+                  <span>
+                    <i style={{ background: heatColor(0.5) }} />
+                    普通
+                  </span>
+                  <span>
+                    <i style={{ background: heatColor(1) }} />
+                    苦手
+                  </span>
+                  <span>
+                    <i className="an-legend-none" />
+                    未使用
+                  </span>
+                </div>
               </div>
-            )}
-            {weakestFinger && (
-              <p className="analysis-insight">
-                特に{weakestFinger.label}のミスが多め(ミス率{Math.round(weakestFinger.missRate * 100)}%)です。
-              </p>
-            )}
-            </div>
-          </div>
-        </section>
-      )}
 
-      <button className="btn-secondary" onClick={onBack}>
-        戻る <span className="btn-sub">Esc</span>
-      </button>
+              {/* 苦手キーを実際のキーキャップとして見せる */}
+              {analysis.weakKeys.length > 0 && (
+                <div className="an-card">
+                  <div className="an-card-title">苦手なキー</div>
+                  <div className="an-caps">
+                    {analysis.weakKeys.slice(0, 6).map((k) => (
+                      <div className="an-cap" key={k.key}>
+                        <span className="an-cap-key" style={{ background: heatColor(k.missRate) }}>
+                          {k.key === "-" ? "ー" : k.key.toUpperCase()}
+                        </span>
+                        <span className="an-cap-rate">{Math.round(k.missRate * 100)}%</span>
+                        <span className="an-cap-finger">{FINGER_LABEL_OF_KEY[k.key] ?? ""}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 前半 / 後半 */}
+              <div className="an-card">
+                <div className="an-card-title">前半 / 後半のペース</div>
+                <div className="an-halves">
+                  <PaceHalf label="前半" segment={analysis.firstHalf} />
+                  <span className="an-halves-arrow" aria-hidden="true">
+                    →
+                  </span>
+                  <PaceHalf label="後半" segment={analysis.secondHalf} />
+                </div>
+                {paceInsight && <p className="an-note">{paceInsight}</p>}
+              </div>
+
+              {/* 手・指 */}
+              <div className="an-card an-card-wide">
+                <div className="an-card-title">手・指ごとのミス率</div>
+                <div className="an-hands">
+                  <MissBar label="左手" missRate={leftHand?.missRate ?? 0} strong />
+                  <MissBar label="右手" missRate={rightHand?.missRate ?? 0} strong />
+                </div>
+                {usedFingers.length > 0 && (
+                  <div className="an-fingers">
+                    {usedFingers
+                      .slice()
+                      .sort((a, b) => b.missRate - a.missRate)
+                      .map((f) => (
+                        <MissBar key={f.finger} label={f.label} missRate={f.missRate} />
+                      ))}
+                  </div>
+                )}
+                {weakestFinger && (
+                  <p className="an-note">
+                    特に{weakestFinger.label}のミスが多め(
+                    {Math.round(weakestFinger.missRate * 100)}%)です。
+                  </p>
+                )}
+              </div>
+            </div>
+          </section>
+        </>
+      )}
+    </div>
+  );
+}
+
+/** 自己ベスト1件。色は盤面の属性色に揃える(ホーム画面と同じ語彙) */
+function Record({
+  tone,
+  label,
+  value,
+}: {
+  tone: "fire" | "water" | "wind" | "light";
+  label: string;
+  value: string;
+}): JSX.Element {
+  return (
+    <div className={`an-record an-tone-${tone}`}>
+      <span className="an-record-label">{label}</span>
+      <strong className="an-record-value">{value}</strong>
     </div>
   );
 }
@@ -362,106 +433,131 @@ function formatDuration(ms: number): string {
   return `${minutes}分`;
 }
 
-const GROWTH_CHART_WIDTH = 280;
-const GROWTH_CHART_HEIGHT = 56;
-const GROWTH_CHART_PAD = 6;
-
-/** 値の配列から、シンプルな折れ線グラフ用のSVG座標点列を計算する */
-function buildGrowthPoints(values: number[]): { x: number; y: number }[] {
-  if (values.length === 0) return [];
-  if (values.length === 1) {
-    return [{ x: GROWTH_CHART_WIDTH / 2, y: GROWTH_CHART_HEIGHT / 2 }];
-  }
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const span = max - min || 1;
-  const innerW = GROWTH_CHART_WIDTH - GROWTH_CHART_PAD * 2;
-  const innerH = GROWTH_CHART_HEIGHT - GROWTH_CHART_PAD * 2;
-  return values.map((v, i) => ({
-    x: GROWTH_CHART_PAD + (innerW * i) / (values.length - 1),
-    y: GROWTH_CHART_PAD + innerH * (1 - (v - min) / span),
-  }));
-}
+const CHART_W = 320;
+const CHART_H = 84;
+const CHART_PAD = 8;
 
 /**
- * 長期的な成長を示すシンプルな折れ線グラフ(D-054, Feature 3)。
- * 既存の`trend-bars`(直近5件の棒グラフ)を置き換え、より多くの記録を
- * 時系列で見せる。外部ライブラリは使わず素のSVGで描画する。
+ * 成長グラフ(D-090で強化)。折れ線だけだった従来版に対し、
+ * 面の塗り・最高記録の基準線・最新点の強調・そして「最初と比べてどれだけ
+ * 伸びたか」のバッジを加えた。上達を数字で言い切ることがこの画面の主目的。
  */
 function GrowthChart({
   label,
   values,
-  color,
+  tone,
   format,
+  pointDelta = false,
 }: {
   label: string;
   values: number[];
-  color: string;
+  tone: "fire" | "water" | "wind" | "light";
   format: (v: number) => string;
+  /** true なら伸びを「ポイント差」で示す(正確率のように単位が%のもの) */
+  pointDelta?: boolean;
 }): JSX.Element | null {
   if (values.length < 2) return null;
-  const points = buildGrowthPoints(values);
-  const polyline = points.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const span = max - min || 1;
+  const innerW = CHART_W - CHART_PAD * 2;
+  const innerH = CHART_H - CHART_PAD * 2;
+  const points = values.map((v, i) => ({
+    x: CHART_PAD + (innerW * i) / (values.length - 1),
+    y: CHART_PAD + innerH * (1 - (v - min) / span),
+  }));
+  const line = points.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+  const area = `${CHART_PAD},${CHART_H} ${line} ${CHART_W - CHART_PAD},${CHART_H}`;
+  const last = points[points.length - 1]!;
+
   const first = values[0]!;
-  const last = values[values.length - 1]!;
-  const best = Math.max(...values);
+  const current = values[values.length - 1]!;
+  const delta = current - first;
+  const deltaText = pointDelta
+    ? `${delta >= 0 ? "+" : ""}${delta.toFixed(1)}pt`
+    : first > 0
+      ? `${delta >= 0 ? "+" : ""}${Math.round((delta / first) * 100)}%`
+      : null;
+  const deltaDir = delta > 0 ? "up" : delta < 0 ? "down" : "flat";
 
   return (
-    <div className="growth-chart">
-      <div className="growth-chart-head">
-        <span className="growth-chart-label">{label}</span>
-        <span className="growth-chart-value">
-          {format(last)}
-          <span className="growth-chart-best">最高 {format(best)}</span>
-        </span>
+    <figure className={`an-chart an-tone-${tone}`}>
+      <figcaption className="an-chart-head">
+        <span className="an-chart-label">{label}</span>
+        {deltaText && (
+          <span className={`an-delta an-delta-${deltaDir}`}>
+            {deltaDir === "up" ? "▲" : deltaDir === "down" ? "▼" : "－"} {deltaText}
+          </span>
+        )}
+      </figcaption>
+
+      <div className="an-chart-now">
+        <strong>{format(current)}</strong>
+        <span>最高 {format(max)}</span>
       </div>
+
       <svg
-        className="growth-chart-svg"
-        viewBox={`0 0 ${GROWTH_CHART_WIDTH} ${GROWTH_CHART_HEIGHT}`}
+        className="an-chart-svg"
+        viewBox={`0 0 ${CHART_W} ${CHART_H}`}
         preserveAspectRatio="none"
         role="img"
-        aria-label={`${label}の推移。開始${format(first)}、直近${format(last)}`}
+        aria-label={`${label}の推移。開始${format(first)}、直近${format(current)}、最高${format(max)}`}
       >
-        <polyline points={polyline} fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round" />
-        {points.map((p, i) => (
-          <circle key={i} cx={p.x} cy={p.y} r={i === points.length - 1 ? 3 : 1.6} fill={color} />
-        ))}
+        {/* 最高記録の基準線 */}
+        <line
+          className="an-chart-best"
+          x1={CHART_PAD}
+          y1={CHART_PAD}
+          x2={CHART_W - CHART_PAD}
+          y2={CHART_PAD}
+        />
+        <polygon className="an-chart-area" points={area} />
+        <polyline className="an-chart-line" points={line} />
+        <circle className="an-chart-dot" cx={last.x} cy={last.y} r={3.5} />
       </svg>
-    </div>
+    </figure>
   );
 }
 
-function PaceCard({ label, segment }: { label: string; segment: TypingAnalysis["firstHalf"] }): JSX.Element {
-  return (
-    <div className="pace-card">
-      <div className="pace-card-label">{label}</div>
-      <div className="pace-card-value">{(segment.accuracy * 100).toFixed(0)}%</div>
-      <div className="pace-card-sub">
-        {segment.keystrokes}打鍵 ・ 平均{Math.round(segment.avgIntervalMs)}ms
-      </div>
-    </div>
-  );
-}
-
-function HandBar({
+function PaceHalf({
   label,
-  stat,
+  segment,
 }: {
   label: string;
-  stat: { correct: number; incorrect: number; missRate: number } | undefined;
+  segment: TypingAnalysis["firstHalf"];
 }): JSX.Element {
-  const missRate = stat?.missRate ?? 0;
-  const attempts = stat ? stat.correct + stat.incorrect : 0;
   return (
-    <div className="hand-bar-item">
-      <div className="hand-bar-label">{label}</div>
-      <span className="finger-bar-wrap">
+    <div className="an-half">
+      <span className="an-half-label">{label}</span>
+      <strong className="an-half-value">{(segment.accuracy * 100).toFixed(0)}%</strong>
+      <span className="an-half-sub">
+        {segment.keystrokes}打鍵 ・ {Math.round(segment.avgIntervalMs)}ms
+      </span>
+    </div>
+  );
+}
+
+/** ミス率の横棒。手(strong)は指より一段大きく見せる */
+function MissBar({
+  label,
+  missRate,
+  strong = false,
+}: {
+  label: string;
+  missRate: number;
+  strong?: boolean;
+}): JSX.Element {
+  return (
+    <div className={strong ? "an-bar an-bar-strong" : "an-bar"}>
+      <span className="an-bar-label">{label}</span>
+      <span className="an-bar-track">
         <span
-          className="finger-bar"
+          className="an-bar-fill"
           style={{ width: `${Math.round(missRate * 100)}%`, background: heatColor(missRate) }}
         />
       </span>
-      <div className="hand-bar-rate">{attempts === 0 ? "-" : `${Math.round(missRate * 100)}%`}</div>
+      <span className="an-bar-rate">{Math.round(missRate * 100)}%</span>
     </div>
   );
 }
@@ -480,7 +576,7 @@ function KeyTile({
   const attempts = stat ? stat.correct + stat.incorrect : 0;
   if (attempts === 0) {
     return (
-      <div className="analysis-key analysis-key-none" title="未使用">
+      <div className="an-key an-key-none" title="未使用">
         {label ?? keyChar.toUpperCase()}
       </div>
     );
@@ -488,7 +584,7 @@ function KeyTile({
   const heat = troubleScore(stat!, referenceMs);
   return (
     <div
-      className="analysis-key"
+      className="an-key"
       style={{ background: heatColor(heat), color: "#10131f" }}
       title={`${attempts}回・ミス率${Math.round(stat!.missRate * 100)}%・平均${Math.round(stat!.avgIntervalMs)}ms`}
     >
@@ -514,13 +610,4 @@ function heatColor(heat: number): string {
   const g = Math.round(a[1] + (b[1] - a[1]) * t);
   const bl = Math.round(a[2] + (b[2] - a[2]) * t);
   return `rgb(${r}, ${g}, ${bl})`;
-}
-
-function Item({ label, value }: { label: string; value: string }): JSX.Element {
-  return (
-    <div className="result-item">
-      <div className="result-label">{label}</div>
-      <div className="result-value">{value}</div>
-    </div>
-  );
 }

@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#070914" />
+    <title>TYPE BURST 報道関係者向け素材ページ｜プレスキット</title>
+    <meta name="description" content="TYPE BURST（タイプバースト）の報道・レビュー向け素材ページです。ロゴ、スクリーンショット、動画、コピペ用紹介文をまとめてダウンロードできます。" />
+    <meta name="robots" content="index,follow,max-image-preview:large" />
+    <link rel="canonical" href="https://type-burst.com/press.html" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f6f4ef;
+        --panel: rgba(255, 255, 255, 0.96);
+        --panel-strong: #fff;
+        --line: #dfe4ec;
+        --ink: #172033;
+        --muted: #5b6679;
+        --coral: #d54d3f;
+        --orange: #a96b00;
+        --mint: #147554;
+        --cyan: #086fa8;
+        font-family: Inter, "Noto Sans JP", "Yu Gothic UI", "Hiragino Sans", Meiryo, system-ui, sans-serif;
+        font-synthesis: none;
+      }
+
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        min-width: 320px;
+        margin: 0;
+        color: var(--ink);
+        line-height: 1.8;
+        background:
+          radial-gradient(circle at 12% 8%, rgba(25, 110, 180, .07), transparent 28rem),
+          radial-gradient(circle at 88% 22%, rgba(213, 77, 63, .06), transparent 25rem),
+          var(--bg);
+      }
+      a { color: inherit; }
+      a:focus-visible, button:focus-visible { outline: 3px solid var(--orange); outline-offset: 4px; }
+      .shell { width: min(1120px, calc(100% - 40px)); margin: 0 auto; }
+      .topbar { border-bottom: 1px solid var(--line); background: rgba(255,255,255,.92); backdrop-filter: blur(18px); }
+      .topbar-inner { min-height: 72px; display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+      .wordmark { display: inline-flex; align-items: center; text-decoration: none; }
+      .wordmark img { display: block; width: 186px; height: auto; }
+      .top-link { color: var(--muted); font-size: .9rem; }
+      .top-link:hover { color: var(--ink); }
+      main { padding: 72px 0 76px; }
+      .eyebrow { margin: 0 0 10px; color: var(--mint); font-size: .78rem; font-weight: 800; letter-spacing: .15em; }
+      h1, h2, h3, p { margin-top: 0; }
+      h1 { max-width: 850px; margin-bottom: 14px; font-size: clamp(2rem, 5vw, 4.35rem); line-height: 1.12; letter-spacing: -.05em; }
+      h2 { margin-bottom: 14px; font-size: clamp(1.4rem, 2.7vw, 2.2rem); line-height: 1.35; letter-spacing: -.03em; }
+      h3 { margin-bottom: 8px; font-size: 1.04rem; }
+      .lead { max-width: 760px; margin-bottom: 28px; color: var(--muted); font-size: clamp(1rem, 1.9vw, 1.17rem); }
+      .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 28px 0 42px; }
+      .button { display: inline-flex; min-height: 50px; align-items: center; justify-content: center; gap: 9px; padding: 12px 19px; border: 1px solid transparent; border-radius: 13px; color: #fff; background: var(--coral); box-shadow: 0 10px 30px rgba(213, 77, 63, .18); font-weight: 900; text-decoration: none; }
+      .button:hover { transform: translateY(-1px); filter: brightness(1.05); }
+      .button.secondary { border-color: var(--line); color: var(--ink); background: #fff; box-shadow: none; }
+      .permission { position: relative; overflow: hidden; margin: 24px 0 64px; padding: clamp(24px, 4vw, 38px); border: 1px solid rgba(20, 117, 84, .32); border-radius: 22px; background: linear-gradient(130deg, #edf8f3, #fff 65%); box-shadow: 0 16px 50px rgba(34, 47, 68, .08); }
+      .permission::after { position: absolute; inset: auto -5% -70% auto; width: 360px; height: 360px; border-radius: 50%; background: rgba(20,117,84,.08); content: ""; }
+      .permission > * { position: relative; z-index: 1; }
+      .permission-label { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 12px; color: var(--mint); font-size: .82rem; font-weight: 900; letter-spacing: .12em; }
+      .permission p { max-width: 820px; margin-bottom: 0; font-size: 1.04rem; }
+      .permission ul { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 24px; max-width: 820px; margin: 20px 0 0; padding-left: 1.2em; }
+      section { margin-top: 68px; }
+      .section-intro { max-width: 760px; color: var(--muted); }
+      .copy-grid { display: grid; gap: 16px; }
+      .copy-card, .asset-card, .video-card, .logo-card { border: 1px solid var(--line); border-radius: 18px; background: var(--panel); }
+      .copy-card { padding: 22px; }
+      .copy-head, .asset-footer, .video-head, .logo-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+      .copy-head { margin-bottom: 14px; }
+      .copy-label { color: var(--cyan); font-size: .82rem; font-weight: 900; letter-spacing: .08em; }
+      .copy-text { margin: 0; white-space: pre-wrap; color: #3f4b60; font-size: .97rem; }
+      .copy-button { flex: 0 0 auto; min-height: 36px; padding: 7px 11px; border: 1px solid rgba(8, 111, 168, .34); border-radius: 9px; color: var(--cyan); background: #eef7fb; cursor: pointer; font: inherit; font-size: .82rem; font-weight: 800; }
+      .copy-button:hover { background: #dff1f9; }
+      .fact-table { width: 100%; overflow: hidden; border: 1px solid var(--line); border-radius: 18px; border-spacing: 0; background: var(--panel); }
+      .fact-table th, .fact-table td { padding: 15px 18px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+      .fact-table th { width: 28%; color: var(--muted); font-size: .9rem; font-weight: 700; }
+      .fact-table tr:last-child th, .fact-table tr:last-child td { border-bottom: 0; }
+      .todo { color: var(--orange); font-weight: 800; }
+      .asset-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+      .asset-card { overflow: hidden; }
+      .asset-card img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: #0d1120; }
+      .asset-footer { min-height: 80px; padding: 15px 16px; }
+      .asset-name { font-weight: 900; }
+      .asset-meta { color: var(--muted); font-size: .8rem; }
+      .download-link { color: var(--cyan); font-size: .88rem; font-weight: 800; white-space: nowrap; }
+      .download-link:hover { color: var(--ink); }
+      .video-grid, .logo-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+      .video-card { padding: 15px; }
+      .video-card video { display: block; width: 100%; margin: 14px 0; border: 1px solid var(--line); border-radius: 12px; background: #000; }
+      .video-note { margin: 0; color: var(--muted); font-size: .86rem; }
+      .logo-card { overflow: hidden; }
+      .logo-preview { display: grid; min-height: 188px; place-items: center; padding: 34px; }
+      .logo-preview.light { background: #eff3fa; }
+      .logo-preview.dark { background: #0b1020; }
+      .logo-preview img { width: min(100%, 400px); }
+      .logo-card .logo-head { padding: 14px 16px; }
+      .contact { padding: 26px; border: 1px solid rgba(169, 107, 0, .28); border-radius: 18px; background: #fff8e7; }
+      .contact p { margin-bottom: 0; }
+      footer { padding: 28px 0 46px; border-top: 1px solid var(--line); color: var(--muted); background: #eceff3; font-size: .86rem; }
+      footer a { color: var(--muted); }
+      footer a:hover { color: var(--ink); }
+      .footer-links { display: flex; flex-wrap: wrap; gap: 9px 16px; margin-top: 8px; }
+      @media (max-width: 720px) {
+        .shell { width: min(100% - 28px, 1120px); }
+        .topbar-inner { min-height: 62px; }
+        .top-link { font-size: .78rem; }
+        main { padding-top: 44px; }
+        .permission ul, .asset-grid, .video-grid, .logo-grid { grid-template-columns: 1fr; }
+        .fact-table th, .fact-table td { display: block; width: 100%; padding: 11px 14px; }
+        .fact-table th { padding-bottom: 2px; border-bottom: 0; }
+        .fact-table td { padding-top: 2px; }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="shell topbar-inner">
+        <a class="wordmark" href="/" aria-label="TYPE BURST トップページ"><img src="/press/logos/type-burst-logo-light.png" alt="TYPE BURST" /></a>
+        <a class="top-link" href="https://type-burst.com/">サービスを開く ↗</a>
+      </div>
+    </header>
+
+    <main class="shell">
+      <p class="eyebrow">PRESS KIT / MEDIA RESOURCES</p>
+      <h1>TYPE BURST<br />報道関係者向け素材ページ</h1>
+      <p class="lead">記事・レビュー・ブログでそのまま使える紹介文、ロゴ、スクリーンショット、動画をまとめました。サービスURL：<a href="https://type-burst.com/">https://type-burst.com/</a></p>
+      <div class="hero-actions">
+        <a class="button" href="/press/TYPE_BURST_press_kit.zip" download>↓ 素材を一括ダウンロード（ZIP）</a>
+        <a class="button secondary" href="#screenshots">個別素材を見る</a>
+      </div>
+
+      <aside class="permission" aria-labelledby="permission-title">
+        <div class="permission-label">✓ MEDIA USE PERMISSION</div>
+        <h2 id="permission-title">掲載にあたっての許諾は不要です</h2>
+        <p>本ページで配布する画像・動画・ロゴは、<strong>TYPE BURST の紹介を目的とする報道、レビュー、ブログ、SNS投稿等で自由に使用できます。</strong>使用前のご連絡や、使用許諾の申請は必要ありません。</p>
+        <ul>
+          <li>トリミング・縮小など、記事編集に必要な改変が可能です</li>
+          <li>クレジット表記は任意です</li>
+          <li>ロゴ・画像・動画を個別またはセットで掲載できます</li>
+          <li>不明点があっても、まずは自由にご利用いただけます</li>
+        </ul>
+      </aside>
+
+      <section aria-labelledby="copy-title">
+        <p class="eyebrow">READY TO PASTE</p>
+        <h2 id="copy-title">コピペ用サービス紹介文</h2>
+        <p class="section-intro">媒体の文字数に合わせて、そのままお使いいただけます。コピー後に媒体の文体へ整えることも自由です。</p>
+        <div class="copy-grid">
+          <article class="copy-card">
+            <div class="copy-head"><span class="copy-label">約100字｜短報用</span><button class="copy-button" type="button" data-copy="copy-short">コピー</button></div>
+            <p class="copy-text" id="copy-short">TYPE BURSTは、打ち終わった言葉ブロックが爆発し、連鎖して消える無料タイピングゲーム。登録不要で、PCブラウザからすぐに遊べる。速さだけでなく、どこを消すかの戦略も楽しめる。</p>
+          </article>
+          <article class="copy-card">
+            <div class="copy-head"><span class="copy-label">約200字｜標準</span><button class="copy-button" type="button" data-copy="copy-medium">コピー</button></div>
+            <p class="copy-text" id="copy-medium">TYPE BURST（タイプバースト）は、日本語の言葉をローマ字で入力し、ブロックを爆発させて消していく無料のPCブラウザ向けタイピングゲームです。打ち終わったブロックは消えるだけでなく、落下や特殊ブロックをきっかけに連鎖することがあります。速く正確に打つ力と、次にどこを消せば盤面が動くかを考えるパズル性を組み合わせた、登録不要ですぐ始められるゲームです。</p>
+          </article>
+          <article class="copy-card">
+            <div class="copy-head"><span class="copy-label">約400字｜詳しい紹介用</span><button class="copy-button" type="button" data-copy="copy-long">コピー</button></div>
+            <p class="copy-text" id="copy-long">TYPE BURST（タイプバースト）は、日本語の単語や短文をローマ字で打ち、画面上のブロックを爆発させて消していく、無料・登録不要のPCブラウザ向けタイピングゲームです。特徴は、正しく打ち終わったブロックが消えるだけで終わらないこと。ブロックが落下して同じ種類がそろうと連鎖し、ボムやプリズム、TYPE BURSTなどの特殊効果を使えば、盤面を一気に動かせます。求められるのは入力の速さだけではありません。どの言葉を先に打つか、どこを消せば大きな連鎖につながるかを考えることで、タイピングとパズルの両方の手応えを楽しめます。サバイバル、CPU対戦、毎日共通の2分間に挑むデイリーチャレンジを用意。プレイ後にはKPM、正確率、キーごとの傾向を振り返れるタイピング分析も表示されます。</p>
+          </article>
+        </div>
+      </section>
+
+      <section aria-labelledby="facts-title">
+        <p class="eyebrow">FACT SHEET</p>
+        <h2 id="facts-title">ファクトシート</h2>
+        <table class="fact-table">
+          <tbody>
+            <tr><th scope="row">サービス名</th><td>TYPE BURST（タイプバースト）</td></tr>
+            <tr><th scope="row">URL</th><td><a href="https://type-burst.com/">https://type-burst.com/</a></td></tr>
+            <tr><th scope="row">種別</th><td>日本語タイピング×連鎖パズルゲーム</td></tr>
+            <tr><th scope="row">料金</th><td>無料</td></tr>
+            <tr><th scope="row">動作環境</th><td>PCブラウザ</td></tr>
+            <tr><th scope="row">対応言語</th><td>日本語</td></tr>
+            <tr><th scope="row">会員登録の要否</th><td>不要</td></tr>
+            <tr><th scope="row">提供開始時期</th><td>2026年7月</td></tr>
+            <tr><th scope="row">開発者</th><td>高木翔慶</td></tr>
+            <tr><th scope="row">収益モデル</th><td>広告収益（Google AdSense）</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="screenshots" aria-labelledby="screenshots-title">
+        <p class="eyebrow">SCREENSHOTS</p>
+        <h2 id="screenshots-title">スクリーンショット（PNG）</h2>
+        <p class="section-intro">いずれも記事への掲載用に、フルHD以上のサイズでご用意しています。画像をクリックすると原寸を開けます。</p>
+        <div class="asset-grid">
+          <figure class="asset-card"><a href="/press/images/home-1920x1080.png" download><img src="/press/images/home-1920x1080.png" alt="TYPE BURSTのホーム画面" /></a><figcaption class="asset-footer"><span><span class="asset-name">ホーム画面</span><br /><span class="asset-meta">1920 × 1080 PNG</span></span><a class="download-link" href="/press/images/home-1920x1080.png" download>原寸DL ↓</a></figcaption></figure>
+          <figure class="asset-card"><a href="/press/images/play-input-1920x1204.png" download><img src="/press/images/play-input-1920x1204.png" alt="ブロックが積まれ、ローマ字を入力しているプレイ画面" /></a><figcaption class="asset-footer"><span><span class="asset-name">プレイ中（入力表示）</span><br /><span class="asset-meta">1920 × 1204 PNG</span></span><a class="download-link" href="/press/images/play-input-1920x1204.png" download>原寸DL ↓</a></figcaption></figure>
+          <figure class="asset-card"><a href="/press/images/chain-1920x1204.png" download><img src="/press/images/chain-1920x1204.png" alt="3連鎖が発生しているTYPE BURSTのプレイ画面" /></a><figcaption class="asset-footer"><span><span class="asset-name">連鎖発生の瞬間</span><br /><span class="asset-meta">1920 × 1204 PNG</span></span><a class="download-link" href="/press/images/chain-1920x1204.png" download>原寸DL ↓</a></figcaption></figure>
+          <figure class="asset-card"><a href="/press/images/typing-analysis-1920x1080.png" download><img src="/press/images/typing-analysis-1920x1080.png" alt="キーボードのヒートマップを表示したタイピング分析画面" /></a><figcaption class="asset-footer"><span><span class="asset-name">タイピング分析</span><br /><span class="asset-meta">1920 × 1080 PNG</span></span><a class="download-link" href="/press/images/typing-analysis-1920x1080.png" download>原寸DL ↓</a></figcaption></figure>
+        </div>
+      </section>
+
+      <section aria-labelledby="video-title">
+        <p class="eyebrow">VIDEO</p>
+        <h2 id="video-title">動画素材</h2>
+        <div class="video-grid">
+          <article class="video-card"><div class="video-head"><strong>紹介動画（音声あり）</strong><a class="download-link" href="/press/video/TYPE_BURST_PV_20s.mp4" download>MP4をDL ↓</a></div><video controls preload="metadata" poster="/press/images/chain-1920x1204.png"><source src="/press/video/TYPE_BURST_PV_20s.mp4" type="video/mp4" />お使いのブラウザは動画再生に対応していません。</video><p class="video-note">20秒の紹介動画です。SNS投稿や動画記事の素材としてご利用いただけます。</p></article>
+          <article class="video-card"><div class="video-head"><strong>紹介動画（無音版）</strong><a class="download-link" href="/press/video/TYPE_BURST_PV_20s_無音版.mp4" download>MP4をDL ↓</a></div><video controls muted preload="metadata" poster="/press/images/chain-1920x1204.png"><source src="/press/video/TYPE_BURST_PV_20s_無音版.mp4" type="video/mp4" />お使いのブラウザは動画再生に対応していません。</video><p class="video-note">記事埋め込み用の無音版です。媒体側の音声・ナレーションに合わせやすい素材です。</p></article>
+        </div>
+      </section>
+
+      <section aria-labelledby="logo-title">
+        <p class="eyebrow">LOGO</p>
+        <h2 id="logo-title">ロゴ素材</h2>
+        <div class="logo-grid">
+          <article class="logo-card"><div class="logo-preview light"><img src="/press/logos/type-burst-logo-light.png" alt="明るい背景用TYPE BURSTロゴ" /></div><div class="logo-head"><span><strong>明るい背景用 PNG</strong><br /><span class="asset-meta">背景透過</span></span><a class="download-link" href="/press/logos/type-burst-logo-light.png" download>DL ↓</a></div></article>
+          <article class="logo-card"><div class="logo-preview dark"><img src="/press/logos/type-burst-logo-dark.png" alt="暗い背景用TYPE BURSTロゴ" /></div><div class="logo-head"><span><strong>暗い背景用 PNG</strong><br /><span class="asset-meta">背景透過</span></span><a class="download-link" href="/press/logos/type-burst-logo-dark.png" download>DL ↓</a></div></article>
+          <article class="logo-card"><div class="logo-preview dark"><img src="/press/logos/type-burst-logo.svg" alt="TYPE BURSTロゴ SVG" /></div><div class="logo-head"><span><strong>SVG</strong><br /><span class="asset-meta">ベクター形式</span></span><a class="download-link" href="/press/logos/type-burst-logo.svg" download>DL ↓</a></div></article>
+        </div>
+      </section>
+
+      <section class="contact" aria-labelledby="contact-title">
+        <p class="eyebrow">CONTACT</p>
+        <h2 id="contact-title">お問い合わせ</h2>
+        <p>素材に関する確認や追加の取材をご希望の場合は、<a href="mailto:typeblast.official@outlook.jp">typeblast.official@outlook.jp</a> までご連絡ください。</p>
+      </section>
+    </main>
+
+    <footer>
+      <div class="shell">© TYPE BURST <div class="footer-links"><a href="/">ゲームをプレイ</a><a href="/about.html">TYPE BURSTとは</a><a href="/terms.html">利用規約</a><a href="/privacy.html">プライバシーポリシー</a></div></div>
+    </footer>
+    <script>
+      function fallbackCopy(text) {
+        var field = document.createElement('textarea');
+        field.value = text;
+        field.setAttribute('readonly', '');
+        field.style.position = 'fixed';
+        field.style.opacity = '0';
+        document.body.appendChild(field);
+        field.select();
+        var copied = document.execCommand('copy');
+        field.remove();
+        return copied;
+      }
+
+      document.querySelectorAll('[data-copy]').forEach(function (button) {
+        button.addEventListener('click', function () {
+          var source = document.getElementById(button.dataset.copy);
+          if (!source) return;
+          var text = source.textContent.trim();
+          var copy = navigator.clipboard && window.isSecureContext
+            ? navigator.clipboard.writeText(text).then(function () { return true; }).catch(function () { return fallbackCopy(text); })
+            : Promise.resolve(fallbackCopy(text));
+          copy.then(function (copied) {
+            var label = button.textContent;
+            button.textContent = copied ? 'コピーしました' : 'コピーできませんでした';
+            window.setTimeout(function () { button.textContent = label; }, 1600);
+          });
+        });
+      });
+    </script>
+  </body>
+</html>

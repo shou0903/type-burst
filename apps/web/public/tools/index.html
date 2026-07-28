@@ -21,14 +21,28 @@
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "CollectionPage",
-        "@id": "https://type-burst.com/tools#page",
-        "url": "https://type-burst.com/tools",
-        "name": "無料タイピング測定ツール",
-        "description": "タイピング速度、KPM・WPM、正確率、ローマ字入力を確認できる無料ツール集。",
-        "dateModified": "2026-07-29",
-        "inLanguage": "ja",
-        "isPartOf": { "@id": "https://type-burst.com/#website" }
+        "@graph": [
+          {
+            "@type": "CollectionPage",
+            "@id": "https://type-burst.com/tools#page",
+            "url": "https://type-burst.com/tools",
+            "name": "無料タイピング測定ツール",
+            "description": "タイピング速度、KPM・WPM、正確率、ローマ字入力を確認できる無料ツール集。",
+            "dateModified": "2026-07-29",
+            "inLanguage": "ja",
+            "isPartOf": { "@id": "https://type-burst.com/#website" }
+          },
+          {
+            "@type": "ItemList",
+            "name": "TYPE BURST 無料タイピングツール",
+            "itemListElement": [
+              { "@type": "ListItem", "position": 1, "url": "https://type-burst.com/tools/typing-speed-test.html", "name": "タイピング速度測定" },
+              { "@type": "ListItem", "position": 2, "url": "https://type-burst.com/tools/kpm-wpm-converter.html", "name": "KPM・WPM換算" },
+              { "@type": "ListItem", "position": 3, "url": "https://type-burst.com/tools/typing-accuracy-check.html", "name": "タイピング正確率計算" },
+              { "@type": "ListItem", "position": 4, "url": "https://type-burst.com/tools/romaji-table.html", "name": "ローマ字入力早見表" }
+            ]
+          }
+        ]
       }
     </script>
   </head>

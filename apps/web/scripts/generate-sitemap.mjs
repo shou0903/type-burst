@@ -46,6 +46,25 @@ function lastModifiedFrom(html) {
   return jsonLd?.[1] ?? meta?.[1] ?? null;
 }
 
+function indexableImagesFrom(html) {
+  const images = new Set();
+  for (const match of html.matchAll(/<img\s[^>]*src=["']([^"']+)["'][^>]*>/gi)) {
+    const url = new URL(match[1], siteOrigin);
+    if (url.origin !== siteOrigin) continue;
+    if (
+      !url.pathname.startsWith("/screenshots/") &&
+      !url.pathname.startsWith("/press/images/") &&
+      !url.pathname.startsWith("/press/logos/")
+    ) {
+      continue;
+    }
+    url.hash = "";
+    url.search = "";
+    images.add(url.href);
+  }
+  return [...images];
+}
+
 const indexPath = join(appRoot, "index.html");
 const bundledSeoPages = [join(appRoot, "tools", "typing-speed-test.html")];
 const publicHtml = await listHtmlFiles(publicRoot);
@@ -66,6 +85,7 @@ for (const sourcePath of [indexPath, ...searchLandingFiles, ...bundledSeoPages])
   pages.push({
     loc: canonicalFrom(html, sourcePath),
     lastmod: lastModifiedFrom(html),
+    images: indexableImagesFrom(html),
   });
 }
 
@@ -77,11 +97,15 @@ const uniquePages = [...new Map(pages.map((page) => [page.loc, page])).values()]
 
 const body = uniquePages
   .map(
-    ({ loc, lastmod }) =>
-      `  <url>\n    <loc>${escapeXml(loc)}</loc>${lastmod ? `\n    <lastmod>${lastmod}</lastmod>` : ""}\n  </url>`,
+    ({ loc, lastmod, images }) => {
+      const imageEntries = images
+        .map((image) => `\n    <image:image>\n      <image:loc>${escapeXml(image)}</image:loc>\n    </image:image>`)
+        .join("");
+      return `  <url>\n    <loc>${escapeXml(loc)}</loc>${lastmod ? `\n    <lastmod>${lastmod}</lastmod>` : ""}${imageEntries}\n  </url>`;
+    },
   )
   .join("\n");
 
-const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${body}\n</urlset>\n`;
+const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n${body}\n</urlset>\n`;
 await writeFile(join(publicRoot, "sitemap.xml"), sitemap, "utf8");
 console.log(`sitemap.xml: ${uniquePages.length} URL を生成しました`);

@@ -11,6 +11,7 @@ const indexableTitles = new Map();
 const indexableDescriptions = new Map();
 const sitemapExpected = new Set();
 const internalLinkSources = new Map();
+const sitemapImageExpected = new Set();
 
 async function listHtmlFiles(directory) {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -52,15 +53,35 @@ const canonicals = new Map();
 for (const path of htmlFiles) {
   const label = relative(appRoot, path);
   const html = await readFile(path, "utf8");
+  const publicPath = relative(publicRoot, path).replaceAll("\\", "/");
+  const includedInSitemap =
+    path === join(appRoot, "index.html") ||
+    path === join(appRoot, "tools", "typing-speed-test.html") ||
+    publicPath === "about.html" ||
+    publicPath === "press.html" ||
+    publicPath.startsWith("guides/") ||
+    publicPath.startsWith("tools/");
   const noindex = /<meta\s+name=["']robots["'][^>]*content=["'][^"']*noindex/i.test(html);
   const title = html.match(/<title>([^<]+)<\/title>/i)?.[1]?.trim();
   const description = html.match(/<meta\s+name=["']description["']\s+content=["']([^"']+)["']/i)?.[1]?.trim();
   const canonical = html.match(/<link\s+rel=["']canonical["']\s+href=["']([^"']+)["']/i)?.[1];
   const h1Count = [...html.matchAll(/<h1(?:\s[^>]*)?>/gi)].length;
+  const ogType = html.match(/<meta\s+property=["']og:type["']\s+content=["']([^"']+)["']/i)?.[1];
+  const ogTitle = html.match(/<meta\s+property=["']og:title["']\s+content=["']([^"']+)["']/i)?.[1];
+  const ogDescription = html.match(/<meta\s+property=["']og:description["']\s+content=["']([^"']+)["']/i)?.[1];
+  const ogUrl = html.match(/<meta\s+property=["']og:url["']\s+content=["']([^"']+)["']/i)?.[1];
+  const ogImage = html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i)?.[1];
+  const twitterCard = html.match(/<meta\s+name=["']twitter:card["']\s+content=["']([^"']+)["']/i)?.[1];
 
   if (!title) failures.push(`${label}: title がありません`);
   if (!description) failures.push(`${label}: meta description がありません`);
   if (!noindex && h1Count !== 1) failures.push(`${label}: h1 は1個必要です (現在 ${h1Count}個)`);
+  if (!noindex && includedInSitemap && !ogType) failures.push(`${label}: og:type がありません`);
+  if (!noindex && includedInSitemap && !ogTitle) failures.push(`${label}: og:title がありません`);
+  if (!noindex && includedInSitemap && !ogDescription) failures.push(`${label}: og:description がありません`);
+  if (!noindex && includedInSitemap && !ogUrl) failures.push(`${label}: og:url がありません`);
+  if (!noindex && includedInSitemap && !ogImage) failures.push(`${label}: og:image がありません`);
+  if (!noindex && includedInSitemap && !twitterCard) failures.push(`${label}: twitter:card がありません`);
   if (!canonical) {
     failures.push(`${label}: canonical がありません`);
   } else {
@@ -70,15 +91,10 @@ for (const path of htmlFiles) {
       failures.push(`${label}: canonical が ${canonicals.get(canonicalUrl.href)} と重複しています`);
     }
     canonicals.set(canonicalUrl.href, label);
-    const publicPath = relative(publicRoot, path).replaceAll("\\", "/");
-    if (
-      path === join(appRoot, "index.html") ||
-      path === join(appRoot, "tools", "typing-speed-test.html") ||
-      publicPath === "about.html" ||
-      publicPath === "press.html" ||
-      publicPath.startsWith("guides/") ||
-      publicPath.startsWith("tools/")
-    ) {
+    if (ogUrl && new URL(ogUrl, origin).href !== canonicalUrl.href) {
+      failures.push(`${label}: og:url が canonical と一致しません`);
+    }
+    if (includedInSitemap) {
       sitemapExpected.add(canonicalUrl.href);
     }
   }
@@ -104,11 +120,97 @@ for (const path of htmlFiles) {
   }
 
   const jsonLdPattern = /<script\s+type=["']application\/ld\+json["']>([\s\S]*?)<\/script>/gi;
+  const structuredItems = [];
   for (const match of html.matchAll(jsonLdPattern)) {
     try {
-      JSON.parse(match[1]);
+      const parsed = JSON.parse(match[1]);
+      structuredItems.push(...(Array.isArray(parsed?.["@graph"]) ? parsed["@graph"] : [parsed]));
     } catch (error) {
       failures.push(`${label}: JSON-LD が不正です (${error.message})`);
+    }
+  }
+  if (ogType === "article") {
+    const article = structuredItems.find((item) =>
+      ["Article", "BlogPosting", "NewsArticle"].includes(item?.["@type"]),
+    );
+    if (!article) {
+      failures.push(`${label}: Article構造化データがありません`);
+    } else {
+      for (const property of ["headline", "image", "datePublished", "dateModified", "author"]) {
+        if (!article[property]) failures.push(`${label}: Article.${property} がありません`);
+      }
+      if (!article.author?.name || !article.author?.url) {
+        failures.push(`${label}: Article.author の name/url が不足しています`);
+      }
+      if (!article.publisher) failures.push(`${label}: Article.publisher がありません`);
+    }
+    if (!structuredItems.some((item) => item?.["@type"] === "BreadcrumbList")) {
+      failures.push(`${label}: BreadcrumbList構造化データがありません`);
+    }
+    if (!/<nav\s+class=["'][^"']*\bbreadcrumb\b/i.test(html)) {
+      failures.push(`${label}: 表示用パンくずがありません`);
+    }
+    if (!/class=["'][^"']*\bauthor-box\b/i.test(html)) failures.push(`${label}: 表示用の著者情報がありません`);
+  }
+  if (path === join(appRoot, "index.html")) {
+    const website = structuredItems.find((item) => item?.["@type"] === "WebSite");
+    const organization = structuredItems.find((item) => item?.["@type"] === "Organization");
+    if (!website?.name || !website?.url || !website?.alternateName) {
+      failures.push(`${label}: WebSite の name/url/alternateName が不足しています`);
+    }
+    if (!organization?.name || !organization?.url || !organization?.logo) {
+      failures.push(`${label}: Organization の name/url/logo が不足しています`);
+    }
+  }
+  if (canonical && [`${origin}/guides`, `${origin}/tools`].includes(new URL(canonical, origin).href)) {
+    const collection = structuredItems.find((item) => item?.["@type"] === "CollectionPage");
+    const itemList = structuredItems.find((item) => item?.["@type"] === "ItemList");
+    if (!collection?.name || !collection?.url) failures.push(`${label}: CollectionPage が不足しています`);
+    if (!Array.isArray(itemList?.itemListElement) || itemList.itemListElement.length === 0) {
+      failures.push(`${label}: ItemList が不足しています`);
+    } else {
+      itemList.itemListElement.forEach((item, index) => {
+        if (item?.position !== index + 1 || !item?.url || !item?.name) {
+          failures.push(`${label}: ItemList ${index + 1}件目の position/url/name が不正です`);
+        }
+      });
+    }
+  }
+  if (publicPath === "press.html") {
+    const imageObjects = structuredItems.filter((item) => item?.["@type"] === "ImageObject");
+    if (imageObjects.length < 5) failures.push(`${label}: 配布画像のImageObjectが不足しています`);
+    for (const image of imageObjects) {
+      for (const property of ["contentUrl", "license", "acquireLicensePage", "creator"]) {
+        if (!image[property]) failures.push(`${label}: ImageObject.${property} がありません`);
+      }
+    }
+  }
+  if (ogImage) {
+    const imageUrl = new URL(ogImage, origin);
+    if (imageUrl.origin === origin) {
+      const target = localTarget(imageUrl.pathname);
+      if (target && !(await exists(target))) failures.push(`${label}: og:image がありません ${ogImage}`);
+    }
+  }
+
+  for (const match of html.matchAll(/<img\s[^>]*>/gi)) {
+    const imageTag = match[0];
+    if (!/\salt=["'][^"']*["']/i.test(imageTag)) failures.push(`${label}: alt のない画像があります`);
+    if (!/\swidth=["']\d+["']/i.test(imageTag) || !/\sheight=["']\d+["']/i.test(imageTag)) {
+      failures.push(`${label}: width/height のない画像があります`);
+    }
+    const source = imageTag.match(/\ssrc=["']([^"']+)["']/i)?.[1];
+    if (!source) continue;
+    const imageUrl = new URL(source, origin);
+    if (
+      imageUrl.origin === origin &&
+      (imageUrl.pathname.startsWith("/screenshots/") ||
+        imageUrl.pathname.startsWith("/press/images/") ||
+        imageUrl.pathname.startsWith("/press/logos/"))
+    ) {
+      imageUrl.hash = "";
+      imageUrl.search = "";
+      sitemapImageExpected.add(imageUrl.href);
     }
   }
 
@@ -140,12 +242,26 @@ for (const path of htmlFiles) {
 
 const sitemap = await readFile(join(publicRoot, "sitemap.xml"), "utf8");
 const sitemapActual = new Set();
+const sitemapImageActual = new Set();
 for (const match of sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)) {
   sitemapActual.add(match[1]);
   if (!canonicals.has(match[1])) failures.push(`sitemap.xml: canonical と一致しないURL ${match[1]}`);
 }
+for (const match of sitemap.matchAll(/<image:loc>([^<]+)<\/image:loc>/g)) {
+  const imageUrl = new URL(match[1], origin);
+  sitemapImageActual.add(imageUrl.href);
+  if (imageUrl.origin !== origin) failures.push(`sitemap.xml: 外部画像URL ${imageUrl.href}`);
+  const target = localTarget(imageUrl.pathname);
+  if (target && !(await exists(target))) failures.push(`sitemap.xml: 画像がありません ${imageUrl.href}`);
+}
 for (const expected of sitemapExpected) {
   if (!sitemapActual.has(expected)) failures.push(`sitemap.xml: 掲載漏れ ${expected}`);
+}
+for (const expected of sitemapImageExpected) {
+  if (!sitemapImageActual.has(expected)) failures.push(`sitemap.xml: 画像掲載漏れ ${expected}`);
+}
+for (const actual of sitemapImageActual) {
+  if (!sitemapImageExpected.has(actual)) failures.push(`sitemap.xml: 対象外画像 ${actual}`);
 }
 for (const actual of sitemapActual) {
   if (!sitemapExpected.has(actual)) failures.push(`sitemap.xml: 対象外URL ${actual}`);

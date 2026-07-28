@@ -1,11 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://type-burst.com/</loc>
     <lastmod>2026-07-29</lastmod>
   </url>
   <url>
     <loc>https://type-burst.com/about.html</loc>
+    <image:image>
+      <image:loc>https://type-burst.com/screenshots/typing-analysis.png</image:loc>
+    </image:image>
   </url>
   <url>
     <loc>https://type-burst.com/guides</loc>
@@ -26,6 +29,9 @@
   <url>
     <loc>https://type-burst.com/guides/free-typing-game.html</loc>
     <lastmod>2026-07-29</lastmod>
+    <image:image>
+      <image:loc>https://type-burst.com/screenshots/gameplay-survival.png</image:loc>
+    </image:image>
   </url>
   <url>
     <loc>https://type-burst.com/guides/home-position.html</loc>
@@ -54,6 +60,9 @@
   <url>
     <loc>https://type-burst.com/guides/typing-result-analysis.html</loc>
     <lastmod>2026-07-29</lastmod>
+    <image:image>
+      <image:loc>https://type-burst.com/screenshots/typing-analysis.png</image:loc>
+    </image:image>
   </url>
   <url>
     <loc>https://type-burst.com/guides/typing-slow-adult.html</loc>
@@ -66,6 +75,21 @@
   <url>
     <loc>https://type-burst.com/press.html</loc>
     <lastmod>2026-07-29</lastmod>
+    <image:image>
+      <image:loc>https://type-burst.com/press/images/home-1920x1080.png</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://type-burst.com/press/images/play-input-1920x1204.png</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://type-burst.com/press/images/chain-1920x1204.png</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://type-burst.com/press/images/typing-analysis-1920x1080.png</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://type-burst.com/press/logos/type-burst-logo-key-visual.png</image:loc>
+    </image:image>
   </url>
   <url>
     <loc>https://type-burst.com/tools</loc>
@@ -77,7 +101,6 @@
   </url>
   <url>
     <loc>https://type-burst.com/tools/romaji-table.html</loc>
-    <lastmod>2026-07-29</lastmod>
   </url>
   <url>
     <loc>https://type-burst.com/tools/typing-accuracy-check.html</loc>

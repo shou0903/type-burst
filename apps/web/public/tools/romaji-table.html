@@ -10,7 +10,7 @@
     <link rel="canonical" href="https://type-burst.com/tools/romaji-table.html" />
     <link rel="stylesheet" href="/tools/tools.css" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
-    <meta property="og:type" content="article" />
+    <meta property="og:type" content="website" />
     <meta property="og:locale" content="ja_JP" />
     <meta property="og:site_name" content="TYPE BURST" />
     <meta property="og:title" content="ローマ字入力早見表" />
@@ -21,16 +21,38 @@
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "Article",
-        "@id": "https://type-burst.com/tools/romaji-table.html#article",
-        "headline": "ローマ字入力早見表",
-        "description": "日本語のローマ字入力方法を検索できる早見表。",
-        "datePublished": "2026-07-29",
-        "dateModified": "2026-07-29",
-        "inLanguage": "ja",
-        "mainEntityOfPage": "https://type-burst.com/tools/romaji-table.html",
-        "author": { "@type": "Organization", "name": "TYPE BURST運営チーム", "url": "https://type-burst.com/" },
-        "publisher": { "@type": "Organization", "name": "TYPE BURST運営チーム", "url": "https://type-burst.com/" }
+        "@graph": [
+          {
+            "@type": "WebApplication",
+            "@id": "https://type-burst.com/tools/romaji-table.html#app",
+            "url": "https://type-burst.com/tools/romaji-table.html",
+            "name": "ローマ字入力早見表",
+            "description": "日本語のローマ字入力方法を検索できる無料の早見表。",
+            "applicationCategory": "EducationalApplication",
+            "operatingSystem": "Any",
+            "browserRequirements": "JavaScript対応ブラウザ",
+            "inLanguage": "ja",
+            "isAccessibleForFree": true,
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "JPY"
+            },
+            "publisher": {
+              "@type": "Organization",
+              "name": "TYPE BURST運営チーム",
+              "url": "https://type-burst.com/"
+            }
+          },
+          {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              { "@type": "ListItem", "position": 1, "name": "TYPE BURST", "item": "https://type-burst.com/" },
+              { "@type": "ListItem", "position": 2, "name": "無料タイピングツール", "item": "https://type-burst.com/tools" },
+              { "@type": "ListItem", "position": 3, "name": "ローマ字入力早見表", "item": "https://type-burst.com/tools/romaji-table.html" }
+            ]
+          }
+        ]
       }
     </script>
   </head>

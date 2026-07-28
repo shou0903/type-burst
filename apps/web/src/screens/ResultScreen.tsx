@@ -17,6 +17,13 @@ import {
   submitDailyScore,
   type DailyLeaderboardResponse,
 } from "../dailyRanking";
+import { ShareSheet } from "../components/ShareSheet";
+import {
+  buildDailyShare,
+  buildDuelShare,
+  buildSurvivalShare,
+  type ShareContent,
+} from "../share/shareContent";
 
 interface Props {
   result: GameResult;
@@ -226,6 +233,10 @@ export function ResultScreen({
           <button className="btn-primary" onClick={() => onRetry(retryMode)} autoFocus>
             もう一戦 <span className="btn-sub">Enter</span>
           </button>
+          <ShareAction
+            score={summary.score}
+            build={() => buildSurvivalShare(summary, rank, loadNickname())}
+          />
           <button
             className="btn-secondary"
             onClick={() => onShowAnalysis(summary.analysis, sameDifficultyHistory)}
@@ -281,6 +292,10 @@ export function ResultScreen({
       <button className="btn-primary" onClick={() => onRetry(retryMode)} autoFocus>
         再戦 <span className="btn-sub">Enter</span>
       </button>
+      <ShareAction
+        score={summary.player.score}
+        build={() => buildDuelShare(summary, loadNickname())}
+      />
       <button className="btn-secondary" onClick={() => onShowAnalysis(summary.player.analysis, [])}>
         タイピング分析を見る
       </button>
@@ -317,6 +332,8 @@ function DailyResultScreen({
   const sameDifficultyHistory = history.filter(
     (item) => (item.difficulty ?? "normal") === summary.difficulty,
   );
+  // 共有カードに順位を載せたいので、ランキング欄が取得した自分の順位を受け取る(D-091)
+  const [viewer, setViewer] = useState<DailyLeaderboardResponse["viewer"]>(null);
 
   return (
     <div className="screen result daily-result">
@@ -357,6 +374,7 @@ function DailyResultScreen({
         challengeId={result.challengeId}
         summary={summary}
         ranked={result.ranked}
+        onViewer={setViewer}
       />
 
       <p className="daily-attempt-note">
@@ -367,6 +385,18 @@ function DailyResultScreen({
       <button className="btn-daily" onClick={() => onRetry(retryMode)} autoFocus>
         {remaining > 0 ? "今日のベストを更新する" : "同じステージを練習する"}
       </button>
+      <ShareAction
+        score={summary.score}
+        build={() =>
+          buildDailyShare({
+            summary,
+            challengeId: result.challengeId,
+            nickname: loadNickname(),
+            streak: progress.currentStreak,
+            viewer,
+          })
+        }
+      />
       <button
         className="btn-secondary"
         onClick={() => onShowAnalysis(summary.analysis, sameDifficultyHistory)}
@@ -382,10 +412,12 @@ function DailyRankingBox({
   challengeId,
   summary,
   ranked,
+  onViewer,
 }: {
   challengeId: string;
   summary: SurvivalSummary;
   ranked: boolean;
+  onViewer: (viewer: DailyLeaderboardResponse["viewer"]) => void;
 }): JSX.Element {
   const [savedNickname, setSavedNickname] = useState(loadNickname());
   const [nickname, setNickname] = useState(savedNickname ?? "");
@@ -400,6 +432,7 @@ function DailyRankingBox({
         .then((response) => {
           if (!active) return;
           setRanking(response);
+          onViewer(response.viewer);
           setStatus("done");
         })
         .catch(() => active && setStatus("error"));
@@ -408,6 +441,7 @@ function DailyRankingBox({
         .then((response) => {
           if (!active) return;
           setRanking(response);
+          onViewer(response.viewer);
           setStatus("done");
         })
         .catch(() => active && setStatus("error"));
@@ -415,7 +449,7 @@ function DailyRankingBox({
     return () => {
       active = false;
     };
-  }, [challengeId, ranked, savedNickname, summary]);
+  }, [challengeId, ranked, savedNickname, summary, onViewer]);
 
   const submit = (): void => {
     const trimmed = nickname.trim();
@@ -640,6 +674,32 @@ function RankingSubmitBox({ summary }: { summary: SurvivalSummary }): JSX.Elemen
         今回はスキップ
       </button>
     </div>
+  );
+}
+
+/**
+ * 共有ボタンと共有シート(D-091)。
+ * カードの描画は重いので、押されるまで build を呼ばない。
+ */
+function ShareAction({
+  build,
+  score,
+}: {
+  build: () => ShareContent;
+  /** 0点の記録は共有しても誰の役にも立たないため、ボタン自体を出さない */
+  score: number;
+}): JSX.Element | null {
+  const [content, setContent] = useState<ShareContent | null>(null);
+  if (score <= 0) return null;
+
+  return (
+    <>
+      <button className="btn-share" onClick={() => setContent(build())}>
+        <span className="btn-share-glyph" aria-hidden="true">💥</span>
+        結果を共有する
+      </button>
+      {content && <ShareSheet content={content} onClose={() => setContent(null)} />}
+    </>
   );
 }
 

@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f5f3ee" />
+    <title>KPM・WPM換算ツール｜タイピング速度を無料変換</title>
+    <meta name="description" content="KPMとWPMを無料で相互換算。KPM・WPMの違い、計算式、日本語タイピングで数値を見る際の注意点を分かりやすく解説します。" />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <link rel="canonical" href="https://type-burst.com/tools/kpm-wpm-converter.html" />
+    <link rel="stylesheet" href="/tools/tools.css" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="ja_JP" />
+    <meta property="og:site_name" content="TYPE BURST" />
+    <meta property="og:title" content="KPM・WPM換算ツール" />
+    <meta property="og:description" content="タイピング速度のKPMとWPMを無料で相互換算。" />
+    <meta property="og:url" content="https://type-burst.com/tools/kpm-wpm-converter.html" />
+    <meta property="og:image" content="https://type-burst.com/og-image-v3.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "@id": "https://type-burst.com/tools/kpm-wpm-converter.html#app",
+        "name": "KPM・WPM換算ツール",
+        "url": "https://type-burst.com/tools/kpm-wpm-converter.html",
+        "description": "タイピング速度のKPMとWPMを相互換算する無料ツール。",
+        "applicationCategory": "UtilitiesApplication",
+        "operatingSystem": "Web",
+        "dateModified": "2026-07-29",
+        "inLanguage": "ja",
+        "isAccessibleForFree": true,
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "JPY" }
+      }
+    </script>
+  </head>
+  <body>
+    <header class="site-header"><div class="header-inner"><a class="wordmark" href="/">TYPE <span>BURST</span></a><nav class="header-nav"><a href="/guides">練習ガイド</a><a href="/tools">無料ツール</a><a class="header-play" href="/?source=tool-converter#play">無料でプレイ</a></nav></div></header>
+    <main>
+      <section class="tool-hero"><div class="hero-inner"><p class="eyebrow">KPM / WPM CONVERTER</p><h1>KPM・WPM換算ツール</h1><p class="hero-lead">タイピング速度の2つの指標を相互換算します。入力した数値はサーバーへ送信しません。</p></div></section>
+      <div class="tool-main">
+        <section class="tool-panel">
+          <form id="converter-form">
+            <div class="field-grid">
+              <div class="field"><label for="converter-source">入力する単位</label><select id="converter-source"><option value="kpm">KPM（1分間の打鍵数）</option><option value="wpm">WPM（1分間の5打鍵相当語数）</option></select></div>
+              <div class="field"><label for="converter-value">速度</label><input id="converter-value" type="number" min="0" step="0.1" value="250" inputmode="decimal" /></div>
+            </div>
+            <div class="tool-actions"><button class="primary-button" type="submit">換算する</button></div>
+          </form>
+          <div id="converter-result" class="result-box" aria-live="polite">
+            <span class="result-label">換算結果</span><strong id="converter-headline" class="result-number">50.0 WPM</strong><p id="converter-detail">250 KPM ≒ 50.0 WPM</p>
+          </div>
+        </section>
+        <article class="content-panel">
+          <h2>KPMとWPMの違い</h2>
+          <p><strong>KPM（Keystrokes Per Minute）</strong>は1分間の打鍵数です。<strong>WPM（Words Per Minute）</strong>は英語圏で広く使われる指標で、一般的なタイピングテストではスペースを含む5文字を1語として計算します。</p>
+          <h2>換算式</h2>
+          <div class="note"><strong>WPM ＝ KPM ÷ 5</strong><br /><strong>KPM ＝ WPM × 5</strong></div>
+          <p>たとえば300 KPMは約60 WPM、80 WPMは約400 KPMです。ただしサービスによってミスの減点やスペースの数え方が異なるため、換算値は目安です。</p>
+          <h2>早見表</h2>
+          <div class="table-wrap"><table><thead><tr><th>KPM</th><th>WPM換算</th><th>見方</th></tr></thead><tbody>
+            <tr><td>100</td><td>20</td><td>キー位置を確認しながら正確さを作る段階</td></tr>
+            <tr><td>200</td><td>40</td><td>日常的な短文入力を練習しやすい速度</td></tr>
+            <tr><td>300</td><td>60</td><td>正確率を保てれば実用的な入力速度</td></tr>
+            <tr><td>400</td><td>80</td><td>かなり速い。苦手な文字列でも維持できるか確認</td></tr>
+            <tr><td>500</td><td>100</td><td>高水準。長文と疲労時の安定性が次の課題</td></tr>
+          </tbody></table></div>
+          <h2>平均値だけで実力を決めない</h2>
+          <p>日本語は同じ文章でもローマ字の打ち方が複数あり、漢字変換を含む実務入力とゲーム内のローマ字入力でも条件が異なります。KPMやWPMは「同じテストで以前の自分と比べる」用途に使うのが安全です。</p>
+          <p>現在の速度が分からない場合は、<a href="/tools/typing-speed-test.html">無料タイピング速度測定</a>でKPM・WPM・正確率を同時に確認できます。</p>
+          <div class="cta"><h2>数字を、実戦の安定性へ。</h2><p>TYPE BURSTで、盤面を判断しながら速度と正確率を試せます。</p><a href="/?source=tool-converter#play">無料でプレイする</a></div>
+        </article>
+      </div>
+    </main>
+    <footer class="site-footer"><div class="site-footer-inner"><span>© TYPE BURST運営チーム</span><div class="footer-links"><a href="/tools">無料ツール</a><a href="/guides">練習ガイド</a><a href="/privacy.html">プライバシー</a></div></div></footer>
+    <script src="/tools/tools.js" defer></script>
+  </body>
+</html>

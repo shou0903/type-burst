@@ -364,6 +364,57 @@ h1 {
   font-size: 14px;
 }
 
+.author-box {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 14px;
+  margin: 32px 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 18px;
+  background: #fafbfc;
+}
+
+.author-mark {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 9px;
+  background: linear-gradient(135deg, var(--blue), var(--coral));
+  color: #fff;
+  font-family: "Arial Black", Impact, sans-serif;
+  font-size: 13px;
+}
+
+.author-box strong,
+.author-box span {
+  display: block;
+}
+
+.author-box span {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.author-box a {
+  font-size: 13px;
+}
+
+.formula {
+  margin: 24px 0;
+  border: 1px solid #cbd7e3;
+  border-radius: 10px;
+  padding: 20px;
+  background: linear-gradient(135deg, #eef8fd, #fff8f4);
+  color: #26445c;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: clamp(16px, 2vw, 20px);
+  font-weight: 900;
+  text-align: center;
+}
+
 .check-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

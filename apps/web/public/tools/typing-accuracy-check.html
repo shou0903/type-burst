@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f5f3ee" />
+    <title>タイピング正確率計算｜ミス数から無料チェック</title>
+    <meta name="description" content="正しい打鍵数とミス数からタイピング正確率を無料計算。正確率90％・95％・98％の見方と、ミスタイプを減らす練習方法も解説します。" />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <link rel="canonical" href="https://type-burst.com/tools/typing-accuracy-check.html" />
+    <link rel="stylesheet" href="/tools/tools.css" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="ja_JP" />
+    <meta property="og:site_name" content="TYPE BURST" />
+    <meta property="og:title" content="タイピング正確率計算" />
+    <meta property="og:description" content="打鍵数とミス数から正確率を計算し、次の練習方針を確認。" />
+    <meta property="og:url" content="https://type-burst.com/tools/typing-accuracy-check.html" />
+    <meta property="og:image" content="https://type-burst.com/og-image-v3.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "@id": "https://type-burst.com/tools/typing-accuracy-check.html#app",
+        "name": "タイピング正確率計算",
+        "url": "https://type-burst.com/tools/typing-accuracy-check.html",
+        "description": "正しい打鍵数とミス数からタイピング正確率を計算する無料ツール。",
+        "applicationCategory": "EducationalApplication",
+        "operatingSystem": "Web",
+        "dateModified": "2026-07-29",
+        "inLanguage": "ja",
+        "isAccessibleForFree": true,
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "JPY" }
+      }
+    </script>
+  </head>
+  <body>
+    <header class="site-header"><div class="header-inner"><a class="wordmark" href="/">TYPE <span>BURST</span></a><nav class="header-nav"><a href="/guides">練習ガイド</a><a href="/tools">無料ツール</a><a class="header-play" href="/?source=tool-accuracy#play">無料でプレイ</a></nav></div></header>
+    <main>
+      <section class="tool-hero"><div class="hero-inner"><p class="eyebrow">TYPING ACCURACY</p><h1>タイピング正確率計算</h1><p class="hero-lead">正しい打鍵数とミス数を入力すると正確率を計算し、数値に合う次の練習を提案します。</p></div></section>
+      <div class="tool-main">
+        <section class="tool-panel">
+          <form id="accuracy-form">
+            <div class="field-grid">
+              <div class="field"><label for="accuracy-correct">正しい打鍵数</label><input id="accuracy-correct" type="number" min="0" step="1" value="285" inputmode="numeric" /></div>
+              <div class="field"><label for="accuracy-misses">ミス数</label><input id="accuracy-misses" type="number" min="0" step="1" value="15" inputmode="numeric" /></div>
+            </div>
+            <div class="tool-actions"><button class="primary-button" type="submit">正確率を計算する</button></div>
+          </form>
+          <div id="accuracy-result" class="result-box" hidden aria-live="polite">
+            <span class="result-label">タイピング正確率</span><strong id="accuracy-headline" class="result-number">95.0%</strong><p id="accuracy-detail"></p>
+          </div>
+        </section>
+        <article class="content-panel">
+          <h2>タイピング正確率の計算式</h2>
+          <div class="note"><strong>正確率（％）＝ 正しい打鍵数 ÷（正しい打鍵数＋ミス数）× 100</strong></div>
+          <p>この式は打鍵単位の簡易計算です。サービスによって、Backspaceで直した文字、未入力、単語単位の失敗をどう数えるかは異なります。同じサービス内での推移を見る用途に使ってください。</p>
+          <h2>正確率の目安と改善方針</h2>
+          <div class="table-wrap"><table><thead><tr><th>正確率</th><th>状態の目安</th><th>次の練習</th></tr></thead><tbody>
+            <tr><td>98％以上</td><td>高い正確性</td><td>正確率を維持できる範囲で短時間だけ加速</td></tr>
+            <tr><td>95〜98％</td><td>安定している</td><td>繰り返すミスのキーを1つ選んで修正</td></tr>
+            <tr><td>90〜95％</td><td>速度優先になりやすい</td><td>入力速度を5〜10％落としてリズムを整える</td></tr>
+            <tr><td>90％未満</td><td>キー位置やローマ字が不安定</td><td>短い単語へ戻し、手元を見る回数を段階的に減らす</td></tr>
+          </tbody></table></div>
+          <h2>正確率だけ上げても遅くならない？</h2>
+          <p>一時的に速度を落とすことはありますが、ミス後の停止やBackspaceが減るため、最終的な入力完了時間は短くなりやすくなります。速さを伸ばす土台として、まず正しい動作を繰り返せる速度を見つけます。</p>
+          <h2>ミスを減らす3つの確認</h2>
+          <ol>
+            <li><strong>同じキーか：</strong>特定の文字だけなら担当する指とホームポジションを確認する。</li>
+            <li><strong>同じ組み合わせか：</strong>「しゃ」「っ」「ん」などならローマ字ルールを確認する。</li>
+            <li><strong>後半だけか：</strong>疲労や最初の飛ばしすぎなら、測定時間を短くして一定速度を作る。</li>
+          </ol>
+          <p><a href="/guides/typing-accuracy.html">正確率を上げる練習を詳しく読む</a>、または<a href="/tools/typing-speed-test.html">速度と正確率を同時に測る</a>ことができます。</p>
+          <div class="cta"><h2>ミスの傾向をゲーム後に確認。</h2><p>TYPE BURSTのタイピング分析では、苦手キーや正確率を振り返れます。</p><a href="/?mode=survival&amp;difficulty=easy&amp;source=tool-accuracy#play">初級で正確に打つ</a></div>
+        </article>
+      </div>
+    </main>
+    <footer class="site-footer"><div class="site-footer-inner"><span>© TYPE BURST運営チーム</span><div class="footer-links"><a href="/tools">無料ツール</a><a href="/guides">練習ガイド</a><a href="/privacy.html">プライバシー</a></div></div></footer>
+    <script src="/tools/tools.js" defer></script>
+  </body>
+</html>

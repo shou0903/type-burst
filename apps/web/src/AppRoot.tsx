@@ -5,6 +5,7 @@ import { ADSENSE_CLIENT_ID, hasAdsenseClientId } from "./adsConfig";
 import { AdSlots } from "./components/AdSlots";
 import { ConsentBanner, loadConsent, type ConsentState } from "./components/ConsentBanner";
 import { SmallScreenGuard } from "./components/SmallScreenGuard";
+import { captureContentAttribution } from "./seoAttribution";
 
 /** 同意状態を ConsentBanner と AdSlots で共有するための最上位コンポーネント */
 export function AppRoot(): JSX.Element {
@@ -19,6 +20,10 @@ export function AppRoot(): JSX.Element {
     meta.name = "google-adsense-account";
     meta.content = ADSENSE_CLIENT_ID;
     document.head.appendChild(meta);
+  }, []);
+
+  useEffect(() => {
+    captureContentAttribution();
   }, []);
 
   return (

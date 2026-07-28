@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "seo:sitemap": "node scripts/generate-sitemap.mjs",
+    "seo:audit": "node scripts/audit-static-seo.mjs",
+    "build": "npm run seo:sitemap && vite build",
     "preview": "vite preview"
   },
   "dependencies": {

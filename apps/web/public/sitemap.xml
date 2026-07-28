@@ -2,38 +2,77 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://type-burst.com/</loc>
-    <lastmod>2026-07-26</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>1.0</priority>
+    <lastmod>2026-07-29</lastmod>
   </url>
   <url>
     <loc>https://type-burst.com/about.html</loc>
-    <lastmod>2026-07-24</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
   </url>
   <url>
     <loc>https://type-burst.com/guides</loc>
-    <lastmod>2026-07-26</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
+    <lastmod>2026-07-29</lastmod>
+  </url>
+  <url>
+    <loc>https://type-burst.com/guides/blind-touch-practice.html</loc>
+    <lastmod>2026-07-29</lastmod>
+  </url>
+  <url>
+    <loc>https://type-burst.com/guides/editorial-policy.html</loc>
+    <lastmod>2026-07-29</lastmod>
   </url>
   <url>
     <loc>https://type-burst.com/guides/free-typing-game.html</loc>
-    <lastmod>2026-07-26</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <lastmod>2026-07-29</lastmod>
   </url>
   <url>
-    <loc>https://type-burst.com/guides/romaji-typing-practice.html</loc>
-    <lastmod>2026-07-26</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <loc>https://type-burst.com/guides/home-position.html</loc>
+    <lastmod>2026-07-29</lastmod>
   </url>
   <url>
     <loc>https://type-burst.com/guides/how-to-type-faster.html</loc>
-    <lastmod>2026-07-26</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <lastmod>2026-07-29</lastmod>
+  </url>
+  <url>
+    <loc>https://type-burst.com/guides/kpm-wpm-guide.html</loc>
+    <lastmod>2026-07-29</lastmod>
+  </url>
+  <url>
+    <loc>https://type-burst.com/guides/romaji-typing-practice.html</loc>
+    <lastmod>2026-07-29</lastmod>
+  </url>
+  <url>
+    <loc>https://type-burst.com/guides/typing-accuracy.html</loc>
+    <lastmod>2026-07-29</lastmod>
+  </url>
+  <url>
+    <loc>https://type-burst.com/guides/typing-mistakes.html</loc>
+    <lastmod>2026-07-29</lastmod>
+  </url>
+  <url>
+    <loc>https://type-burst.com/guides/typing-speed-average.html</loc>
+    <lastmod>2026-07-29</lastmod>
+  </url>
+  <url>
+    <loc>https://type-burst.com/press.html</loc>
+    <lastmod>2026-07-29</lastmod>
+  </url>
+  <url>
+    <loc>https://type-burst.com/tools</loc>
+    <lastmod>2026-07-29</lastmod>
+  </url>
+  <url>
+    <loc>https://type-burst.com/tools/kpm-wpm-converter.html</loc>
+    <lastmod>2026-07-29</lastmod>
+  </url>
+  <url>
+    <loc>https://type-burst.com/tools/romaji-table.html</loc>
+    <lastmod>2026-07-29</lastmod>
+  </url>
+  <url>
+    <loc>https://type-burst.com/tools/typing-accuracy-check.html</loc>
+    <lastmod>2026-07-29</lastmod>
+  </url>
+  <url>
+    <loc>https://type-burst.com/tools/typing-speed-test.html</loc>
+    <lastmod>2026-07-29</lastmod>
   </url>
 </urlset>

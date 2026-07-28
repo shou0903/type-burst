@@ -27,6 +27,7 @@ import {
   type DailyRecordResult,
 } from "./daily";
 import { queueSnapshotUpload } from "./playerData";
+import { trackAttributedGameStart } from "./seoAttribution";
 
 type ResultScreenState = {
   name: "result";
@@ -79,6 +80,7 @@ export function App(): JSX.Element {
 
   const startGame = (mode: GameMode): void => {
     sound.unlock();
+    trackAttributedGameStart(mode.type);
     const resolvedMode =
       mode.type === "daily"
         ? {

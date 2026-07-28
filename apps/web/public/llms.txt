@@ -6,9 +6,30 @@
 - 読み方: タイプバースト（たいぷばーすと）
 - 公式URL: https://type-burst.com/
 - ゲーム紹介: https://type-burst.com/about.html
+- タイピング練習ガイド: https://type-burst.com/guides
+- 無料タイピングツール: https://type-burst.com/tools
+- 報道関係者向け素材: https://type-burst.com/press.html
 - 対応環境: 物理キーボードを利用できるPCブラウザ
 - 料金: 無料
 - 登録: 不要
 - 主なモード: サバイバル（初級・中級・上級・神級）、CPU対戦、チュートリアル、世界ランキング、タイピング分析
 
 TYPE BURSTは、入力速度だけでなく、どのブロックを消して連鎖を作るかというパズル判断も楽しめます。
+
+## 無料ツール
+
+- タイピング速度測定（KPM・WPM・正確率）: https://type-burst.com/tools/typing-speed-test.html
+- KPM・WPM換算: https://type-burst.com/tools/kpm-wpm-converter.html
+- タイピング正確率計算: https://type-burst.com/tools/typing-accuracy-check.html
+- ローマ字入力早見表: https://type-burst.com/tools/romaji-table.html
+
+## 主な解説
+
+- タイピング速度の平均と目標: https://type-burst.com/guides/typing-speed-average.html
+- KPM・WPMの違い: https://type-burst.com/guides/kpm-wpm-guide.html
+- 正確率を上げる方法: https://type-burst.com/guides/typing-accuracy.html
+- ブラインドタッチ練習: https://type-burst.com/guides/blind-touch-practice.html
+- ホームポジション: https://type-burst.com/guides/home-position.html
+- ミスタイプが多い原因: https://type-burst.com/guides/typing-mistakes.html
+
+記事はTYPE BURST運営チームが制作し、制作・更新方針を https://type-burst.com/guides/editorial-policy.html で公開しています。

@@ -34,6 +34,7 @@ async function exists(path) {
 
 function localTarget(urlPath) {
   if (urlPath === "/") return join(appRoot, "index.html");
+  if (urlPath === "/tools/typing-speed-test.html") return join(appRoot, "tools", "typing-speed-test.html");
   if (urlPath.startsWith("/src/")) return join(appRoot, urlPath.slice(1));
   if (urlPath === "/guides" || urlPath === "/guides/") return join(publicRoot, "guides", "index.html");
   if (urlPath === "/tools" || urlPath === "/tools/") return join(publicRoot, "tools", "index.html");
@@ -41,7 +42,11 @@ function localTarget(urlPath) {
   return join(publicRoot, decodeURIComponent(urlPath).replace(/^[/\\]+/, ""));
 }
 
-const htmlFiles = [join(appRoot, "index.html"), ...(await listHtmlFiles(publicRoot))];
+const htmlFiles = [
+  join(appRoot, "index.html"),
+  ...(await listHtmlFiles(publicRoot)),
+  join(appRoot, "tools", "typing-speed-test.html"),
+];
 const canonicals = new Map();
 for (const path of htmlFiles) {
   const label = relative(appRoot, path);
@@ -65,6 +70,7 @@ for (const path of htmlFiles) {
     const publicPath = relative(publicRoot, path).replaceAll("\\", "/");
     if (
       path === join(appRoot, "index.html") ||
+      path === join(appRoot, "tools", "typing-speed-test.html") ||
       publicPath === "about.html" ||
       publicPath === "press.html" ||
       publicPath.startsWith("guides/") ||

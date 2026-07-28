@@ -47,6 +47,7 @@ function lastModifiedFrom(html) {
 }
 
 const indexPath = join(appRoot, "index.html");
+const bundledSeoPages = [join(appRoot, "tools", "typing-speed-test.html")];
 const publicHtml = await listHtmlFiles(publicRoot);
 const searchLandingFiles = publicHtml.filter((path) => {
   const pathFromPublic = relative(publicRoot, path).replaceAll("\\", "/");
@@ -59,7 +60,7 @@ const searchLandingFiles = publicHtml.filter((path) => {
 });
 
 const pages = [];
-for (const sourcePath of [indexPath, ...searchLandingFiles]) {
+for (const sourcePath of [indexPath, ...searchLandingFiles, ...bundledSeoPages]) {
   const html = await readFile(sourcePath, "utf8");
   if (/<meta\s+name=["']robots["'][^>]*content=["'][^"']*noindex/i.test(html)) continue;
   pages.push({

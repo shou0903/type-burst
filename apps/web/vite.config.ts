@@ -6,6 +6,14 @@ const r = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 
 export default defineConfig({
   plugins: [react()],
+  build: {
+    rollupOptions: {
+      input: {
+        main: r("index.html"),
+        typingSpeedTest: r("tools/typing-speed-test.html"),
+      },
+    },
+  },
   resolve: {
     alias: {
       "@type-burst/typing-engine": r("../../packages/typing-engine/src/index.ts"),

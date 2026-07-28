@@ -14,7 +14,7 @@
     <meta property="og:locale" content="ja_JP" />
     <meta property="og:site_name" content="TYPE BURST" />
     <meta property="og:title" content="タイピング速度測定｜無料・登録不要" />
-    <meta property="og:description" content="KPM・WPM・正確率を30秒または60秒で測定。" />
+    <meta property="og:description" content="KPM・WPM・正確率を30秒または60秒で測定。ゲーム本体と同じローマ字入力判定に対応。" />
     <meta property="og:url" content="https://type-burst.com/tools/typing-speed-test.html" />
     <meta property="og:image" content="https://type-burst.com/og-image-v3.png" />
     <meta name="twitter:card" content="summary_large_image" />
@@ -27,7 +27,7 @@
             "@id": "https://type-burst.com/tools/typing-speed-test.html#app",
             "name": "タイピング速度測定",
             "url": "https://type-burst.com/tools/typing-speed-test.html",
-            "description": "KPM・WPM・正確率を測定できる無料タイピングテスト。",
+            "description": "KPM・WPM・正確率を、ゲーム本体と同じ複数ローマ字表記で測定できる無料タイピングテスト。",
             "applicationCategory": "EducationalApplication",
             "operatingSystem": "Web",
             "browserRequirements": "JavaScript対応のブラウザとキーボード",
@@ -62,7 +62,7 @@
         <div class="hero-inner">
           <p class="eyebrow">TYPING SPEED TEST</p>
           <h1>タイピング速度測定</h1>
-          <p class="hero-lead">KPM・WPM・正確率を一度に測定します。入力はブラウザ内だけで処理され、サーバーへ送信されません。</p>
+          <p class="hero-lead">KPM・WPM・正確率を一度に測定します。ゲーム本体と同じように、複数の正しいローマ字入力を受け付けます。</p>
         </div>
       </section>
       <div class="tool-main">
@@ -93,6 +93,8 @@
           </div>
         </section>
         <article class="content-panel">
+          <h2>複数のローマ字入力に対応</h2>
+          <p>表示上の例と完全に同じ綴りを打つ必要はありません。TYPE BURST本体と同じ入力判定を使うため、たとえば <code>shi / si / ci</code>、<code>chi / ti</code>、<code>tsu / tu</code> など、正しい別表記も受け付けます。</p>
           <h2>KPMとWPMの意味</h2>
           <p><strong>KPM</strong>は1分間の正しい打鍵数、<strong>WPM</strong>は1分間に入力した「5打鍵相当の語数」です。この測定では正しい打鍵だけを速度へ加算し、ミスは正確率へ反映します。</p>
           <div class="note">日本語タイピングでは文章やローマ字表記で必要な打鍵数が変わります。自分の成長を見るときは、他人の数字より同じ測定条件での前回値と比べてください。</div>
@@ -121,6 +123,6 @@
       </div>
     </main>
     <footer class="site-footer"><div class="site-footer-inner"><span>© TYPE BURST運営チーム</span><div class="footer-links"><a href="/tools">無料ツール</a><a href="/guides">練習ガイド</a><a href="/privacy.html">プライバシー</a></div></div></footer>
-    <script src="/tools/tools.js" defer></script>
+    <script type="module" src="/src/tools/typing-speed-test.ts"></script>
   </body>
 </html>

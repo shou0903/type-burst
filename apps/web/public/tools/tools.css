@@ -347,6 +347,124 @@ h1 {
   font-weight: 800;
 }
 
+.practice-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.practice-heading h2 {
+  margin-bottom: 0;
+}
+
+.practice-selection {
+  display: grid;
+  min-width: 150px;
+  margin: 0;
+  text-align: right;
+}
+
+.practice-selection strong {
+  color: var(--coral);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 42px;
+  line-height: 1;
+}
+
+.practice-selection span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.practice-keyboard {
+  display: grid;
+  gap: 8px;
+  margin: 24px 0 0;
+}
+
+.practice-key-row {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.practice-key {
+  width: clamp(30px, 7vw, 56px);
+  aspect-ratio: 1;
+  border: 1px solid #b8c4d2;
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: 0 3px 0 #cbd3dd;
+  color: var(--ink);
+  cursor: pointer;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: clamp(13px, 2vw, 18px);
+  font-weight: 900;
+}
+
+.practice-key:hover:not(:disabled) {
+  border-color: var(--blue);
+  color: var(--blue-deep);
+  transform: translateY(1px);
+}
+
+.practice-key.is-selected {
+  border-color: var(--coral);
+  background: var(--coral);
+  box-shadow: 0 3px 0 #a94438;
+  color: #fff;
+}
+
+.practice-key:disabled {
+  background: #eef1f4;
+  box-shadow: none;
+  color: #a7afba;
+  cursor: not-allowed;
+}
+
+.practice-divider {
+  height: 1px;
+  margin: 34px 0;
+  background: var(--line);
+}
+
+.practice-example-label {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.practice-example {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 18px;
+  letter-spacing: 0.04em;
+}
+
+.practice-example mark {
+  border-radius: 4px;
+  padding: 1px 3px;
+  background: #ffe2d9;
+  color: #a3332a;
+  font-weight: 900;
+}
+
+.breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 32px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.breadcrumb a {
+  color: var(--blue-deep);
+}
+
 .tool-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -519,6 +637,18 @@ th {
 
   .metric-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .practice-heading {
+    align-items: start;
+  }
+
+  .practice-keyboard {
+    gap: 5px;
+  }
+
+  .practice-key-row {
+    gap: 4px;
   }
 
   .site-footer-inner {

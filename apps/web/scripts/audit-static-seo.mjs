@@ -37,6 +37,7 @@ async function exists(path) {
 function localTarget(urlPath) {
   if (urlPath === "/") return join(appRoot, "index.html");
   if (urlPath === "/tools/typing-speed-test.html") return join(appRoot, "tools", "typing-speed-test.html");
+  if (urlPath === "/tools/weak-key-practice.html") return join(appRoot, "tools", "weak-key-practice.html");
   if (urlPath.startsWith("/src/")) return join(appRoot, urlPath.slice(1));
   if (urlPath === "/guides" || urlPath === "/guides/") return join(publicRoot, "guides", "index.html");
   if (urlPath === "/tools" || urlPath === "/tools/") return join(publicRoot, "tools", "index.html");
@@ -48,6 +49,7 @@ const htmlFiles = [
   join(appRoot, "index.html"),
   ...(await listHtmlFiles(publicRoot)),
   join(appRoot, "tools", "typing-speed-test.html"),
+  join(appRoot, "tools", "weak-key-practice.html"),
 ];
 const canonicals = new Map();
 for (const path of htmlFiles) {
@@ -57,6 +59,7 @@ for (const path of htmlFiles) {
   const includedInSitemap =
     path === join(appRoot, "index.html") ||
     path === join(appRoot, "tools", "typing-speed-test.html") ||
+    path === join(appRoot, "tools", "weak-key-practice.html") ||
     publicPath === "about.html" ||
     publicPath === "press.html" ||
     publicPath.startsWith("guides/") ||

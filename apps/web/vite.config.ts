@@ -11,6 +11,7 @@ export default defineConfig({
       input: {
         main: r("index.html"),
         typingSpeedTest: r("tools/typing-speed-test.html"),
+        weakKeyPractice: r("tools/weak-key-practice.html"),
       },
     },
   },

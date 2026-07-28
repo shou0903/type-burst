@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f5f3ee" />
+    <title>苦手キー練習｜苦手な文字だけ反復できる無料タイピング</title>
+    <meta
+      name="description"
+      content="タイピングで苦手なキーを選び、その文字を含む日本語だけ無料練習。ミスしても入力途中が消えず、複数の正しいローマ字入力に対応。登録不要ですぐ使えます。"
+    />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <link rel="canonical" href="https://type-burst.com/tools/weak-key-practice.html" />
+    <link rel="stylesheet" href="/tools/tools.css" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="ja_JP" />
+    <meta property="og:site_name" content="TYPE BURST" />
+    <meta property="og:title" content="苦手キー練習｜無料タイピングツール" />
+    <meta
+      property="og:description"
+      content="苦手なアルファベットを選び、そのキーを含む日本語だけを集中練習。登録不要・ブラウザですぐ使えます。"
+    />
+    <meta property="og:url" content="https://type-burst.com/tools/weak-key-practice.html" />
+    <meta property="og:image" content="https://type-burst.com/og-image-v3.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebApplication",
+            "@id": "https://type-burst.com/tools/weak-key-practice.html#app",
+            "name": "苦手キー練習",
+            "alternateName": "苦手文字タイピング練習",
+            "url": "https://type-burst.com/tools/weak-key-practice.html",
+            "description": "苦手なアルファベットを選び、そのキーを含む日本語だけを反復できる無料タイピング練習ツール。",
+            "applicationCategory": "EducationalApplication",
+            "operatingSystem": "Web",
+            "browserRequirements": "JavaScript対応のブラウザとキーボード",
+            "dateModified": "2026-07-29",
+            "inLanguage": "ja",
+            "isAccessibleForFree": true,
+            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "JPY" }
+          },
+          {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              { "@type": "ListItem", "position": 1, "name": "TYPE BURST", "item": "https://type-burst.com/" },
+              { "@type": "ListItem", "position": 2, "name": "無料ツール", "item": "https://type-burst.com/tools" },
+              { "@type": "ListItem", "position": 3, "name": "苦手キー練習", "item": "https://type-burst.com/tools/weak-key-practice.html" }
+            ]
+          }
+        ]
+      }
+    </script>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="wordmark" href="/" aria-label="TYPE BURSTトップへ">TYPE <span>BURST</span></a>
+        <nav class="header-nav" aria-label="主要メニュー">
+          <a href="/guides">練習ガイド</a><a href="/tools">無料ツール</a
+          ><a class="header-play" href="/?source=tool-weak-key#play">無料でプレイ</a>
+        </nav>
+      </div>
+    </header>
+    <main>
+      <section class="tool-hero">
+        <div class="hero-inner">
+          <p class="eyebrow">WEAK KEY PRACTICE</p>
+          <h1>苦手キーだけ、<br />10語で集中練習。</h1>
+          <p class="hero-lead">
+            苦手なアルファベットを1つ選ぶと、そのキーを含む日本語だけを出題します。ミスしても入力途中は消えません。
+          </p>
+        </div>
+      </section>
+      <div class="tool-main">
+        <section class="tool-panel" aria-labelledby="practice-title">
+          <div class="practice-heading">
+            <div>
+              <p class="eyebrow">STEP 1</p>
+              <h2 id="practice-title">練習したいキーを選ぶ</h2>
+            </div>
+            <p class="practice-selection">
+              選択中 <strong id="weak-key-selected">R</strong><span id="weak-key-availability"></span>
+            </p>
+          </div>
+          <div id="weak-key-keyboard" class="practice-keyboard" aria-label="練習キー選択"></div>
+
+          <div class="practice-divider"></div>
+          <p class="eyebrow">STEP 2</p>
+          <div id="weak-key-stage" class="typing-stage" tabindex="0" aria-describedby="weak-key-message">
+            <div class="typing-status">
+              <span>完了 <strong id="weak-key-word-count">0 / 10</strong></span>
+              <span>対象キー <strong id="weak-key-hit-count">0</strong>回</span>
+              <span>正確率 <strong id="weak-key-live-accuracy">100.0%</strong></span>
+            </div>
+            <p id="weak-key-japanese" class="typing-japanese"></p>
+            <p class="practice-example-label">
+              入力例：
+              <span id="weak-key-example" class="practice-example"></span>
+            </p>
+            <p id="weak-key-roman" class="typing-roman" aria-live="polite"></p>
+            <p id="weak-key-message" class="typing-message">
+              開始ボタンを押し、表示された日本語をローマ字で入力します。
+            </p>
+          </div>
+          <div class="tool-actions">
+            <button id="weak-key-start" class="primary-button" type="button">10語の練習を始める</button>
+            <button id="weak-key-reset" class="secondary-button" type="button">リセット</button>
+          </div>
+          <div id="weak-key-result" class="result-box" hidden aria-live="polite">
+            <span class="result-label">今回の練習結果</span>
+            <div class="metric-grid">
+              <div class="metric"><strong id="weak-key-result-words">0</strong><span>完了した語</span></div>
+              <div class="metric"><strong id="weak-key-result-hits">0</strong><span>対象キー入力</span></div>
+              <div class="metric"><strong id="weak-key-result-accuracy">100%</strong><span>正確率</span></div>
+              <div class="metric"><strong id="weak-key-result-misses">0</strong><span>ミス</span></div>
+            </div>
+          </div>
+        </section>
+
+        <article class="content-panel">
+          <nav class="breadcrumb" aria-label="パンくず">
+            <a href="/">TYPE BURST</a><span aria-hidden="true">›</span><a href="/tools">無料ツール</a
+            ><span aria-hidden="true">›</span><span>苦手キー練習</span>
+          </nav>
+          <h2>苦手キーは「1つずつ」直す</h2>
+          <p>
+            タイピングのミスが多いとき、キーボード全体を速く打とうとしても原因は見つかりません。まず同じ条件で測定し、繰り返し間違えるキーを1つだけ選びます。このツールは、選んだキーを標準的なローマ字入力に含む短い日本語を、TYPE BURSTの単語データから抽出して出題します。
+          </p>
+          <p>
+            入力例では対象キーを色付きで表示します。ただし、<code>shi / si</code>や<code>chi / ti</code>など別の正しいローマ字入力も受け付けます。別表記を使って単語を完成させてもミスにはなりません。
+          </p>
+
+          <h2>どのキーを選べばいい？</h2>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>起きていること</th><th>選ぶキー</th><th>確認する点</th></tr></thead>
+              <tbody>
+                <tr><td>結果画面で毎回同じ文字が苦手上位</td><td>その文字を1つ</td><td>正確率を保ったまま10語</td></tr>
+                <tr><td>右手だけ遅れる</td><td>Y・U・I・O・Pなどから1つ</td><td>手首を動かさず担当指で押す</td></tr>
+                <tr><td>左手だけミスが多い</td><td>R・T・F・G・V・Bなどから1つ</td><td>押した後にホームポジションへ戻る</td></tr>
+                <tr><td>「し」「ち」「つ」で迷う</td><td>S・H・Tなど</td><td>自分が普段使う表記を決める</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h2>効果を出す5分練習</h2>
+          <ol>
+            <li><a href="/tools/typing-speed-test.html">60秒の速度測定</a>を1回行い、正確率とミスを確認する。</li>
+            <li>最も気になったキーを、このページで10語だけ練習する。</li>
+            <li>間違えた瞬間に速度を上げず、入力済みの文字を残したまま正しいキーへ戻る。</li>
+            <li>同じキーでもう10語練習し、対象キーの入力回数と正確率を比較する。</li>
+            <li>最後にもう一度だけ速度測定を行う。速度より、同じミスが減ったかを見る。</li>
+          </ol>
+          <div class="note">
+            1日に多くのキーを直そうとしないことが重要です。正確率95％未満なら速度を落とし、95％以上を保ててからテンポを少し上げます。
+          </div>
+
+          <h2>よくある質問</h2>
+          <details>
+            <summary>苦手キーは毎日変えた方がいいですか？</summary>
+            <p>同じキーを2〜3日続け、測定結果でミスが減ったら次へ移ります。1回の結果だけで変更すると、偶然のミスを苦手だと判断しやすくなります。</p>
+          </details>
+          <details>
+            <summary>入力例と違うローマ字でも大丈夫ですか？</summary>
+            <p>大丈夫です。ゲーム本体と同じ入力判定を使い、複数の正しいローマ字表記を受け付けます。対象キーを練習したい場合は、色付きの入力例を試してください。</p>
+          </details>
+          <details>
+            <summary>ミスしたら最初から打ち直しますか？</summary>
+            <p>打ち直しません。入力途中は残るため、その位置から正しいキーを続けられます。実戦でも修正後に流れを戻す練習になります。</p>
+          </details>
+
+          <p>
+            ミスの原因をさらに切り分けたい場合は、<a href="/guides/typing-mistakes.html">タイピングミスを減らす方法</a>と<a href="/guides/typing-result-analysis.html">結果分析の見方</a>を確認してください。
+          </p>
+          <div class="cta">
+            <h2>直したキーを、ゲームで確かめる。</h2>
+            <p>TYPE BURSTではプレイ後に苦手キーと正確率を確認できます。同じ難易度で比較すると変化が分かります。</p>
+            <a href="/?mode=survival&amp;difficulty=easy&amp;source=tool-weak-key#play">初級で実戦確認する</a>
+          </div>
+        </article>
+      </div>
+    </main>
+    <footer class="site-footer">
+      <div class="site-footer-inner">
+        <span>© TYPE BURST運営チーム</span>
+        <div class="footer-links">
+          <a href="/tools">無料ツール</a><a href="/guides">練習ガイド</a><a href="/privacy.html">プライバシー</a>
+        </div>
+      </div>
+    </footer>
+    <script type="module" src="/src/tools/weak-key-practice.ts"></script>
+  </body>
+</html>

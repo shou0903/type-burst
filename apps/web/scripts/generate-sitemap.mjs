@@ -66,7 +66,10 @@ function indexableImagesFrom(html) {
 }
 
 const indexPath = join(appRoot, "index.html");
-const bundledSeoPages = [join(appRoot, "tools", "typing-speed-test.html")];
+const bundledSeoPages = [
+  join(appRoot, "tools", "typing-speed-test.html"),
+  join(appRoot, "tools", "weak-key-practice.html"),
+];
 const publicHtml = await listHtmlFiles(publicRoot);
 const searchLandingFiles = publicHtml.filter((path) => {
   const pathFromPublic = relative(publicRoot, path).replaceAll("\\", "/");

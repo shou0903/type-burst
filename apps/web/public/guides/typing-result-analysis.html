@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f6f4ef" />
+    <title>タイピング結果の見方｜KPM・WPM・正確率・ミスを練習に変える</title>
+    <meta
+      name="description"
+      content="タイピング結果のKPM・WPM・正確率・ミス数・苦手キーはどう見る？数字の組み合わせから原因を判断し、次の練習を決める方法を具体例と記録表で解説します。"
+    />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <link rel="canonical" href="https://type-burst.com/guides/typing-result-analysis.html" />
+    <link rel="stylesheet" href="/guides/guide.css" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <meta property="og:type" content="article" />
+    <meta property="og:locale" content="ja_JP" />
+    <meta property="og:site_name" content="TYPE BURST" />
+    <meta property="og:title" content="タイピング結果の見方｜KPM・正確率・ミスを練習に変える" />
+    <meta property="og:description" content="結果画面の数字を眺めて終わらない。組み合わせから原因を判断し、次の練習を1つ決める方法。" />
+    <meta property="og:url" content="https://type-burst.com/guides/typing-result-analysis.html" />
+    <meta property="og:image" content="https://type-burst.com/screenshots/typing-analysis.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Article",
+            "@id": "https://type-burst.com/guides/typing-result-analysis.html#article",
+            "headline": "タイピング結果の見方｜KPM・WPM・正確率・ミスを練習に変える",
+            "description": "タイピング結果の指標を組み合わせて原因を判断し、次の練習を決める方法を解説。",
+            "image": "https://type-burst.com/screenshots/typing-analysis.png",
+            "datePublished": "2026-07-29",
+            "dateModified": "2026-07-29",
+            "inLanguage": "ja",
+            "mainEntityOfPage": "https://type-burst.com/guides/typing-result-analysis.html",
+            "author": {
+              "@type": "Organization",
+              "name": "TYPE BURST運営チーム",
+              "url": "https://type-burst.com/guides/editorial-policy.html"
+            },
+            "publisher": {
+              "@type": "Organization",
+              "name": "TYPE BURST運営チーム",
+              "url": "https://type-burst.com/"
+            }
+          },
+          {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              { "@type": "ListItem", "position": 1, "name": "TYPE BURST", "item": "https://type-burst.com/" },
+              { "@type": "ListItem", "position": 2, "name": "タイピング練習ガイド", "item": "https://type-burst.com/guides" },
+              { "@type": "ListItem", "position": 3, "name": "タイピング結果の見方", "item": "https://type-burst.com/guides/typing-result-analysis.html" }
+            ]
+          }
+        ]
+      }
+    </script>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="wordmark" href="/" aria-label="TYPE BURST（タイプバースト）トップへ">TYPE <span>BURST</span></a>
+        <nav class="header-nav" aria-label="主要メニュー">
+          <a href="/about.html">ゲーム紹介</a>
+          <a href="/guides">練習ガイド</a>
+          <a href="/tools">無料ツール</a>
+          <a class="header-play" href="/?source=guide-result-analysis#play">無料でプレイ</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <header class="article-hero">
+        <div class="hero-inner">
+          <p class="eyebrow">READ YOUR TYPING RESULTS</p>
+          <h1>タイピング結果の見方<br /><span class="accent">数字を、次の1回へつなげる。</span></h1>
+          <p class="hero-lead">
+            KPMが上がっただけでは、上達したか判断できません。速度・正確率・ミス・苦手キーを組み合わせて見ると、次に直すことが決まります。
+          </p>
+          <div class="hero-meta">
+            <span>公開：2026年7月29日</span>
+            <span>読了目安：11分</span>
+            <span>結果判定表付き</span>
+          </div>
+        </div>
+      </header>
+
+      <div class="article-layout">
+        <article class="article-body">
+          <div class="lead-box">
+            <strong>先に結論：</strong>
+            結果画面では、まず正確率、次にKPMまたはWPM、最後にミスしたキーを見ます。
+            前回より速くても正確率が大きく下がったなら、速度を上げる練習はまだ増やしません。次回の課題は必ず1つに絞ります。
+          </div>
+
+          <h2 id="metrics">最初に知っておく4つの指標</h2>
+          <h3>KPM：1分間に何回キーを打ったか</h3>
+          <p>
+            KPMはKeystrokes Per Minuteの略で、1分間の打鍵数を表します。日本語をローマ字で打つ場合、
+            語によって必要な打鍵数が違うため、手の動きに近い速度指標として使われます。
+          </p>
+          <h3>WPM：5打鍵を1語として換算した速度</h3>
+          <p>
+            WPMはWords Per Minuteの略です。一般的なタイピング測定では5打鍵を1語として扱います。
+            おおよその換算は「KPM ÷ 5」ですが、サービスごとにミスの扱いが違うため、別サービスの数字をそのまま比較しません。
+          </p>
+          <h3>正確率：速度が実用的かを判断する</h3>
+          <p>
+            正確率は、正しい打鍵が全入力に占める割合です。急いでミスが増えると、実際には修正のために時間を使います。
+            速度が上がったとき、正確率が大きく崩れていないかを必ず確認します。
+          </p>
+          <h3>ミス数・苦手キー：次の練習内容を決める</h3>
+          <p>
+            合計ミス数だけでなく、どのキー、どの文字の並び、どの時間帯で間違えたかを見ます。
+            「Rを3回」「しゃで停止」「後半に増加」のように具体化できれば、次の練習を選べます。
+          </p>
+          <p>
+            KPMとWPMの違いを詳しく確認したい場合は<a href="/guides/kpm-wpm-guide.html">KPM・WPM完全ガイド</a>、
+            手元の数値を換算したい場合は<a href="/tools/kpm-wpm-converter.html">無料換算ツール</a>を使えます。
+          </p>
+
+          <h2 id="order">結果はこの順番で見る</h2>
+          <ol class="practice-plan">
+            <li><strong>測定条件：</strong>秒数、文章、難易度、端末が前回と同じか確認します。</li>
+            <li><strong>正確率：</strong>急ぎすぎ、疲労、キー位置の崩れがないか見ます。</li>
+            <li><strong>KPM・WPM：</strong>正確率を保ったまま速度が変化したか見ます。</li>
+            <li><strong>ミスの場所：</strong>キー、ローマ字、時間帯、盤面の焦りに分けます。</li>
+            <li><strong>次の1課題：</strong>次回に変えることを1つだけ決めます。</li>
+          </ol>
+          <p>
+            条件が違う記録は、成長比較に向きません。30秒測定と3分測定、短語と長文、初級と上級では、求められる動きが異なります。
+          </p>
+
+          <h2 id="matrix">速度と正確率の組み合わせで判断する</h2>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>前回との変化</th><th>読み取り</th><th>次に行うこと</th></tr></thead>
+              <tbody>
+                <tr><td>速度↑・正確率→</td><td>正しい動きを保って加速できた</td><td>同条件でもう数回安定するか確認</td></tr>
+                <tr><td>速度↑・正確率↓</td><td>急ぎすぎ、先読み不足、力みの可能性</td><td>速度を戻し、ミス位置を確認</td></tr>
+                <tr><td>速度→・正確率↑</td><td>正しい動きが安定してきた</td><td>30秒だけ速度区間を追加</td></tr>
+                <tr><td>速度↓・正確率↑</td><td>意識して正確に打てている途中</td><td>正確率を保ち、少しずつリズムを戻す</td></tr>
+                <tr><td>速度↓・正確率↓</td><td>疲労、難易度、環境変化を疑う</td><td>休むか、条件を1段下げる</td></tr>
+                <tr><td>両方→</td><td>同じ練習だけで刺激が不足している可能性</td><td>苦手キーか文章長を1つ変える</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            1回だけの上下では判断しません。同じ条件で3回測り、最高値ではなく中央の結果や週単位の傾向を見ます。
+          </p>
+
+          <h2 id="misses">ミスの「場所」と「起き方」を見る</h2>
+          <div class="mini-card-grid">
+            <section class="mini-card"><h3>同じキーで繰り返す</h3><p>担当指や手の位置が曖昧。長文ではなく、そのキーを含む2文字・短語へ戻ります。</p></section>
+            <section class="mini-card"><h3>特定のローマ字で止まる</h3><p>「ん」「っ」「しゃ」などの入力ルールを確認し、自分の基本形を決めます。</p></section>
+            <section class="mini-card"><h3>速い語の直後に崩れる</h3><p>語ごとの速度差が大きい状態。苦手語でも崩れない一定リズムへ戻します。</p></section>
+            <section class="mini-card"><h3>後半だけ増える</h3><p>最初の飛ばしすぎ、力み、疲労を確認。測定時間を短くして比較します。</p></section>
+            <section class="mini-card"><h3>ゲームで盤面が危ないと増える</h3><p>入力技術より判断の焦り。1段低い難易度で、言葉を読み終えてから打ち始めます。</p></section>
+            <section class="mini-card"><h3>場所が毎回ばらばら</h3><p>全体速度が速すぎる可能性。少し速度を落とし、先読みと姿勢を整えます。</p></section>
+          </div>
+
+          <h2 id="heatmap">キーボードヒートマップの読み方</h2>
+          <p>
+            キーごとの色は、「苦手な指」まで自動的に断定するものではありません。同じキーのミスでも、隣のキーを押した、ローマ字を迷った、
+            手の位置がずれた、焦って先に押した、という複数の原因があります。
+          </p>
+          <ol>
+            <li>最も苦手なキーを1〜2個選ぶ。</li>
+            <li>そのキーを含む実際のミス語を思い出す。</li>
+            <li>担当指とホームポジションを確認する。</li>
+            <li>2文字の組み合わせ、短語、文章の順に戻す。</li>
+            <li>翌日、同じ条件で色の変化を確認する。</li>
+          </ol>
+          <p>
+            一度にすべての苦手キーを練習すると、どの変更が効いたか分かりません。頻度が高い1〜2個から進めます。
+          </p>
+
+          <h2 id="type-burst">TYPE BURSTの分析画面で見る順番</h2>
+          <p>
+            TYPE BURSTでは、速度や正確率だけでなく、連鎖・生存時間・キーごとの傾向も表示されます。
+            ゲームスコアはタイピング速度だけで決まらず、どのブロックを消すかという盤面判断も含まれるため、次のように分けて見ます。
+          </p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>表示</th><th>主に分かること</th><th>注意点</th></tr></thead>
+              <tbody>
+                <tr><td>KPM</td><td>入力中の打鍵速度</td><td>盤面を見る時間があるため、純粋な速度測定とは条件が違う</td></tr>
+                <tr><td>正確率・ミス数</td><td>焦った場面でも入力を保てたか</td><td>難易度やブロックの長さをそろえて比較</td></tr>
+                <tr><td>最大連鎖</td><td>消す順番と特殊効果の活用</td><td>タイピング速度そのものではない</td></tr>
+                <tr><td>生存時間</td><td>速度・正確率・盤面管理の総合</td><td>スコアと同じ方向に動くとは限らない</td></tr>
+                <tr><td>ヒートマップ</td><td>キーごとの得意・苦手の傾向</td><td>回数が少ないキーは1回のミスで色が変わりやすい</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="tip">
+            「スコアは上がったが正確率が下がった」場合、盤面判断や連鎖がうまくいった可能性があります。
+            ゲームの上達としては成果でも、タイピング練習としてはミス原因を別に確認してください。
+          </div>
+
+          <h2 id="record">記録する数字を4つに絞る</h2>
+          <div class="worksheet" aria-label="タイピング結果記録表">
+            <h3>1回の記録テンプレート</h3>
+            <div class="worksheet-row"><span class="worksheet-label">条件</span><span>60秒／サバイバル初級など、比較できる名前</span></div>
+            <div class="worksheet-row"><span class="worksheet-label">速度</span><span>KPMまたはWPMのどちらか1つ</span></div>
+            <div class="worksheet-row"><span class="worksheet-label">正確率</span><span>ミス数も併記すると原因を追いやすい</span></div>
+            <div class="worksheet-row"><span class="worksheet-label">次の課題</span><span>例：RとT、しゃ、後半の力みから1つ</span></div>
+          </div>
+          <p>
+            ゲームでは、これに最大連鎖または生存時間のどちらかを追加します。記録項目を増やしすぎると、何を改善するか決めにくくなります。
+          </p>
+
+          <h2 id="bad-comparisons">比較してはいけない組み合わせ</h2>
+          <ul>
+            <li>日本語ローマ字入力のKPMと、英文コピーのWPM</li>
+            <li>30秒の短時間測定と、5分の持続測定</li>
+            <li>簡単な短語と、記号を含む長文</li>
+            <li>初級と神級など、単語長が異なる難易度</li>
+            <li>外付けキーボードとノートPCなど、入力環境が違う記録</li>
+            <li>ウォームアップ前の1回目と、慣れた後の最高記録</li>
+          </ul>
+          <p>
+            違う条件の記録にも価値はありますが、「成長したか」という1つの結論には使いません。それぞれ別の基準値として残します。
+          </p>
+
+          <h2 id="faq">よくある質問</h2>
+          <div class="faq">
+            <details><summary>KPMが高ければタイピングが速いと言えますか？</summary><p>同じ条件なら速度比較に使えますが、正確率やミス修正を併せて見ます。また、文章作成や漢字変換を含む仕事の速さをKPMだけで判断することはできません。</p></details>
+            <details><summary>正確率は何％なら十分ですか？</summary><p>測定方法で変わるため絶対値だけで判断しません。まず同じ条件で自分の基準を作り、速度を上げても大きく崩れない範囲を探してください。</p></details>
+            <details><summary>自己ベストが出ないと上達していませんか？</summary><p>同じ速度でも正確率が上がった、後半の失速が減った、苦手キーが減った場合は進歩です。最高値だけでなく3回の安定性を見ます。</p></details>
+            <details><summary>結果は毎回保存すべきですか？</summary><p>毎回すべて残す必要はありません。週の基準測定と、条件を変えた日だけ記録しても十分です。比較条件と次の課題は忘れずに残します。</p></details>
+          </div>
+
+          <div class="author-box">
+            <span class="author-mark">TB</span>
+            <div>
+              <strong>TYPE BURST運営チーム</strong>
+              <span>ゲーム内の速度・正確率・苦手キー分析を、具体的な次の練習へつなげられるよう編集しています。</span>
+              <a href="/guides/editorial-policy.html">記事の制作・更新方針</a>
+            </div>
+          </div>
+
+          <div class="article-cta">
+            <h2>結果を読むために、まず60秒測る。</h2>
+            <p>無料・登録不要。KPM、WPM、正確率を同じ条件で確認できます。</p>
+            <a class="cta-button" href="/tools/typing-speed-test.html">タイピング速度を測定する</a>
+          </div>
+
+          <nav class="related" aria-label="関連記事">
+            <a href="/guides/typing-speed-average.html"><small>METRIC GUIDE</small>タイピング速度の平均と目標</a>
+            <a href="/guides/typing-accuracy.html"><small>ACCURACY GUIDE</small>正確率を上げる原因別練習</a>
+          </nav>
+        </article>
+
+        <aside class="article-toc" aria-label="目次">
+          <p>CONTENTS</p>
+          <ol>
+            <li><a href="#metrics">4つの指標</a></li>
+            <li><a href="#order">見る順番</a></li>
+            <li><a href="#matrix">速度×正確率</a></li>
+            <li><a href="#misses">ミスの見方</a></li>
+            <li><a href="#heatmap">ヒートマップ</a></li>
+            <li><a href="#type-burst">分析画面</a></li>
+            <li><a href="#record">記録方法</a></li>
+            <li><a href="#bad-comparisons">比較の注意</a></li>
+            <li><a href="#faq">よくある質問</a></li>
+          </ol>
+        </aside>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <div class="site-footer-inner">
+        <span>© TYPE BURST運営チーム</span>
+        <div class="footer-links">
+          <a href="/">ゲーム</a>
+          <a href="/about.html">TYPE BURSTとは</a>
+          <a href="/guides">練習ガイド一覧</a>
+          <a href="/tools">無料ツール</a>
+          <a href="/privacy.html">プライバシーポリシー</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

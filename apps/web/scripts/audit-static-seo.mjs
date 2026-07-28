@@ -10,6 +10,7 @@ const failures = [];
 const indexableTitles = new Map();
 const indexableDescriptions = new Map();
 const sitemapExpected = new Set();
+const internalLinkSources = new Map();
 
 async function listHtmlFiles(directory) {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -55,9 +56,11 @@ for (const path of htmlFiles) {
   const title = html.match(/<title>([^<]+)<\/title>/i)?.[1]?.trim();
   const description = html.match(/<meta\s+name=["']description["']\s+content=["']([^"']+)["']/i)?.[1]?.trim();
   const canonical = html.match(/<link\s+rel=["']canonical["']\s+href=["']([^"']+)["']/i)?.[1];
+  const h1Count = [...html.matchAll(/<h1(?:\s[^>]*)?>/gi)].length;
 
   if (!title) failures.push(`${label}: title がありません`);
   if (!description) failures.push(`${label}: meta description がありません`);
+  if (!noindex && h1Count !== 1) failures.push(`${label}: h1 は1個必要です (現在 ${h1Count}個)`);
   if (!canonical) {
     failures.push(`${label}: canonical がありません`);
   } else {
@@ -119,6 +122,20 @@ for (const path of htmlFiles) {
       failures.push(`${label}: リンク先がありません ${value}`);
     }
   }
+
+  const linkPattern = /<a\s[^>]*href=["']([^"']+)["']/gi;
+  for (const match of html.matchAll(linkPattern)) {
+    const value = match[1];
+    if (value.startsWith("#") || value.startsWith("mailto:") || value.startsWith("tel:")) continue;
+    const url = new URL(value, origin);
+    if (url.origin !== origin) continue;
+    url.hash = "";
+    url.search = "";
+    const normalized = url.href.endsWith("/") && url.pathname !== "/" ? url.href.slice(0, -1) : url.href;
+    const sources = internalLinkSources.get(normalized) ?? new Set();
+    sources.add(label);
+    internalLinkSources.set(normalized, sources);
+  }
 }
 
 const sitemap = await readFile(join(publicRoot, "sitemap.xml"), "utf8");
@@ -132,6 +149,11 @@ for (const expected of sitemapExpected) {
 }
 for (const actual of sitemapActual) {
   if (!sitemapExpected.has(actual)) failures.push(`sitemap.xml: 対象外URL ${actual}`);
+}
+for (const expected of sitemapExpected) {
+  if (expected === `${origin}/`) continue;
+  const sources = internalLinkSources.get(expected);
+  if (!sources || sources.size === 0) failures.push(`${expected}: 他ページからの内部リンクがありません`);
 }
 
 if (failures.length > 0) {

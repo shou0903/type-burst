@@ -31,5 +31,8 @@ TYPE BURSTは、入力速度だけでなく、どのブロックを消して連�
 - ブラインドタッチ練習: https://type-burst.com/guides/blind-touch-practice.html
 - ホームポジション: https://type-burst.com/guides/home-position.html
 - ミスタイプが多い原因: https://type-burst.com/guides/typing-mistakes.html
+- タイピング練習は毎日何分か: https://type-burst.com/guides/daily-typing-practice.html
+- タイピングが遅い社会人の練習手順: https://type-burst.com/guides/typing-slow-adult.html
+- KPM・WPM・正確率などタイピング結果の見方: https://type-burst.com/guides/typing-result-analysis.html
 
 記事はTYPE BURST運営チームが制作し、制作・更新方針を https://type-burst.com/guides/editorial-policy.html で公開しています。

@@ -1,21 +1,8 @@
 import { useEffect, useState } from "react";
 import { AD_SLOT_LEFT, AD_SLOT_RIGHT, ADSENSE_CLIENT_ID, isAdsenseConfigured } from "../adsConfig";
-import type { ConsentState } from "./ConsentBanner";
 
 /** ゲーム盤面(最大幅約1050px)と両側の広告が重ならない最小ビューポート幅 */
 const MIN_WIDTH_FOR_ADS = 1450;
-
-let scriptLoadStarted = false;
-
-function loadAdsenseScript(): void {
-  if (scriptLoadStarted) return;
-  scriptLoadStarted = true;
-  const script = document.createElement("script");
-  script.async = true;
-  script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT_ID}`;
-  script.crossOrigin = "anonymous";
-  document.head.appendChild(script);
-}
 
 function AdSlot({ side, slotId }: { side: "left" | "right"; slotId: string }): JSX.Element {
   useEffect(() => {
@@ -46,10 +33,10 @@ function AdSlot({ side, slotId }: { side: "left" | "right"; slotId: string }): J
 }
 
 /**
- * 画面両サイドの広告枠。同意("ConsentBanner")取得済み・AdSense設定済み・
- * ビューポートが十分広い場合のみ表示する(D-026)。
+ * 画面両サイドの手動広告枠。Google CMP が地域別の同意を管理するため、
+ * ここではAdSense設定済み・ビューポートが十分広い場合だけ枠を描画する。
  */
-export function AdSlots({ consent }: { consent: ConsentState }): JSX.Element | null {
+export function AdSlots(): JSX.Element | null {
   const [wideEnough, setWideEnough] = useState(() => window.innerWidth >= MIN_WIDTH_FOR_ADS);
 
   useEffect(() => {
@@ -58,13 +45,7 @@ export function AdSlots({ consent }: { consent: ConsentState }): JSX.Element | n
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  useEffect(() => {
-    if (consent === "accepted" && isAdsenseConfigured()) {
-      loadAdsenseScript();
-    }
-  }, [consent]);
-
-  if (consent !== "accepted" || !isAdsenseConfigured() || !wideEnough) return null;
+  if (!isAdsenseConfigured() || !wideEnough) return null;
 
   return (
     <>

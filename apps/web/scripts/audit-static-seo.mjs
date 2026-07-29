@@ -12,6 +12,7 @@ const indexableDescriptions = new Map();
 const sitemapExpected = new Set();
 const internalLinkSources = new Map();
 const sitemapImageExpected = new Set();
+const adsenseAccount = "ca-pub-5471900652537950";
 
 async function listHtmlFiles(directory) {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -64,6 +65,13 @@ for (const path of htmlFiles) {
     publicPath === "press.html" ||
     publicPath.startsWith("guides/") ||
     publicPath.startsWith("tools/");
+  const monetizedPage =
+    path === join(appRoot, "index.html") ||
+    path === join(appRoot, "tools", "typing-speed-test.html") ||
+    path === join(appRoot, "tools", "weak-key-practice.html") ||
+    publicPath === "about.html" ||
+    (publicPath.startsWith("guides/") && publicPath !== "guides/editorial-policy.html") ||
+    publicPath.startsWith("tools/");
   const noindex = /<meta\s+name=["']robots["'][^>]*content=["'][^"']*noindex/i.test(html);
   const title = html.match(/<title>([^<]+)<\/title>/i)?.[1]?.trim();
   const description = html.match(/<meta\s+name=["']description["']\s+content=["']([^"']+)["']/i)?.[1]?.trim();
@@ -75,6 +83,23 @@ for (const path of htmlFiles) {
   const ogUrl = html.match(/<meta\s+property=["']og:url["']\s+content=["']([^"']+)["']/i)?.[1];
   const ogImage = html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i)?.[1];
   const twitterCard = html.match(/<meta\s+name=["']twitter:card["']\s+content=["']([^"']+)["']/i)?.[1];
+
+  if (monetizedPage) {
+    const accountTags = [
+      ...html.matchAll(/<meta\s+name=["']google-adsense-account["']\s+content=["']([^"']+)["'][^>]*>/gi),
+    ];
+    const adsenseScripts = [
+      ...html.matchAll(
+        /<script\s+[^>]*src=["']https:\/\/pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js\?client=([^"']+)["'][^>]*>/gi,
+      ),
+    ];
+    if (accountTags.length !== 1 || accountTags[0]?.[1] !== adsenseAccount) {
+      failures.push(`${label}: AdSenseアカウントメタタグが正しくありません`);
+    }
+    if (adsenseScripts.length !== 1 || adsenseScripts[0]?.[1] !== adsenseAccount) {
+      failures.push(`${label}: AdSenseコードがhead内に1つ必要です`);
+    }
+  }
 
   if (!title) failures.push(`${label}: title がありません`);
   if (!description) failures.push(`${label}: meta description がありません`);
@@ -244,6 +269,10 @@ for (const path of htmlFiles) {
 }
 
 const sitemap = await readFile(join(publicRoot, "sitemap.xml"), "utf8");
+const adsTxt = (await readFile(join(publicRoot, "ads.txt"), "utf8")).trim();
+if (adsTxt !== "google.com, pub-5471900652537950, DIRECT, f08c47fec0942fa0") {
+  failures.push("public/ads.txt のパブリッシャー情報が一致しません");
+}
 const sitemapActual = new Set();
 const sitemapImageActual = new Set();
 for (const match of sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)) {

@@ -294,6 +294,41 @@ h1 {
   background: #f9fbfd;
 }
 
+.sentence-controls {
+  max-width: 680px;
+  margin-bottom: 22px;
+}
+
+.sentence-stage {
+  min-height: 280px;
+}
+
+.diagnosis-box {
+  margin-top: 22px;
+  padding-top: 22px;
+  border-top: 1px solid rgba(18, 35, 51, 0.12);
+}
+
+.diagnosis-level {
+  display: block;
+  margin: 7px 0 8px;
+  color: var(--ink);
+  font-family: "Arial Black", "Hiragino Kaku Gothic ProN", sans-serif;
+  font-size: clamp(1.5rem, 4vw, 2.25rem);
+  line-height: 1.2;
+}
+
+.diagnosis-box p {
+  margin: 7px 0;
+}
+
+.diagnosis-box a {
+  display: inline-block;
+  margin-top: 9px;
+  color: var(--blue);
+  font-weight: 900;
+}
+
 .typing-status {
   display: flex;
   flex-wrap: wrap;

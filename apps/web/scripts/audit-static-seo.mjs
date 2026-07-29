@@ -37,6 +37,9 @@ async function exists(path) {
 
 function localTarget(urlPath) {
   if (urlPath === "/") return join(appRoot, "index.html");
+  if (urlPath === "/tools/sentence-typing-practice.html") {
+    return join(appRoot, "tools", "sentence-typing-practice.html");
+  }
   if (urlPath === "/tools/typing-speed-test.html") return join(appRoot, "tools", "typing-speed-test.html");
   if (urlPath === "/tools/weak-key-practice.html") return join(appRoot, "tools", "weak-key-practice.html");
   if (urlPath.startsWith("/src/")) return join(appRoot, urlPath.slice(1));
@@ -49,6 +52,7 @@ function localTarget(urlPath) {
 const htmlFiles = [
   join(appRoot, "index.html"),
   ...(await listHtmlFiles(publicRoot)),
+  join(appRoot, "tools", "sentence-typing-practice.html"),
   join(appRoot, "tools", "typing-speed-test.html"),
   join(appRoot, "tools", "weak-key-practice.html"),
 ];
@@ -59,6 +63,7 @@ for (const path of htmlFiles) {
   const publicPath = relative(publicRoot, path).replaceAll("\\", "/");
   const includedInSitemap =
     path === join(appRoot, "index.html") ||
+    path === join(appRoot, "tools", "sentence-typing-practice.html") ||
     path === join(appRoot, "tools", "typing-speed-test.html") ||
     path === join(appRoot, "tools", "weak-key-practice.html") ||
     publicPath === "about.html" ||
@@ -67,12 +72,16 @@ for (const path of htmlFiles) {
     publicPath.startsWith("tools/");
   const monetizedPage =
     path === join(appRoot, "index.html") ||
+    path === join(appRoot, "tools", "sentence-typing-practice.html") ||
     path === join(appRoot, "tools", "typing-speed-test.html") ||
     path === join(appRoot, "tools", "weak-key-practice.html") ||
     publicPath === "about.html" ||
     (publicPath.startsWith("guides/") && publicPath !== "guides/editorial-policy.html") ||
     publicPath.startsWith("tools/");
   const noindex = /<meta\s+name=["']robots["'][^>]*content=["'][^"']*noindex/i.test(html);
+  const htmlLang = html.match(/<html\s+[^>]*lang=["']([^"']+)["']/i)?.[1];
+  const viewport = html.match(/<meta\s+name=["']viewport["']\s+content=["']([^"']+)["']/i)?.[1];
+  const robots = html.match(/<meta\s+name=["']robots["']\s+content=["']([^"']+)["']/i)?.[1];
   const title = html.match(/<title>([^<]+)<\/title>/i)?.[1]?.trim();
   const description = html.match(/<meta\s+name=["']description["']\s+content=["']([^"']+)["']/i)?.[1]?.trim();
   const canonical = html.match(/<link\s+rel=["']canonical["']\s+href=["']([^"']+)["']/i)?.[1];
@@ -103,6 +112,19 @@ for (const path of htmlFiles) {
 
   if (!title) failures.push(`${label}: title がありません`);
   if (!description) failures.push(`${label}: meta description がありません`);
+  if (!noindex && htmlLang !== "ja") failures.push(`${label}: html lang="ja" が必要です`);
+  if (!noindex && !viewport?.includes("width=device-width")) {
+    failures.push(`${label}: モバイル向けviewportが必要です`);
+  }
+  if (!noindex && includedInSitemap && !robots?.includes("index")) {
+    failures.push(`${label}: sitemap掲載ページにはindex指定が必要です`);
+  }
+  if (!noindex && title && ([...title].length < 15 || [...title].length > 60)) {
+    failures.push(`${label}: titleは15〜60文字を目安にしてください (現在 ${[...title].length}文字)`);
+  }
+  if (!noindex && description && ([...description].length < 50 || [...description].length > 160)) {
+    failures.push(`${label}: meta descriptionは50〜160文字を目安にしてください (現在 ${[...description].length}文字)`);
+  }
   if (!noindex && h1Count !== 1) failures.push(`${label}: h1 は1個必要です (現在 ${h1Count}個)`);
   if (!noindex && includedInSitemap && !ogType) failures.push(`${label}: og:type がありません`);
   if (!noindex && includedInSitemap && !ogTitle) failures.push(`${label}: og:title がありません`);
@@ -115,6 +137,9 @@ for (const path of htmlFiles) {
   } else {
     const canonicalUrl = new URL(canonical, origin);
     if (canonicalUrl.origin !== origin) failures.push(`${label}: canonical が外部URLです`);
+    if (canonicalUrl.protocol !== "https:" || canonicalUrl.search || canonicalUrl.hash) {
+      failures.push(`${label}: canonicalはHTTPSの正規URL（クエリ・フラグメントなし）にしてください`);
+    }
     if (canonicals.has(canonicalUrl.href)) {
       failures.push(`${label}: canonical が ${canonicals.get(canonicalUrl.href)} と重複しています`);
     }
@@ -164,13 +189,20 @@ for (const path of htmlFiles) {
     if (!article) {
       failures.push(`${label}: Article構造化データがありません`);
     } else {
-      for (const property of ["headline", "image", "datePublished", "dateModified", "author"]) {
+      for (const property of ["headline", "image", "datePublished", "dateModified", "mainEntityOfPage", "author"]) {
         if (!article[property]) failures.push(`${label}: Article.${property} がありません`);
       }
       if (!article.author?.name || !article.author?.url) {
         failures.push(`${label}: Article.author の name/url が不足しています`);
       }
       if (!article.publisher) failures.push(`${label}: Article.publisher がありません`);
+      if (
+        canonical &&
+        article.mainEntityOfPage &&
+        new URL(article.mainEntityOfPage, origin).href !== new URL(canonical, origin).href
+      ) {
+        failures.push(`${label}: Article.mainEntityOfPageがcanonicalと一致しません`);
+      }
     }
     if (!structuredItems.some((item) => item?.["@type"] === "BreadcrumbList")) {
       failures.push(`${label}: BreadcrumbList構造化データがありません`);
@@ -189,6 +221,17 @@ for (const path of htmlFiles) {
     if (!organization?.name || !organization?.url || !organization?.logo) {
       failures.push(`${label}: Organization の name/url/logo が不足しています`);
     }
+    const game = structuredItems.find((item) => {
+      const types = Array.isArray(item?.["@type"]) ? item["@type"] : [item?.["@type"]];
+      return types.includes("WebApplication") || types.includes("SoftwareApplication");
+    });
+    const gameTypes = Array.isArray(game?.["@type"]) ? game["@type"] : [game?.["@type"]];
+    if (!gameTypes.includes("WebApplication") || !gameTypes.includes("VideoGame")) {
+      failures.push(`${label}: ゲームはWebApplicationとVideoGameの両方で構造化してください`);
+    }
+    if (game?.offers?.price !== "0" || !game?.operatingSystem) {
+      failures.push(`${label}: 無料Webゲームのoffers/operatingSystemが不足しています`);
+    }
   }
   if (canonical && [`${origin}/guides`, `${origin}/tools`].includes(new URL(canonical, origin).href)) {
     const collection = structuredItems.find((item) => item?.["@type"] === "CollectionPage");
@@ -202,6 +245,21 @@ for (const path of htmlFiles) {
           failures.push(`${label}: ItemList ${index + 1}件目の position/url/name が不正です`);
         }
       });
+    }
+  }
+  if (canonical && new URL(canonical, origin).pathname.startsWith("/tools/") && !noindex) {
+    const app = structuredItems.find((item) => item?.["@type"] === "WebApplication");
+    if (!app?.name || !app?.url || !app?.operatingSystem || !app?.isAccessibleForFree) {
+      failures.push(`${label}: WebApplicationのname/url/operatingSystem/isAccessibleForFreeが不足しています`);
+    }
+    if (app?.offers?.price !== "0") {
+      failures.push(`${label}: 無料ツールのWebApplication.offers.priceは"0"にしてください`);
+    }
+    if (!structuredItems.some((item) => item?.["@type"] === "BreadcrumbList")) {
+      failures.push(`${label}: ツールページにBreadcrumbList構造化データがありません`);
+    }
+    if (!/class=["'][^"']*\bbreadcrumb\b/i.test(html)) {
+      failures.push(`${label}: ツールページに表示用パンくずがありません`);
     }
   }
   if (publicPath === "press.html") {
@@ -270,8 +328,19 @@ for (const path of htmlFiles) {
 
 const sitemap = await readFile(join(publicRoot, "sitemap.xml"), "utf8");
 const adsTxt = (await readFile(join(publicRoot, "ads.txt"), "utf8")).trim();
+const vercelConfig = JSON.parse(await readFile(join(appRoot, "vercel.json"), "utf8"));
 if (adsTxt !== "google.com, pub-5471900652537950, DIRECT, f08c47fec0942fa0") {
   failures.push("public/ads.txt のパブリッシャー情報が一致しません");
+}
+for (const [source, destination] of [
+  ["/index.html", "/"],
+  ["/guides/index.html", "/guides"],
+  ["/tools/index.html", "/tools"],
+]) {
+  const redirect = vercelConfig.redirects?.find((item) => item.source === source);
+  if (!redirect?.permanent || redirect.destination !== destination) {
+    failures.push(`vercel.json: ${source} から ${destination} への恒久リダイレクトが必要です`);
+  }
 }
 const sitemapActual = new Set();
 const sitemapImageActual = new Set();

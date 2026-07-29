@@ -10,6 +10,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: r("index.html"),
+        sentenceTypingPractice: r("tools/sentence-typing-practice.html"),
         typingSpeedTest: r("tools/typing-speed-test.html"),
         weakKeyPractice: r("tools/weak-key-practice.html"),
       },

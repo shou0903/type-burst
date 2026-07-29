@@ -1,5 +1,6 @@
 import { TypingAutomaton } from "@type-burst/typing-engine";
 import { SPEED_TEST_PROMPTS } from "./speedPrompts";
+import { diagnoseTypingLevel } from "./typingLevel";
 
 const byId = (id: string): HTMLElement => {
   const element = document.getElementById(id);
@@ -27,6 +28,10 @@ const kpmNode = byId("typing-kpm");
 const wpmNode = byId("typing-wpm");
 const accuracyNode = byId("typing-accuracy");
 const correctNode = byId("typing-correct");
+const levelNode = byId("typing-level");
+const levelSummaryNode = byId("typing-level-summary");
+const levelActionNode = byId("typing-level-action");
+const levelLinkNode = byId("typing-level-link") as HTMLAnchorElement;
 
 let running = false;
 let promptIndex = 0;
@@ -91,6 +96,12 @@ function finish(): void {
   wpmNode.textContent = format(kpm / 5, 1);
   accuracyNode.textContent = `${format(accuracy, 1)}%`;
   correctNode.textContent = correct.toLocaleString();
+  const level = diagnoseTypingLevel(kpm, accuracy);
+  levelNode.textContent = level.label;
+  levelSummaryNode.textContent = level.summary;
+  levelActionNode.textContent = level.nextAction;
+  levelLinkNode.href = level.href;
+  levelLinkNode.textContent = level.linkLabel;
   result.hidden = false;
   messageNode.textContent = "測定完了。複数のローマ字入力を使った場合も、正しい打鍵として集計しています。";
   startButton.textContent = "もう一度測る";

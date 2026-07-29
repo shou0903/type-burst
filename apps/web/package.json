@@ -8,7 +8,7 @@
     "seo:sitemap": "node scripts/generate-sitemap.mjs",
     "seo:audit": "node scripts/audit-static-seo.mjs",
     "seo:indexnow": "node scripts/submit-indexnow.mjs",
-    "build": "npm run seo:sitemap && vite build",
+    "build": "npm run seo:sitemap && vite build && node scripts/inject-static-observability.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -163,6 +163,8 @@ export function MobileLanding(): JSX.Element {
         <span aria-hidden="true">・</span>
         <a href="/guides">練習ガイド</a>
         <span aria-hidden="true">・</span>
+        <a href="/tools">無料タイピング測定</a>
+        <span aria-hidden="true">・</span>
         <a href="/press.html">報道関係者向け</a>
         <span aria-hidden="true">・</span>
         <a href="/terms.html" target="_blank" rel="noreferrer">

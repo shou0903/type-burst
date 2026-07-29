@@ -868,6 +868,12 @@ td {
     grid-template-columns: 1fr;
   }
 
+  .article-body,
+  .article-toc {
+    min-width: 0;
+    width: 100%;
+  }
+
   .article-toc {
     position: static;
     grid-row: 1;
@@ -919,6 +925,18 @@ td {
   .quick-start,
   .guide-card {
     border-radius: 12px;
+  }
+
+  .article-toc {
+    display: none;
+  }
+
+  .article-body {
+    overflow-wrap: anywhere;
+  }
+
+  .table-wrap {
+    max-width: 100%;
   }
 
   .check-grid,

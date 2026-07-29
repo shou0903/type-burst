@@ -18,7 +18,8 @@ TYPE BURSTは、入力速度だけでなく、どのブロックを消して連�
 
 ## 無料ツール
 
-- タイピング速度測定（KPM・WPM・正確率）: https://type-burst.com/tools/typing-speed-test.html
+- 日本語の短文・長文タイピング練習: https://type-burst.com/tools/sentence-typing-practice.html
+- タイピング速度測定・レベル診断（KPM・WPM・正確率）: https://type-burst.com/tools/typing-speed-test.html
 - 苦手キー練習（選んだキーを含む日本語を集中練習）: https://type-burst.com/tools/weak-key-practice.html
 - KPM・WPM換算: https://type-burst.com/tools/kpm-wpm-converter.html
 - タイピング正確率計算: https://type-burst.com/tools/typing-accuracy-check.html
@@ -26,6 +27,7 @@ TYPE BURSTは、入力速度だけでなく、どのブロックを消して連�
 
 ## 主な解説
 
+- タイピング初心者が最初にする7ステップ: https://type-burst.com/guides/typing-beginner.html
 - タイピング速度の平均と目標: https://type-burst.com/guides/typing-speed-average.html
 - KPM・WPMの違い: https://type-burst.com/guides/kpm-wpm-guide.html
 - 正確率を上げる方法: https://type-burst.com/guides/typing-accuracy.html

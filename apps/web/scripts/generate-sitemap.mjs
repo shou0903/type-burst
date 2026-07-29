@@ -67,6 +67,7 @@ function indexableImagesFrom(html) {
 
 const indexPath = join(appRoot, "index.html");
 const bundledSeoPages = [
+  join(appRoot, "tools", "sentence-typing-practice.html"),
   join(appRoot, "tools", "typing-speed-test.html"),
   join(appRoot, "tools", "weak-key-practice.html"),
 ];

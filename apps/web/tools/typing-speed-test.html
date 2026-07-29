@@ -10,8 +10,8 @@
       src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5471900652537950"
       crossorigin="anonymous"
     ></script>
-    <title>タイピング速度測定｜KPM・WPM・正確率を無料チェック</title>
-    <meta name="description" content="タイピング速度を30秒・60秒で無料測定。KPM、WPM、正確率、正しい打鍵数を同時に表示します。登録不要でブラウザ上ですぐ使えます。" />
+    <title>タイピング速度測定・レベル診断｜KPM・正確率を無料チェック</title>
+    <meta name="description" content="タイピング速度とレベルを30秒・60秒で無料診断。KPM、WPM、正確率、正しい打鍵数を測定し、結果に合う次の練習を案内します。登録不要。" />
     <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
     <link rel="canonical" href="https://type-burst.com/tools/typing-speed-test.html" />
     <link rel="stylesheet" href="/tools/tools.css" />
@@ -19,8 +19,8 @@
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="ja_JP" />
     <meta property="og:site_name" content="TYPE BURST" />
-    <meta property="og:title" content="タイピング速度測定｜無料・登録不要" />
-    <meta property="og:description" content="KPM・WPM・正確率を30秒または60秒で測定。ゲーム本体と同じローマ字入力判定に対応。" />
+    <meta property="og:title" content="タイピング速度測定・レベル診断｜無料・登録不要" />
+    <meta property="og:description" content="KPM・WPM・正確率を測定し、現在の段階と次に取り組む練習を診断します。" />
     <meta property="og:url" content="https://type-burst.com/tools/typing-speed-test.html" />
     <meta property="og:image" content="https://type-burst.com/og-image-v3.png" />
     <meta name="twitter:card" content="summary_large_image" />
@@ -31,9 +31,10 @@
           {
             "@type": "WebApplication",
             "@id": "https://type-burst.com/tools/typing-speed-test.html#app",
-            "name": "タイピング速度測定",
+            "name": "タイピング速度測定・レベル診断",
+            "alternateName": ["タイピング診断", "タイピングレベル診断"],
             "url": "https://type-burst.com/tools/typing-speed-test.html",
-            "description": "KPM・WPM・正確率を、ゲーム本体と同じ複数ローマ字表記で測定できる無料タイピングテスト。",
+            "description": "KPM・WPM・正確率を測定し、現在の段階と次の練習を案内する無料タイピング診断。",
             "applicationCategory": "EducationalApplication",
             "operatingSystem": "Web",
             "browserRequirements": "JavaScript対応のブラウザとキーボード",
@@ -67,11 +68,12 @@
       <section class="tool-hero">
         <div class="hero-inner">
           <p class="eyebrow">TYPING SPEED TEST</p>
-          <h1>タイピング速度測定</h1>
-          <p class="hero-lead">KPM・WPM・正確率を一度に測定します。ゲーム本体と同じように、複数の正しいローマ字入力を受け付けます。</p>
+          <h1>タイピング速度測定・レベル診断</h1>
+          <p class="hero-lead">KPM・WPM・正確率を一度に測定し、今の段階と次の練習を案内します。複数の正しいローマ字入力にも対応しています。</p>
         </div>
       </section>
       <div class="tool-main">
+        <nav class="breadcrumb" aria-label="パンくずリスト"><a href="/">ホーム</a><span>›</span><a href="/tools">無料ツール</a><span>›</span><span aria-current="page">タイピング速度測定</span></nav>
         <section class="tool-panel" aria-labelledby="test-title">
           <h2 id="test-title">30秒・60秒タイピングテスト</h2>
           <div class="field" style="max-width: 260px; margin-bottom: 18px">
@@ -96,6 +98,13 @@
               <div class="metric"><strong id="typing-accuracy">0%</strong><span>正確率</span></div>
               <div class="metric"><strong id="typing-correct">0</strong><span>正しい打鍵</span></div>
             </div>
+            <div class="diagnosis-box">
+              <span class="result-label">TYPE BURST独自診断</span>
+              <strong id="typing-level" class="diagnosis-level">―</strong>
+              <p id="typing-level-summary"></p>
+              <p id="typing-level-action"></p>
+              <a id="typing-level-link" class="text-link" href="/tools">次の練習を見る</a>
+            </div>
           </div>
         </section>
         <article class="content-panel">
@@ -111,6 +120,7 @@
             <li><strong>90〜95％：</strong>急ぎすぎの可能性。速度を5〜10％落として再測定します。</li>
             <li><strong>90％未満：</strong>速度よりキー位置とローマ字の確認を優先します。</li>
           </ul>
+          <div class="note">レベル表示は公的な検定や資格の合否ではなく、TYPE BURSTが次の練習を選びやすくするために設けた独自の目安です。環境を揃え、1回の最高値より複数回の傾向を見てください。</div>
           <h2>毎回の数字が変わるのはなぜ？</h2>
           <p>測定結果は文章の長さ、慣れた文字の割合、姿勢、疲労、キーボードで上下します。1回の最高値ではなく、同じ時間で3回測った中央の値を基準にすると、偶然の好不調に左右されにくくなります。</p>
           <h2>速度を伸ばす3段階</h2>

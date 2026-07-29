@@ -422,12 +422,22 @@
         transform: rotate(1.4deg);
       }
 
+      .game-stage .showcase-video,
       .game-stage .showcase-image {
         display: block;
         width: 100%;
         height: auto;
         border-radius: 17px;
         background: #090d1c;
+      }
+
+      .game-stage .showcase-video {
+        aspect-ratio: 960 / 602;
+        object-fit: cover;
+      }
+
+      .showcase-reduced-motion {
+        display: none !important;
       }
 
       .game-stage .showcase-caption {
@@ -450,9 +460,19 @@
         letter-spacing: 0.14em;
       }
 
-      .game-stage .showcase-image ~ .stage-top,
-      .game-stage .showcase-image ~ .board {
+      .game-stage .showcase-video ~ .stage-top,
+      .game-stage .showcase-video ~ .board {
         display: none;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .game-stage .showcase-video {
+          display: none;
+        }
+
+        .game-stage .showcase-reduced-motion {
+          display: block !important;
+        }
       }
 
       .game-stage::before {
@@ -1473,8 +1493,11 @@
         </div>
 
         <div class="game-stage" aria-label="TYPE BURSTのゲーム盤面イメージ">
-          <img class="showcase-image" src="/screenshots/gameplay-survival.png" width="1280" height="720" alt="TYPE BURSTの実際のサバイバルプレイ画面。落下する単語ブロックとスコア表示" />
-          <p class="showcase-caption"><span>ACTUAL GAMEPLAY</span>狙う言葉を打って、連鎖をつくる。</p>
+          <video class="showcase-video" autoplay muted loop playsinline preload="metadata" poster="/media/hero-gameplay-poster.jpg" aria-label="TYPE BURSTの実プレイ映像。3連鎖からTYPE BURSTを発動する場面">
+            <source src="/media/hero-gameplay.mp4" type="video/mp4" />
+          </video>
+          <img class="showcase-image showcase-reduced-motion" src="/media/hero-gameplay-poster.jpg" width="960" height="602" alt="TYPE BURSTの実際のサバイバルプレイ画面。3連鎖を決める場面" />
+          <p class="showcase-caption"><span>ACTUAL GAMEPLAY</span>3連鎖からTYPE BURSTへ。</p>
           <div class="stage-top">
             <span><strong>SURVIVAL</strong> / NORMAL</span>
             <span class="stage-score">SCORE 84,620</span>

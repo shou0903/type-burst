@@ -2,6 +2,7 @@ import { access, readFile, readdir } from "node:fs/promises";
 import { constants } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
+import { BUNDLED_TOOL_PAGES, BUNDLED_TOOL_PATHS } from "./bundled-seo-pages.mjs";
 
 const appRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const publicRoot = join(appRoot, "public");
@@ -37,11 +38,9 @@ async function exists(path) {
 
 function localTarget(urlPath) {
   if (urlPath === "/") return join(appRoot, "index.html");
-  if (urlPath === "/tools/sentence-typing-practice.html") {
-    return join(appRoot, "tools", "sentence-typing-practice.html");
+  if (BUNDLED_TOOL_PATHS.includes(urlPath)) {
+    return join(appRoot, "tools", urlPath.slice("/tools/".length));
   }
-  if (urlPath === "/tools/typing-speed-test.html") return join(appRoot, "tools", "typing-speed-test.html");
-  if (urlPath === "/tools/weak-key-practice.html") return join(appRoot, "tools", "weak-key-practice.html");
   if (urlPath.startsWith("/src/")) return join(appRoot, urlPath.slice(1));
   if (urlPath === "/guides" || urlPath === "/guides/") return join(publicRoot, "guides", "index.html");
   if (urlPath === "/tools" || urlPath === "/tools/") return join(publicRoot, "tools", "index.html");
@@ -49,12 +48,11 @@ function localTarget(urlPath) {
   return join(publicRoot, decodeURIComponent(urlPath).replace(/^[/\\]+/, ""));
 }
 
+const bundledToolPaths = new Set(BUNDLED_TOOL_PAGES.map((name) => join(appRoot, "tools", name)));
 const htmlFiles = [
   join(appRoot, "index.html"),
   ...(await listHtmlFiles(publicRoot)),
-  join(appRoot, "tools", "sentence-typing-practice.html"),
-  join(appRoot, "tools", "typing-speed-test.html"),
-  join(appRoot, "tools", "weak-key-practice.html"),
+  ...BUNDLED_TOOL_PAGES.map((name) => join(appRoot, "tools", name)),
 ];
 const canonicals = new Map();
 for (const path of htmlFiles) {
@@ -63,18 +61,14 @@ for (const path of htmlFiles) {
   const publicPath = relative(publicRoot, path).replaceAll("\\", "/");
   const includedInSitemap =
     path === join(appRoot, "index.html") ||
-    path === join(appRoot, "tools", "sentence-typing-practice.html") ||
-    path === join(appRoot, "tools", "typing-speed-test.html") ||
-    path === join(appRoot, "tools", "weak-key-practice.html") ||
+    bundledToolPaths.has(path) ||
     publicPath === "about.html" ||
     publicPath === "press.html" ||
     publicPath.startsWith("guides/") ||
     publicPath.startsWith("tools/");
   const monetizedPage =
     path === join(appRoot, "index.html") ||
-    path === join(appRoot, "tools", "sentence-typing-practice.html") ||
-    path === join(appRoot, "tools", "typing-speed-test.html") ||
-    path === join(appRoot, "tools", "weak-key-practice.html") ||
+    bundledToolPaths.has(path) ||
     publicPath === "about.html" ||
     (publicPath.startsWith("guides/") && publicPath !== "guides/editorial-policy.html") ||
     publicPath.startsWith("tools/");

@@ -13,6 +13,7 @@ export default defineConfig({
         sentenceTypingPractice: r("tools/sentence-typing-practice.html"),
         typingSpeedTest: r("tools/typing-speed-test.html"),
         weakKeyPractice: r("tools/weak-key-practice.html"),
+        numberSymbolPractice: r("tools/number-symbol-practice.html"),
       },
     },
   },

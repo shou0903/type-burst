@@ -1,4 +1,5 @@
 import { readFile, readdir, writeFile } from "node:fs/promises";
+import { BUNDLED_TOOL_PAGES } from "./bundled-seo-pages.mjs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -66,11 +67,7 @@ function indexableImagesFrom(html) {
 }
 
 const indexPath = join(appRoot, "index.html");
-const bundledSeoPages = [
-  join(appRoot, "tools", "sentence-typing-practice.html"),
-  join(appRoot, "tools", "typing-speed-test.html"),
-  join(appRoot, "tools", "weak-key-practice.html"),
-];
+const bundledSeoPages = BUNDLED_TOOL_PAGES.map((name) => join(appRoot, "tools", name));
 const publicHtml = await listHtmlFiles(publicRoot);
 const searchLandingFiles = publicHtml.filter((path) => {
   const pathFromPublic = relative(publicRoot, path).replaceAll("\\", "/");

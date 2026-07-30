@@ -735,3 +735,75 @@ th {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* 数字・記号タイピング練習(D-092) */
+.field-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.field-row .field {
+  flex: 1 1 200px;
+  max-width: 260px;
+}
+
+.weak-list {
+  list-style: none;
+  margin: 8px 0 12px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.weak-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.95rem;
+}
+
+.weak-list code {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.4em;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.16);
+  border-bottom-width: 3px;
+  background: #fff;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.table-scroll {
+  overflow-x: auto;
+  margin: 16px 0;
+}
+
+.symbol-table {
+  width: 100%;
+  min-width: 380px;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.symbol-table th,
+.symbol-table td {
+  padding: 9px 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  text-align: left;
+}
+
+.symbol-table th {
+  background: rgba(0, 0, 0, 0.04);
+  font-weight: 700;
+}
+
+.symbol-table code {
+  font-size: 1.05rem;
+  font-weight: 700;
+}

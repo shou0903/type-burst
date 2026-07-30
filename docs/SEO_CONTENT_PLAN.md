@@ -115,10 +115,13 @@ SEOと機能開発が同じ方向を向く数少ない接点であり、切り�
 
 ## 6. 進め方
 
-1. 技術記事を公開し、被リンクの起点を作る
-2. 新規ツール3本
-3. クラスタ1（ローマ字の個別の打ち方）
-4. Search Console の実データを見て、クラスタ2〜6の順序を確定する
-5. データが溜まった段階で §4 の一次データを公開する
+1. ~~技術記事を公開し、被リンクの起点を作る~~ — `marketing/article-romaji-nfa.md` を作成・Zenn記法へ調整済み。**Zennへの公開はユーザー操作待ち（未公開）。ここが最大のボトルネック。**
+2. ~~新規ツール3本~~ — 完了・本番反映済み（number-symbol-practice / input-method-check / typing-workload）
+3. ~~クラスタ1（ローマ字の個別の打ち方）~~ — 完了・本番反映済み（romaji-n-input / romaji-small-kana）
+4. ~~クラスタ4・6・7・9~~ — 完了・本番反映済み（typing-mastery-timeline / finger-key-chart / typing-for-kids / typing-ergonomics）
+5. **次**: クラスタ8（伸び悩み・`typing-slow-adult.html`と要差別化）、クラスタ10（英文タイピング・慎重な扱いが必要）
+6. Search Console の実データを見て、CTR改善とクラスタ2・3・5の掘り下げ順序を確定する（未着手・データ待ち）
+7. データが溜まった段階で §4 の一次データを公開する（未着手）
 
 新規ページは `docs/SEO_SAO_HANDOVER.md` §3 のチェックリストを必ず通す。
+実装の詳細と検証結果は `docs/DECISIONS.md` の D-091・D-092 を参照。

@@ -13,6 +13,8 @@ export const BUNDLED_TOOL_PAGES = [
   "typing-speed-test.html",
   "weak-key-practice.html",
   "number-symbol-practice.html",
+  "input-method-check.html",
+  "typing-workload.html",
 ];
 
 /** URLパス("/tools/xxx.html")の一覧 */

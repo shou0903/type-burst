@@ -14,6 +14,8 @@ export default defineConfig({
         typingSpeedTest: r("tools/typing-speed-test.html"),
         weakKeyPractice: r("tools/weak-key-practice.html"),
         numberSymbolPractice: r("tools/number-symbol-practice.html"),
+        inputMethodCheck: r("tools/input-method-check.html"),
+        typingWorkload: r("tools/typing-workload.html"),
       },
     },
   },

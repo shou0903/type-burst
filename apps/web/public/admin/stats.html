@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>プレイデータ統計（非公開）</title>
+    <meta name="description" content="TYPE BURST 運営者専用のプレイデータ統計ページ。" />
+    <meta name="robots" content="noindex,nofollow" />
+    <link rel="canonical" href="https://type-burst.com/admin/stats.html" />
+    <link rel="stylesheet" href="/admin/admin.css" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+  </head>
+  <body>
+    <div class="ad-shell">
+      <div id="ad-gate" class="ad-gate">
+        <h1>プレイデータ統計</h1>
+        <p>運営者専用ページです。トークンを入力してください。</p>
+        <div class="ad-gate-row">
+          <input id="ad-token-input" type="password" autocomplete="off" placeholder="トークン" />
+          <button id="ad-token-submit" class="ad-btn" type="button">表示</button>
+        </div>
+        <p id="ad-gate-error" class="ad-gate-error"></p>
+      </div>
+
+      <div id="ad-dashboard" class="ad-hidden">
+        <header class="ad-header">
+          <div>
+            <h1 class="ad-title">TYPE BURST プレイデータ統計</h1>
+            <p class="ad-subtitle" id="ad-generated-at">生成: -</p>
+          </div>
+          <div class="ad-actions">
+            <button id="ad-refresh" class="ad-btn" type="button">更新</button>
+            <button id="ad-logout" class="ad-btn" type="button">ログアウト</button>
+          </div>
+        </header>
+
+        <div class="ad-kpi-row">
+          <div class="ad-kpi">
+            <div class="ad-kpi-label">共有カード累計作成数</div>
+            <div class="ad-kpi-value" id="ad-kpi-shares">-</div>
+          </div>
+          <div class="ad-kpi">
+            <div class="ad-kpi-label">本日のデイリー参加者</div>
+            <div class="ad-kpi-value" id="ad-kpi-daily-participants">-</div>
+          </div>
+          <div class="ad-kpi">
+            <div class="ad-kpi-label">本日の平均KPM</div>
+            <div class="ad-kpi-value" id="ad-kpi-daily-kpm">-</div>
+          </div>
+          <div class="ad-kpi">
+            <div class="ad-kpi-label">本日の平均正確率</div>
+            <div class="ad-kpi-value" id="ad-kpi-daily-accuracy">-</div>
+          </div>
+        </div>
+
+        <section class="ad-section">
+          <h2>デイリーチャレンジ</h2>
+          <p class="ad-section-note">全員が同じ問題に挑む2分間チャレンジの、直近の参加状況。</p>
+          <div class="ad-chart-grid">
+            <div class="ad-chart-box">
+              <canvas id="ad-chart-daily-trend"></canvas>
+              <p class="ad-chart-caption">直近7日間の参加者数</p>
+            </div>
+            <div class="ad-chart-box">
+              <canvas id="ad-chart-daily-kpm"></canvas>
+              <p class="ad-chart-caption">本日のKPM分布</p>
+            </div>
+            <div class="ad-chart-box">
+              <canvas id="ad-chart-daily-accuracy"></canvas>
+              <p class="ad-chart-caption">本日の正確率分布(%)</p>
+            </div>
+          </div>
+          <div id="ad-table-daily-top"></div>
+        </section>
+
+        <section class="ad-section">
+          <h2>サバイバル（全期間累計ランキング）</h2>
+          <p class="ad-section-note">難易度ごとに送信済みスコアを集計しています。</p>
+          <div class="ad-tabs" role="tablist">
+            <button class="ad-tab" type="button" data-difficulty="easy">初級</button>
+            <button class="ad-tab is-active" type="button" data-difficulty="normal">中級</button>
+            <button class="ad-tab" type="button" data-difficulty="hard">上級</button>
+            <button class="ad-tab" type="button" data-difficulty="god">神級</button>
+          </div>
+          <div class="ad-kpi-row" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 16px;">
+            <div class="ad-kpi">
+              <div class="ad-kpi-label" id="ad-kpi-survival-label">総送信数</div>
+              <div class="ad-kpi-value" id="ad-kpi-survival-total">-</div>
+            </div>
+          </div>
+          <div class="ad-chart-grid">
+            <div class="ad-chart-box">
+              <canvas id="ad-chart-survival-score"></canvas>
+              <p class="ad-chart-caption">スコア分布</p>
+            </div>
+          </div>
+          <p class="ad-section-note" id="ad-survival-chain-summary">最大連鎖: -</p>
+          <p class="ad-section-note" id="ad-survival-level-summary">到達LEVEL: -</p>
+          <div id="ad-table-survival-top"></div>
+        </section>
+
+        <p class="ad-footnote">
+          表示しているのは各モードで<strong>送信済みのスコア</strong>の集計のみです。0点や未送信のプレイ、ページ閲覧数・離脱率などのトラフィック全体はここには含まれません。それらはVercelのWeb Analyticsダッシュボードで確認してください。データは最大500件のサンプルから集計しています。
+        </p>
+      </div>
+    </div>
+    <script src="/admin/stats.js"></script>
+  </body>
+</html>

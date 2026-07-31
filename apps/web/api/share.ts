@@ -82,6 +82,8 @@ async function handlePost(req: VercelRequest, res: VercelResponse): Promise<void
   });
   pipeline.expire(shareMetaKey(id), SHARE_TTL_SECONDS);
   pipeline.set(shareImageKey(id), image, "EX", SHARE_TTL_SECONDS);
+  // 管理者統計(D-093)向けの累計カウンタ。TTL失効しても減算しない、生成された総数。
+  pipeline.incr("stats:shares:total");
   await pipeline.exec();
 
   res.status(200).json({ id, path: `/r/${id}` });

@@ -12,6 +12,11 @@ export default defineConfig({
     },
   },
   test: {
-    include: ["packages/*/test/**/*.test.ts"],
+    include: [
+      "packages/*/test/**/*.test.ts",
+      "apps/web/src/**/*.test.ts",
+      "apps/web/api/**/*.test.ts",
+      "apps/x-automation/test/**/*.test.ts",
+    ],
   },
 });

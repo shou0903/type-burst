@@ -547,6 +547,7 @@ function RankingSubmitBox({ summary }: { summary: SurvivalSummary }): JSX.Elemen
   );
   const [skipped, setSkipped] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [rankingUpdated, setRankingUpdated] = useState<boolean | null>(null);
 
   useEffect(() => {
     // APIは0点を妥当なランキング記録として受け付けない。送信欄も自動送信も出さない。
@@ -555,7 +556,10 @@ function RankingSubmitBox({ summary }: { summary: SurvivalSummary }): JSX.Elemen
       setStatus("submitting");
       submitScore(savedNickname, summary)
         .then((result) => {
-          if (result.ok) markRankingSubmitted(summary);
+          if (result.ok) {
+            markRankingSubmitted(summary);
+            setRankingUpdated(result.updated);
+          }
           setStatus(result.ok ? "done" : "error");
         })
         .catch(() => setStatus("error"));
@@ -618,7 +622,11 @@ function RankingSubmitBox({ summary }: { summary: SurvivalSummary }): JSX.Elemen
           <span className="ranking-submit-status">ランキングに送信中…</span>
         )}
         {status === "done" && (
-          <span className="ranking-submit-status">🏆 ランキングに登録しました({savedNickname})</span>
+          <span className="ranking-submit-status">
+            {rankingUpdated === false
+              ? `🏆 ${savedNickname}の自己ベストは維持されています`
+              : `🏆 ${savedNickname}の自己ベストをランキングへ反映しました`}
+          </span>
         )}
         {status === "error" && (
           <span className="ranking-submit-status error">
@@ -640,7 +648,10 @@ function RankingSubmitBox({ summary }: { summary: SurvivalSummary }): JSX.Elemen
     setSavedNickname(trimmed);
     submitScore(trimmed, summary)
       .then((result) => {
-        if (result.ok) markRankingSubmitted(summary);
+        if (result.ok) {
+          markRankingSubmitted(summary);
+          setRankingUpdated(result.updated);
+        }
         setStatus(result.ok ? "done" : "error");
       })
       .catch(() => setStatus("error"));

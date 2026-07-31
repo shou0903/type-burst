@@ -11,7 +11,8 @@ import Redis from "ioredis";
  * データストアは Vercel Marketplace の Redis 連携(REDIS_URL、TCP接続)。
  * @vercel/kv(REST方式)ではなく ioredis を使う(D-029)。
  *
- * ランキングは難易度ごとに完全に分離する(D-041)。以前はスコア補正係数
+ * ランキングは難易度ごとに完全に分離する(D-041)。匿名プレイヤーIDごとに
+ * 各難易度の最高スコア1件だけを保持する。以前はスコア補正係数
  * (SCORE_MULTIPLIER)で1本のランキングに正規化していたが、ユーザーから
  * 「ランキングは難易度別に分けたほうがいい」との指摘を受け、正規化ではなく
  * 難易度ごとに別々のsorted setへ分離する方式に変更した。
@@ -26,11 +27,40 @@ const MAX_PLAUSIBLE_CHAIN = 60;
 const MAX_PLAUSIBLE_SURVIVED_MS = 6 * 60 * 60 * 1000; // 6時間
 const RATE_LIMIT_WINDOW_SEC = 5;
 const NICKNAME_MAX_LENGTH = 12;
+const PLAYER_PATTERN = /^[A-Za-z0-9-]{8,80}$/;
+const PLAYER_MEMBER_PREFIX = "player:";
 
 type SurvivalDifficulty = "easy" | "normal" | "hard" | "god";
 
 function leaderboardKey(difficulty: SurvivalDifficulty): string {
   return `${LEADERBOARD_KEY_PREFIX}:${difficulty}`;
+}
+
+/**
+ * 新しいランキング会員は匿名プレイヤーIDをそのままsorted setのmemberに使わない。
+ * memberの接頭辞で旧ランダムIDの記録と区別しつつ、GETレスポンスからもIDを隠す。
+ */
+function playerMember(playerId: string): string {
+  return `${PLAYER_MEMBER_PREFIX}${playerId}`;
+}
+
+function isPlayerMember(member: string): boolean {
+  return member.startsWith(PLAYER_MEMBER_PREFIX);
+}
+
+function playerEntryKey(difficulty: SurvivalDifficulty, playerId: string): string {
+  return `score:survival:${difficulty}:player:${playerId}`;
+}
+
+/**
+ * 既存のランダムID記録は読み続ける。プレイヤーID導入前の履歴には本人を安全に
+ * 特定する情報が無いため、ニックネームでの推測統合は行わない。
+ */
+function entryKeyForMember(difficulty: SurvivalDifficulty, member: string): string {
+  if (isPlayerMember(member)) {
+    return playerEntryKey(difficulty, member.slice(PLAYER_MEMBER_PREFIX.length));
+  }
+  return `score:${member}`;
 }
 
 interface ScoreEntry {
@@ -95,7 +125,7 @@ async function handleGet(req: VercelRequest, res: VercelResponse): Promise<void>
   }
 
   const pipeline = redis.pipeline();
-  for (const id of ids) pipeline.hgetall(`score:${id}`);
+  for (const member of ids) pipeline.hgetall(entryKeyForMember(difficulty, member));
   const results = await pipeline.exec();
 
   const entries: ScoreEntry[] = [];
@@ -132,6 +162,7 @@ async function handlePost(req: VercelRequest, res: VercelResponse): Promise<void
   await redis.set(rateLimitKey, "1", "EX", RATE_LIMIT_WINDOW_SEC);
 
   const body = (req.body ?? {}) as Record<string, unknown>;
+  const playerId = sanitizePlayerId(body.playerId);
   const nickname = sanitizeNickname(body.nickname);
   const score = Number(body.score);
   const maxChain = Number(body.maxChain);
@@ -141,8 +172,8 @@ async function handlePost(req: VercelRequest, res: VercelResponse): Promise<void
     ? body.difficulty
     : "normal";
 
-  if (!nickname) {
-    res.status(400).json({ error: "Invalid nickname" });
+  if (!playerId || !nickname) {
+    res.status(400).json({ error: "Invalid ranking identity" });
     return;
   }
   if (!Number.isFinite(score) || score <= 0 || score > MAX_PLAUSIBLE_SCORE) {
@@ -158,6 +189,7 @@ async function handlePost(req: VercelRequest, res: VercelResponse): Promise<void
     return;
   }
 
+  // idは画面描画用の公開ID。匿名プレイヤーIDをレスポンスに含めない。
   const id = randomUUID();
   const entry: ScoreEntry = {
     id,
@@ -171,22 +203,74 @@ async function handlePost(req: VercelRequest, res: VercelResponse): Promise<void
   };
 
   const key = leaderboardKey(difficulty);
-  await redis.hset(`score:${id}`, entry as unknown as Record<string, string | number>);
-  await redis.zadd(key, entry.score, id);
-  await pruneOldEntries(redis, key);
+  const member = playerMember(playerId);
+  const updated = await upsertBestScore(redis, key, playerEntryKey(difficulty, playerId), member, entry);
+  await pruneOldEntries(redis, key, difficulty);
 
-  res.status(200).json({ ok: true, id });
+  res.status(200).json({ ok: true, updated });
+}
+
+/**
+ * scoreと詳細レコードを同時に扱い、遅い通信が高得点の詳細を低得点で上書きしないよう
+ * Luaで原子的に更新する。同点では先に達成した記録を維持し、ニックネームだけ最新化する。
+ */
+async function upsertBestScore(
+  redis: Redis,
+  leaderboard: string,
+  entryKey: string,
+  member: string,
+  entry: ScoreEntry,
+): Promise<boolean> {
+  const result = await redis.eval(
+    `
+      local previous = redis.call("ZSCORE", KEYS[1], ARGV[1])
+      if not previous or tonumber(ARGV[2]) > tonumber(previous) then
+        redis.call("ZADD", KEYS[1], ARGV[2], ARGV[1])
+        redis.call("HSET", KEYS[2],
+          "id", ARGV[3],
+          "nickname", ARGV[4],
+          "score", ARGV[2],
+          "difficulty", ARGV[5],
+          "maxChain", ARGV[6],
+          "survivedMs", ARGV[7],
+          "level", ARGV[8],
+          "submittedAt", ARGV[9])
+        return 1
+      end
+      redis.call("HSET", KEYS[2], "nickname", ARGV[4])
+      return 0
+    `,
+    2,
+    leaderboard,
+    entryKey,
+    member,
+    String(entry.score),
+    entry.id,
+    entry.nickname,
+    entry.difficulty,
+    String(entry.maxChain),
+    String(entry.survivedMs),
+    String(entry.level),
+    entry.submittedAt,
+  );
+  return Number(result) === 1;
 }
 
 /** ランキング圏外のエントリが無限に溜まらないよう定期的に間引く */
-async function pruneOldEntries(redis: Redis, key: string): Promise<void> {
+async function pruneOldEntries(
+  redis: Redis,
+  key: string,
+  difficulty: SurvivalDifficulty,
+): Promise<void> {
   const total = await redis.zcard(key);
   if (total <= MAX_RETAINED_ENTRIES) return;
   const excess = total - MAX_RETAINED_ENTRIES;
   const toRemove = await redis.zrange(key, 0, excess - 1);
   if (toRemove.length === 0) return;
-  await redis.zrem(key, ...toRemove);
-  await Promise.all(toRemove.map((id) => redis.del(`score:${id}`)));
+  const pipeline = redis.pipeline();
+  pipeline.zrem(key, ...toRemove);
+  for (const member of toRemove) pipeline.del(entryKeyForMember(difficulty, member));
+  await pipeline.exec();
 }
 
 function sanitizeNickname(input: unknown): string | null {
@@ -194,6 +278,10 @@ function sanitizeNickname(input: unknown): string | null {
   const trimmed = input.trim().slice(0, NICKNAME_MAX_LENGTH);
   if (trimmed.length === 0) return null;
   return trimmed;
+}
+
+function sanitizePlayerId(input: unknown): string | null {
+  return typeof input === "string" && PLAYER_PATTERN.test(input) ? input : null;
 }
 
 function getClientIp(req: VercelRequest): string {

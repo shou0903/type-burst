@@ -1,4 +1,5 @@
 import type { SurvivalDifficulty, SurvivalSummary } from "@type-burst/game-core";
+import { loadPlayerId } from "./playerId";
 
 export interface RankingEntry {
   id: string;
@@ -11,7 +12,9 @@ export interface RankingEntry {
   submittedAt: string;
 }
 
-export type SubmitScoreResult = { ok: true } | { ok: false; reason: string };
+export type SubmitScoreResult =
+  | { ok: true; updated: boolean }
+  | { ok: false; reason: string };
 
 /** サバイバル結果をランキングへ送信する。失敗してもゲーム進行には影響させない */
 export async function submitScore(
@@ -23,6 +26,7 @@ export async function submitScore(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        playerId: loadPlayerId(),
         nickname,
         score: summary.score,
         difficulty: summary.difficulty,
@@ -34,7 +38,8 @@ export async function submitScore(
     if (!res.ok) {
       return { ok: false, reason: res.status === 429 ? "rate_limited" : "rejected" };
     }
-    return { ok: true };
+    const data = (await res.json()) as { updated?: unknown };
+    return { ok: true, updated: data.updated === true };
   } catch {
     return { ok: false, reason: "network_error" };
   }

@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import Redis from "ioredis";
-import { isAuthorizedAdmin } from "../_shared/adminAuth";
-import { histogram, summarize } from "../_shared/statsMath";
+import { isAuthorizedAdmin } from "../_shared/adminAuth.js";
+import { histogram, summarize } from "../_shared/statsMath.js";
 
 /**
  * 管理者専用プレイデータ統計(D-093)。

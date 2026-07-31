@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { SHARE_ID_PATTERN, getRedis, shareImageKey } from "./_shared/shareStore";
+import { SHARE_ID_PATTERN, getRedis, shareImageKey } from "./_shared/shareStore.js";
 
 /**
  * 共有カード画像の配信(D-091)。

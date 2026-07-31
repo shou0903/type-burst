@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { SHARE_ID_PATTERN, escapeHtml, getRedis, shareMetaKey } from "./_shared/shareStore";
+import { SHARE_ID_PATTERN, escapeHtml, getRedis, shareMetaKey } from "./_shared/shareStore.js";
 
 /**
  * 共有リンク /r/<id> の実体(D-091)。

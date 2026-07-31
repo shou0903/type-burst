@@ -6,7 +6,7 @@ import {
   getRedis,
   shareImageKey,
   shareMetaKey,
-} from "./_shared/shareStore";
+} from "./_shared/shareStore.js";
 
 /**
  * 共有カードの保管(D-091)。

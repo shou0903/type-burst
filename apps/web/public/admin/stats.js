@@ -11,14 +11,14 @@
   const DIFFICULTY_LABELS = { easy: "初級", normal: "中級", hard: "上級", god: "神級" };
 
   const byId = (id) => document.getElementById(id);
-  const gate = byId("ad-gate");
-  const gateInput = byId("ad-token-input");
-  const gateButton = byId("ad-token-submit");
-  const gateError = byId("ad-gate-error");
-  const dashboard = byId("ad-dashboard");
-  const refreshButton = byId("ad-refresh");
-  const logoutButton = byId("ad-logout");
-  const generatedAtNode = byId("ad-generated-at");
+  const gate = byId("pd-gate");
+  const gateInput = byId("pd-token-input");
+  const gateButton = byId("pd-token-submit");
+  const gateError = byId("pd-gate-error");
+  const dashboard = byId("pd-dashboard");
+  const refreshButton = byId("pd-refresh");
+  const logoutButton = byId("pd-logout");
+  const generatedAtNode = byId("pd-generated-at");
 
   function getToken() {
     try {
@@ -45,15 +45,15 @@
   }
 
   function showGate(message) {
-    dashboard.classList.add("ad-hidden");
-    gate.classList.remove("ad-hidden");
+    dashboard.classList.add("pd-hidden");
+    gate.classList.remove("pd-hidden");
     gateError.textContent = message || "";
     gateInput.focus();
   }
 
   function showDashboard() {
-    gate.classList.add("ad-hidden");
-    dashboard.classList.remove("ad-hidden");
+    gate.classList.add("pd-hidden");
+    dashboard.classList.remove("pd-hidden");
   }
 
   async function fetchStats(token) {
@@ -163,13 +163,13 @@
     container.innerHTML = "";
     if (!rows || rows.length === 0) {
       const empty = document.createElement("p");
-      empty.className = "ad-empty";
+      empty.className = "pd-empty";
       empty.textContent = emptyText || "データがありません";
       container.appendChild(empty);
       return;
     }
     const table = document.createElement("table");
-    table.className = "ad-table";
+    table.className = "pd-table";
     const thead = document.createElement("thead");
     const headRow = document.createElement("tr");
     for (const col of columns) {
@@ -206,10 +206,10 @@
     generatedAtNode.textContent = "生成: " + formatDate(data.generatedAt);
 
     // KPI
-    byId("ad-kpi-shares").textContent = format(data.shares.totalCreated);
-    byId("ad-kpi-daily-participants").textContent = format(data.daily.todayStats.participants);
-    byId("ad-kpi-daily-kpm").textContent = data.daily.todayStats.kpm ? format(data.daily.todayStats.kpm.avg, 0) : "-";
-    byId("ad-kpi-daily-accuracy").textContent = data.daily.todayStats.accuracy
+    byId("pd-kpi-shares").textContent = format(data.shares.totalCreated);
+    byId("pd-kpi-daily-participants").textContent = format(data.daily.todayStats.participants);
+    byId("pd-kpi-daily-kpm").textContent = data.daily.todayStats.kpm ? format(data.daily.todayStats.kpm.avg, 0) : "-";
+    byId("pd-kpi-daily-accuracy").textContent = data.daily.todayStats.accuracy
       ? format(data.daily.todayStats.accuracy.avg, 1) + "%"
       : "-";
 
@@ -218,14 +218,14 @@
       .slice()
       .reverse()
       .map((d) => ({ value: d.participants, color: "#6fc0ff", label: d.date.slice(5) }));
-    drawBarChart(byId("ad-chart-daily-trend"), trendBars);
+    drawBarChart(byId("pd-chart-daily-trend"), trendBars);
 
     // デイリー: 本日のKPM・正確率分布
-    drawBarChart(byId("ad-chart-daily-kpm"), histogramToBars(data.daily.todayStats.kpmHistogram, "#6fc0ff"));
-    drawBarChart(byId("ad-chart-daily-accuracy"), histogramToBars(data.daily.todayStats.accuracyHistogram, "#5fe8b6"));
+    drawBarChart(byId("pd-chart-daily-kpm"), histogramToBars(data.daily.todayStats.kpmHistogram, "#6fc0ff"));
+    drawBarChart(byId("pd-chart-daily-accuracy"), histogramToBars(data.daily.todayStats.accuracyHistogram, "#5fe8b6"));
 
     renderTable(
-      byId("ad-table-daily-top"),
+      byId("pd-table-daily-top"),
       data.daily.todayStats.top,
       [
         { label: "順位", render: (_row, i) => String(i + 1) },
@@ -247,17 +247,17 @@
     const stat = data.survival[difficulty];
     const color = DIFFICULTY_COLORS[difficulty];
 
-    document.querySelectorAll(".ad-tab").forEach((tab) => {
+    document.querySelectorAll(".pd-tab").forEach((tab) => {
       tab.classList.toggle("is-active", tab.dataset.difficulty === difficulty);
     });
 
-    byId("ad-kpi-survival-total").textContent = format(stat.total);
-    byId("ad-kpi-survival-label").textContent = DIFFICULTY_LABELS[difficulty] + "の総送信数";
+    byId("pd-kpi-survival-total").textContent = format(stat.total);
+    byId("pd-kpi-survival-label").textContent = DIFFICULTY_LABELS[difficulty] + "の総送信数";
 
-    drawBarChart(byId("ad-chart-survival-score"), histogramToBars(stat.scoreHistogram, color));
+    drawBarChart(byId("pd-chart-survival-score"), histogramToBars(stat.scoreHistogram, color));
 
     renderTable(
-      byId("ad-table-survival-top"),
+      byId("pd-table-survival-top"),
       stat.top,
       [
         { label: "順位", render: (_row, i) => String(i + 1) },
@@ -272,10 +272,10 @@
 
     const chainSummary = stat.maxChain;
     const levelSummary = stat.level;
-    byId("ad-survival-chain-summary").textContent = chainSummary
+    byId("pd-survival-chain-summary").textContent = chainSummary
       ? "最大連鎖: 平均 " + format(chainSummary.avg, 1) + " / 中央値 " + format(chainSummary.median, 1) + " / 最大 " + format(chainSummary.max)
       : "最大連鎖: データなし";
-    byId("ad-survival-level-summary").textContent = levelSummary
+    byId("pd-survival-level-summary").textContent = levelSummary
       ? "到達LEVEL: 平均 " + format(levelSummary.avg, 1) + " / 中央値 " + format(levelSummary.median, 1) + " / 最大 " + format(levelSummary.max)
       : "到達LEVEL: データなし";
   }
@@ -305,7 +305,7 @@
     showGate("");
   });
 
-  document.querySelectorAll(".ad-tab").forEach((tab) => {
+  document.querySelectorAll(".pd-tab").forEach((tab) => {
     tab.addEventListener("click", () => renderSurvivalTab(tab.dataset.difficulty));
   });
 

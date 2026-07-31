@@ -2,16 +2,16 @@
    配色はゲーム本体の属性パレット(fire/water/wind/light)をそのまま流用する。 */
 
 :root {
-  --ad-bg: #090c17;
-  --ad-panel: #12162a;
-  --ad-border: rgba(255, 255, 255, 0.09);
-  --ad-ink: #edf4ff;
-  --ad-muted: #8a93ad;
-  --ad-easy: #5fe8b6;
-  --ad-normal: #6fc0ff;
-  --ad-hard: #ffdf70;
-  --ad-god: #ff8a70;
-  --ad-accent: #ff8a70;
+  --pd-bg: #090c17;
+  --pd-panel: #12162a;
+  --pd-border: rgba(255, 255, 255, 0.09);
+  --pd-ink: #edf4ff;
+  --pd-muted: #8a93ad;
+  --pd-easy: #5fe8b6;
+  --pd-normal: #6fc0ff;
+  --pd-hard: #ffdf70;
+  --pd-god: #ff8a70;
+  --pd-accent: #ff8a70;
 }
 
 * {
@@ -21,18 +21,18 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: var(--ad-bg);
-  color: var(--ad-ink);
+  background: var(--pd-bg);
+  color: var(--pd-ink);
   font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", "Meiryo", system-ui, sans-serif;
 }
 
-.ad-shell {
+.pd-shell {
   max-width: 1080px;
   margin: 0 auto;
   padding: 32px 20px 64px;
 }
 
-.ad-header {
+.pd-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -41,217 +41,217 @@ body {
   flex-wrap: wrap;
 }
 
-.ad-title {
+.pd-title {
   margin: 0 0 4px;
   font-size: 22px;
   font-weight: 800;
   letter-spacing: 0.02em;
 }
 
-.ad-subtitle {
+.pd-subtitle {
   margin: 0;
-  color: var(--ad-muted);
+  color: var(--pd-muted);
   font-size: 13px;
 }
 
-.ad-actions {
+.pd-actions {
   display: flex;
   gap: 8px;
 }
 
-.ad-btn {
+.pd-btn {
   padding: 8px 14px;
   border-radius: 8px;
-  border: 1px solid var(--ad-border);
+  border: 1px solid var(--pd-border);
   background: rgba(255, 255, 255, 0.04);
-  color: var(--ad-ink);
+  color: var(--pd-ink);
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
 }
 
-.ad-btn:hover {
+.pd-btn:hover {
   background: rgba(255, 255, 255, 0.09);
 }
 
 /* トークン入力ゲート */
-.ad-gate {
+.pd-gate {
   max-width: 420px;
   margin: 20vh auto 0;
   padding: 28px;
   border-radius: 14px;
-  border: 1px solid var(--ad-border);
-  background: var(--ad-panel);
+  border: 1px solid var(--pd-border);
+  background: var(--pd-panel);
   text-align: center;
 }
 
-.ad-gate h1 {
+.pd-gate h1 {
   font-size: 18px;
   margin: 0 0 8px;
 }
 
-.ad-gate p {
-  color: var(--ad-muted);
+.pd-gate p {
+  color: var(--pd-muted);
   font-size: 13px;
   margin: 0 0 18px;
 }
 
-.ad-gate-row {
+.pd-gate-row {
   display: flex;
   gap: 8px;
 }
 
-.ad-gate input {
+.pd-gate input {
   flex: 1;
   padding: 10px 12px;
   border-radius: 8px;
-  border: 1px solid var(--ad-border);
+  border: 1px solid var(--pd-border);
   background: rgba(255, 255, 255, 0.05);
-  color: var(--ad-ink);
+  color: var(--pd-ink);
   font-size: 14px;
 }
 
-.ad-gate-error {
+.pd-gate-error {
   margin-top: 10px;
-  color: var(--ad-god);
+  color: var(--pd-god);
   font-size: 12.5px;
   min-height: 1.4em;
 }
 
 /* KPI */
-.ad-kpi-row {
+.pd-kpi-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
   margin-bottom: 28px;
 }
 
-.ad-kpi {
+.pd-kpi {
   padding: 16px 18px;
   border-radius: 12px;
-  border: 1px solid var(--ad-border);
-  background: var(--ad-panel);
+  border: 1px solid var(--pd-border);
+  background: var(--pd-panel);
 }
 
-.ad-kpi-label {
-  color: var(--ad-muted);
+.pd-kpi-label {
+  color: var(--pd-muted);
   font-size: 12px;
   margin-bottom: 6px;
 }
 
-.ad-kpi-value {
+.pd-kpi-value {
   font-size: 26px;
   font-weight: 800;
 }
 
 /* セクション */
-.ad-section {
+.pd-section {
   margin-bottom: 32px;
   padding: 20px;
   border-radius: 14px;
-  border: 1px solid var(--ad-border);
-  background: var(--ad-panel);
+  border: 1px solid var(--pd-border);
+  background: var(--pd-panel);
 }
 
-.ad-section h2 {
+.pd-section h2 {
   margin: 0 0 4px;
   font-size: 16px;
 }
 
-.ad-section-note {
-  color: var(--ad-muted);
+.pd-section-note {
+  color: var(--pd-muted);
   font-size: 12.5px;
   margin: 0 0 16px;
 }
 
-.ad-chart-grid {
+.pd-chart-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 20px;
   margin-bottom: 20px;
 }
 
-.ad-chart-box canvas {
+.pd-chart-box canvas {
   width: 100%;
   height: 180px;
   display: block;
 }
 
-.ad-chart-caption {
-  color: var(--ad-muted);
+.pd-chart-caption {
+  color: var(--pd-muted);
   font-size: 12px;
   margin: 6px 0 0;
 }
 
 /* 難易度タブ */
-.ad-tabs {
+.pd-tabs {
   display: flex;
   gap: 6px;
   margin-bottom: 16px;
   flex-wrap: wrap;
 }
 
-.ad-tab {
+.pd-tab {
   padding: 6px 14px;
   border-radius: 999px;
-  border: 1px solid var(--ad-border);
+  border: 1px solid var(--pd-border);
   background: rgba(255, 255, 255, 0.04);
-  color: var(--ad-muted);
+  color: var(--pd-muted);
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
 }
 
-.ad-tab.is-active {
-  color: var(--ad-bg);
+.pd-tab.is-active {
+  color: var(--pd-bg);
   border-color: transparent;
 }
 
-.ad-tab[data-difficulty="easy"].is-active { background: var(--ad-easy); }
-.ad-tab[data-difficulty="normal"].is-active { background: var(--ad-normal); }
-.ad-tab[data-difficulty="hard"].is-active { background: var(--ad-hard); }
-.ad-tab[data-difficulty="god"].is-active { background: var(--ad-god); }
+.pd-tab[data-difficulty="easy"].is-active { background: var(--pd-easy); }
+.pd-tab[data-difficulty="normal"].is-active { background: var(--pd-normal); }
+.pd-tab[data-difficulty="hard"].is-active { background: var(--pd-hard); }
+.pd-tab[data-difficulty="god"].is-active { background: var(--pd-god); }
 
 /* テーブル */
-.ad-table {
+.pd-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
 }
 
-.ad-table th,
-.ad-table td {
+.pd-table th,
+.pd-table td {
   padding: 7px 10px;
-  border-bottom: 1px solid var(--ad-border);
+  border-bottom: 1px solid var(--pd-border);
   text-align: left;
   white-space: nowrap;
 }
 
-.ad-table th {
-  color: var(--ad-muted);
+.pd-table th {
+  color: var(--pd-muted);
   font-weight: 700;
 }
 
-.ad-empty {
-  color: var(--ad-muted);
+.pd-empty {
+  color: var(--pd-muted);
   font-size: 13px;
   padding: 12px 0;
 }
 
-.ad-footnote {
-  color: var(--ad-muted);
+.pd-footnote {
+  color: var(--pd-muted);
   font-size: 12px;
   line-height: 1.8;
-  border-top: 1px solid var(--ad-border);
+  border-top: 1px solid var(--pd-border);
   padding-top: 16px;
   margin-top: 8px;
 }
 
-.ad-hidden {
+.pd-hidden {
   display: none !important;
 }
 
 @media (max-width: 560px) {
-  .ad-shell { padding: 20px 14px 48px; }
-  .ad-gate { margin-top: 12vh; }
+  .pd-shell { padding: 20px 14px 48px; }
+  .pd-gate { margin-top: 12vh; }
 }

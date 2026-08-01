@@ -174,7 +174,7 @@ for (const [index, batch] of batches.entries()) {
   const response = await sendChunk({
     host: origin.host,
     key,
-    keyLocation: `${origin.href}/${key}.txt`,
+    keyLocation: `${origin.origin}/${key}.txt`,
     urlList: batch,
   }, endpoint.href);
   console.log(`IndexNow: ${index + 1}/${batches.length}件目を送信しました (${batch.length} URL, HTTP ${response.status})`);

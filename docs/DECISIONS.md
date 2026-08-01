@@ -897,3 +897,13 @@
 - **検証:** 型検査・全148テスト・`seo:audit`(37 HTML/37 canonical/エラーなし、admin/stats.htmlはsitemapに含まれないことを確認)・プロダクションビルド通過。ローカルにREDIS_URLが無いため実データでのE2E検証はできず、ブラウザで`window.fetch`をモックしてダッシュボードのレンダリング(KPI・ヒストグラム・難易度タブ切替・トップ10テーブル)とCanvas実描画(getImageDataで非透明ピクセルを確認)、および401応答時にトークンをクリアしてゲート画面へ戻ることを確認した。
 - **運用上の注意:** 本番で機能させるには、Vercelのプロジェクト設定で環境変数`ADMIN_STATS_TOKEN`を設定する必要がある(このAIはVercelの環境変数を直接設定できないため、ユーザー自身の設定が必須)。トークンはパスワードと同様に扱い、共有しないこと。
 - **理由:** 検索流入だけでなく実際のプレイデータ(スコア分布・デイリー参加傾向)を見えるようにすることで、今後のゲームバランス調整や成長施策の判断材料にするため。
+
+## D-095: 本番SEO監査とIndexNow通知を自動化
+
+- **日付:** 2026-08-02
+- **背景:** 静的SEO監査はビルド前のHTMLを確認できるが、デプロイ後にHTTPステータス、リダイレクト、レスポンスヘッダー、実際のcanonical、robots.txt、内部リンクが正しく配信されているかは別途確認が必要だった。また、IndexNowは手動実行だけで、更新URLを毎回選ぶ運用負荷が残っていた。
+- **対応:** `apps/web/scripts/audit-production-seo.mjs`を追加し、サイトマップ掲載URLを本番から並列巡回する。HTTP 200/HTML、`lang`、viewport、noindex、title、description、h1、canonical、JSON-LD、robots.txt、内部リンクを確認し、重大な不整合は終了コード1、目安外の長さや孤立ページは警告とする。`--origin`と`--canonical-origin`を分け、ローカルプレビューでも本番canonicalを検査できるようにした。
+- **IndexNow:** `submit-indexnow.mjs`を変更ファイル単位の送信(`--since`)、全件送信(`--all`)、dry-run、10,000URL単位の分割、429/一時的5xxの最大3回再試行に対応させた。公開済みのIndexNowキーは従来どおり`public`に置き、APIレスポンスやプレイヤーデータには関与させない。
+- **自動化:** `.github/workflows/seo-monitor.yml`を追加し、master更新後・週次・手動実行で本番監査を実施する。master更新時はVercelの反映待ちを置いてから変更URLだけをIndexNowへ通知し、共有CSS・アプリコード・パッケージ変更はサイトマップ全件を対象にする。対象URLが無いコミットでは送信しない。
+- **理由:** サイトマップやIndexNowだけでは配信後のcanonical/リダイレクト事故を検知できず、手動送信の繰り返しは改善にならないため。自動監査は検索順位を保証するものではなく、技術的なクロール障害を早期に見つけるための安全網と位置付ける。
+- **検証:** `node --check`、dry-run、ローカルプレビューで本番canonicalを指定した本番監査、typecheck、全テスト、build、静的SEO監査を実施する。

@@ -1,0 +1,48 @@
+name: SEO production monitor
+
+on:
+  push:
+    branches: [master]
+  schedule:
+    - cron: "17 1 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: seo-production-monitor
+  cancel-in-progress: true
+
+jobs:
+  audit-and-notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Wait for the production deployment
+        if: github.event_name == 'push'
+        run: sleep 45
+
+      - name: Audit production URLs
+        run: npm --workspace @type-burst/web run seo:production-audit -- --origin https://type-burst.com --canonical-origin https://type-burst.com
+
+      - name: Notify changed URLs with IndexNow
+        if: github.event_name == 'push'
+        env:
+          INDEXNOW_SINCE: ${{ github.event.before }}
+        run: npm --workspace @type-burst/web run seo:indexnow -- --since "$INDEXNOW_SINCE"
+
+      - name: Notify the sitemap with IndexNow
+        if: github.event_name != 'push'
+        run: npm --workspace @type-burst/web run seo:indexnow -- --all

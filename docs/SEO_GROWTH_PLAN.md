@@ -102,7 +102,8 @@
 - Vercel Speed InsightsによるPC・モバイルの実測Core Web Vitals収集
 - 静的なガイド・ツールページを含むVercel Web Analyticsのページ計測
 - title、canonical、構造化データ、パンくず、内部リンクを検査する静的SEO監査
-- IndexNow送信
+- 本番サイトのHTTP・canonical・noindex・robots・サイトマップ・内部リンクを定期監査する本番SEO監査
+- 更新された公開URLだけをIndexNowへ自動通知するGitHub Actions運用
 
 ### 次に判断すること
 
@@ -110,6 +111,12 @@
 2. 検索表示があるのに答え切れていない意図を、既存ページの改善で補う。
 3. 文章練習ツールの表示クエリを「文章」「短文」「例文」「ローマ字」の意図別に確認し、同じ意図の薄いページは増やさず既存ページを改善する。
 4. 外部掲載を再開するときは、トップだけでなく検索意図に合う解説・ツールへリンクしてもらう。
+
+### 本番監査・IndexNow運用
+
+- `npm --workspace @type-burst/web run seo:production-audit` は、サイトマップ掲載URLを本番から取得し、HTTP 200、HTML、`lang`、viewport、noindex、title、description、h1、canonical、JSON-LD、robots.txt、内部リンクを確認する。
+- GitHub Actionsの `SEO production monitor` は、master更新後・週次・手動実行で本番監査を行う。master更新時は変更ファイルから対象URLを絞り、共有CSSやアプリコードの変更時はサイトマップ全件を通知する。
+- IndexNowの送信は検索順位やGoogleの登録を保証しない。HTTP 200/202を成功とし、429・一時的な5xxだけ最大3回再試行する。対象URLがないコミットでは送信しない。
 
 ## 品質の判断基準
 

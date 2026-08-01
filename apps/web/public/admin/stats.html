@@ -17,7 +17,7 @@
         <p>運営者専用ページです。トークンを入力してください。</p>
         <div class="pd-gate-row">
           <input id="pd-token-input" type="password" autocomplete="off" placeholder="トークン" />
-          <button id="pd-token-submit" class="pd-btn" type="button">表示</button>
+          <button id="pd-token-submit" class="pd-btn pd-btn-accent" type="button">表示</button>
         </div>
         <p id="pd-gate-error" class="pd-gate-error"></p>
       </div>
@@ -25,41 +25,84 @@
       <div id="pd-dashboard" class="pd-hidden">
         <header class="pd-header">
           <div>
-            <h1 class="pd-title">TYPE BURST プレイデータ統計</h1>
+            <p class="pd-wordmark">TYPE <span>BURST</span></p>
+            <h1 class="pd-title">プレイデータ統計</h1>
             <p class="pd-subtitle" id="pd-generated-at">生成: -</p>
           </div>
           <div class="pd-actions">
+            <button id="pd-export" class="pd-btn" type="button">JSONで書き出す</button>
             <button id="pd-refresh" class="pd-btn" type="button">更新</button>
             <button id="pd-logout" class="pd-btn" type="button">ログアウト</button>
           </div>
         </header>
 
         <div class="pd-kpi-row">
-          <div class="pd-kpi">
+          <div class="pd-kpi" style="--pd-kpi-accent: var(--pd-accent)">
             <div class="pd-kpi-label">共有カード累計作成数</div>
             <div class="pd-kpi-value" id="pd-kpi-shares">-</div>
           </div>
-          <div class="pd-kpi">
+          <div class="pd-kpi" style="--pd-kpi-accent: var(--pd-normal)">
+            <div class="pd-kpi-label">サバイバル総送信数（全難易度）</div>
+            <div class="pd-kpi-value" id="pd-kpi-survival-total-all">-</div>
+            <div class="pd-kpi-sub" id="pd-kpi-nickname-count">ユニークニックネーム -</div>
+          </div>
+          <div class="pd-kpi" style="--pd-kpi-accent: var(--pd-easy)">
             <div class="pd-kpi-label">本日のデイリー参加者</div>
             <div class="pd-kpi-value" id="pd-kpi-daily-participants">-</div>
           </div>
-          <div class="pd-kpi">
+          <div class="pd-kpi" style="--pd-kpi-accent: var(--pd-normal)">
             <div class="pd-kpi-label">本日の平均KPM</div>
             <div class="pd-kpi-value" id="pd-kpi-daily-kpm">-</div>
           </div>
-          <div class="pd-kpi">
+          <div class="pd-kpi" style="--pd-kpi-accent: var(--pd-hard)">
             <div class="pd-kpi-label">本日の平均正確率</div>
             <div class="pd-kpi-value" id="pd-kpi-daily-accuracy">-</div>
           </div>
         </div>
 
         <section class="pd-section">
-          <h2>デイリーチャレンジ</h2>
-          <p class="pd-section-note">全員が同じ問題に挑む2分間チャレンジの、直近の参加状況。</p>
-          <div class="pd-chart-grid">
+          <div class="pd-section-head">
+            <h2><span class="pd-section-glyph">◆●★▲</span> サバイバル 難易度別オーバービュー</h2>
+          </div>
+          <p class="pd-section-note">カードをクリックすると、下の詳細セクションがその難易度に切り替わります。</p>
+          <div class="pd-difficulty-grid" id="pd-difficulty-grid"></div>
+        </section>
+
+        <section class="pd-section">
+          <div class="pd-section-head">
+            <h2><span class="pd-section-glyph">●</span> デイリーチャレンジ</h2>
+          </div>
+          <p class="pd-section-note">全員が同じ問題に挑む2分間チャレンジの、参加状況と推移。</p>
+
+          <p class="pd-subsection-title">直近30日間の参加者数</p>
+          <div class="pd-chart-grid" style="grid-template-columns: 1fr; margin-bottom: 24px;">
             <div class="pd-chart-box">
               <canvas id="pd-chart-daily-trend"></canvas>
-              <p class="pd-chart-caption">直近7日間の参加者数</p>
+              <div class="pd-tooltip" id="pd-tooltip-daily-trend"></div>
+            </div>
+          </div>
+
+          <p class="pd-subsection-title">直近14日間の平均値の推移</p>
+          <div class="pd-chart-grid">
+            <div class="pd-chart-box">
+              <canvas id="pd-chart-trend-score"></canvas>
+              <p class="pd-chart-caption">平均スコア</p>
+            </div>
+            <div class="pd-chart-box">
+              <canvas id="pd-chart-trend-kpm"></canvas>
+              <p class="pd-chart-caption">平均KPM</p>
+            </div>
+            <div class="pd-chart-box">
+              <canvas id="pd-chart-trend-accuracy"></canvas>
+              <p class="pd-chart-caption">平均正確率(%)</p>
+            </div>
+          </div>
+
+          <p class="pd-subsection-title">本日の分布</p>
+          <div class="pd-chart-grid">
+            <div class="pd-chart-box">
+              <canvas id="pd-chart-daily-score"></canvas>
+              <p class="pd-chart-caption">本日のスコア分布</p>
             </div>
             <div class="pd-chart-box">
               <canvas id="pd-chart-daily-kpm"></canvas>
@@ -70,37 +113,75 @@
               <p class="pd-chart-caption">本日の正確率分布(%)</p>
             </div>
           </div>
-          <div id="pd-table-daily-top"></div>
+
+          <p class="pd-subsection-title">本日のトップ10</p>
+          <div class="pd-table-wrap" id="pd-table-daily-top"></div>
         </section>
 
         <section class="pd-section">
-          <h2>サバイバル（全期間累計ランキング）</h2>
-          <p class="pd-section-note">難易度ごとに送信済みスコアを集計しています。</p>
-          <div class="pd-tabs" role="tablist">
-            <button class="pd-tab" type="button" data-difficulty="easy">初級</button>
-            <button class="pd-tab is-active" type="button" data-difficulty="normal">中級</button>
-            <button class="pd-tab" type="button" data-difficulty="hard">上級</button>
-            <button class="pd-tab" type="button" data-difficulty="god">神級</button>
+          <div class="pd-section-head">
+            <h2><span class="pd-section-glyph" id="pd-survival-detail-glyph">●</span> サバイバル詳細</h2>
           </div>
-          <div class="pd-kpi-row" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 16px;">
-            <div class="pd-kpi">
-              <div class="pd-kpi-label" id="pd-kpi-survival-label">総送信数</div>
-              <div class="pd-kpi-value" id="pd-kpi-survival-total">-</div>
+          <p class="pd-section-note">難易度ごとに送信済みスコアを集計しています（自己ベスト制、プレイヤーごとに各難易度1件）。</p>
+          <div class="pd-tabs" role="tablist">
+            <button class="pd-tab" type="button" data-difficulty="easy">◆ 初級</button>
+            <button class="pd-tab is-active" type="button" data-difficulty="normal">● 中級</button>
+            <button class="pd-tab" type="button" data-difficulty="hard">★ 上級</button>
+            <button class="pd-tab" type="button" data-difficulty="god">▲ 神級</button>
+          </div>
+
+          <p class="pd-subsection-title">スコア分布</p>
+          <div class="pd-chart-grid" style="grid-template-columns: 1fr; margin-bottom: 20px;">
+            <div class="pd-chart-box pd-chart-tall">
+              <canvas id="pd-chart-survival-score"></canvas>
+              <div class="pd-tooltip" id="pd-tooltip-survival-score"></div>
             </div>
           </div>
+
+          <p class="pd-subsection-title">最大連鎖・到達LEVELの分布</p>
           <div class="pd-chart-grid">
             <div class="pd-chart-box">
-              <canvas id="pd-chart-survival-score"></canvas>
-              <p class="pd-chart-caption">スコア分布</p>
+              <canvas id="pd-chart-survival-chain"></canvas>
+              <p class="pd-chart-caption" id="pd-survival-chain-summary">最大連鎖: -</p>
+            </div>
+            <div class="pd-chart-box">
+              <canvas id="pd-chart-survival-level"></canvas>
+              <p class="pd-chart-caption" id="pd-survival-level-summary">到達LEVEL: -</p>
             </div>
           </div>
-          <p class="pd-section-note" id="pd-survival-chain-summary">最大連鎖: -</p>
-          <p class="pd-section-note" id="pd-survival-level-summary">到達LEVEL: -</p>
-          <div id="pd-table-survival-top"></div>
+
+          <p class="pd-subsection-title">トップ10</p>
+          <div class="pd-table-wrap" id="pd-table-survival-top"></div>
+        </section>
+
+        <section class="pd-section">
+          <div class="pd-section-head">
+            <h2><span class="pd-section-glyph">◇</span> プレイの活動パターン</h2>
+          </div>
+          <p class="pd-section-note">サバイバル送信記録の時刻から集計（4難易度・最大500件×4のサンプル横断）。</p>
+          <div class="pd-activity-grid">
+            <div>
+              <p class="pd-subsection-title">時間帯別の送信数（0〜23時）</p>
+              <div class="pd-chart-box" style="margin-bottom: 20px;">
+                <canvas id="pd-chart-activity-hour"></canvas>
+              </div>
+              <p class="pd-subsection-title">曜日別の送信数</p>
+              <div class="pd-chart-box">
+                <canvas id="pd-chart-activity-weekday"></canvas>
+              </div>
+            </div>
+            <div>
+              <p class="pd-subsection-title">よく登場するニックネーム（上位15）</p>
+              <ul class="pd-nickname-list" id="pd-nickname-list"></ul>
+            </div>
+          </div>
         </section>
 
         <p class="pd-footnote">
-          表示しているのは各モードで<strong>送信済みのスコア</strong>の集計のみです。0点や未送信のプレイ、ページ閲覧数・離脱率などのトラフィック全体はここには含まれません。それらはVercelのWeb Analyticsダッシュボードで確認してください。データは最大500件のサンプルから集計しています。
+          表示しているのは各モードで<strong>送信済みのスコア</strong>の集計です。0点や未送信のプレイ、ページ閲覧数・離脱率などのトラフィック全体はここには含まれません。それらはVercelのWeb Analyticsダッシュボードで確認してください。分布・活動パターンは各リーダーボードの最大500件のサンプルから集計しています。
+          <div class="pd-unavailable">
+            <strong>このダッシュボードで原理的に表示できないもの：</strong>CPU対戦の勝敗・獲得称号や生涯累計プレイ統計・苦手キー分析は、いずれも端末のlocalStorageにのみ保存されており、サーバーへは一切送信されていません。これらをここに表示するには、新しい送信用エンドポイントを追加し、プライバシーポリシーの改訂も伴う別作業が必要です。
+          </div>
         </p>
       </div>
     </div>

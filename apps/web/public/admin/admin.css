@@ -1,16 +1,26 @@
-/* 管理者統計ダッシュボード(D-093)。運営者本人のみが見る非公開ページ。
-   配色はゲーム本体の属性パレット(fire/water/wind/light)をそのまま流用する。 */
+/* 管理者統計ダッシュボード(D-094, D-095で拡張)。運営者本人のみが見る非公開ページ。
+   配色はゲーム本体の属性パレット(fire/water/wind/light)をそのまま流用する。
+   クラス接頭辞は pd-(play data)。過去に ad- を使っていたところ、広告ブロッカーの
+   汎用フィルタ(class名に"ad-"を含む要素を広告とみなして隠すルール)と衝突し、
+   .ad-section だけ display:none にされていたことがあるため、この名前は避ける。 */
 
 :root {
-  --pd-bg: #090c17;
+  --pd-bg: #07090f;
   --pd-panel: #12162a;
+  --pd-panel-alt: #161b32;
   --pd-border: rgba(255, 255, 255, 0.09);
+  --pd-border-soft: rgba(255, 255, 255, 0.06);
   --pd-ink: #edf4ff;
   --pd-muted: #8a93ad;
+  --pd-faint: #5a6382;
   --pd-easy: #5fe8b6;
+  --pd-easy-deep: #116048;
   --pd-normal: #6fc0ff;
+  --pd-normal-deep: #123f7a;
   --pd-hard: #ffdf70;
+  --pd-hard-deep: #7a5f10;
   --pd-god: #ff8a70;
+  --pd-god-deep: #7c2418;
   --pd-accent: #ff8a70;
 }
 
@@ -21,31 +31,50 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: var(--pd-bg);
+  background:
+    radial-gradient(900px 500px at 15% -10%, rgba(255, 138, 112, 0.08), transparent 60%),
+    radial-gradient(800px 460px at 100% 0%, rgba(111, 192, 255, 0.07), transparent 60%),
+    var(--pd-bg);
   color: var(--pd-ink);
   font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", "Meiryo", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 .pd-shell {
-  max-width: 1080px;
+  max-width: 1240px;
   margin: 0 auto;
-  padding: 32px 20px 64px;
+  padding: 32px 24px 80px;
 }
+
+/* ---------- ヘッダー ---------- */
 
 .pd-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 24px;
+  margin-bottom: 28px;
   flex-wrap: wrap;
+}
+
+.pd-wordmark {
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0.22em;
+  color: var(--pd-faint);
+  margin: 0 0 6px;
+}
+
+.pd-wordmark span {
+  color: var(--pd-accent);
 }
 
 .pd-title {
   margin: 0 0 4px;
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 800;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
 }
 
 .pd-subtitle {
@@ -57,43 +86,58 @@ body {
 .pd-actions {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .pd-btn {
-  padding: 8px 14px;
-  border-radius: 8px;
+  padding: 9px 16px;
+  border-radius: 9px;
   border: 1px solid var(--pd-border);
   background: rgba(255, 255, 255, 0.04);
   color: var(--pd-ink);
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .pd-btn:hover {
-  background: rgba(255, 255, 255, 0.09);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.18);
 }
 
-/* トークン入力ゲート */
+.pd-btn-accent {
+  border-color: rgba(255, 138, 112, 0.4);
+  background: rgba(255, 138, 112, 0.12);
+  color: #ffd8cd;
+}
+
+.pd-btn-accent:hover {
+  background: rgba(255, 138, 112, 0.22);
+}
+
+/* ---------- トークンゲート ---------- */
+
 .pd-gate {
   max-width: 420px;
-  margin: 20vh auto 0;
-  padding: 28px;
-  border-radius: 14px;
+  margin: 18vh auto 0;
+  padding: 32px;
+  border-radius: 16px;
   border: 1px solid var(--pd-border);
   background: var(--pd-panel);
   text-align: center;
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.5);
 }
 
 .pd-gate h1 {
-  font-size: 18px;
+  font-size: 19px;
   margin: 0 0 8px;
 }
 
 .pd-gate p {
   color: var(--pd-muted);
   font-size: 13px;
-  margin: 0 0 18px;
+  margin: 0 0 20px;
 }
 
 .pd-gate-row {
@@ -103,22 +147,28 @@ body {
 
 .pd-gate input {
   flex: 1;
-  padding: 10px 12px;
-  border-radius: 8px;
+  padding: 11px 13px;
+  border-radius: 9px;
   border: 1px solid var(--pd-border);
   background: rgba(255, 255, 255, 0.05);
   color: var(--pd-ink);
   font-size: 14px;
 }
 
+.pd-gate input:focus {
+  outline: none;
+  border-color: rgba(255, 138, 112, 0.5);
+}
+
 .pd-gate-error {
-  margin-top: 10px;
+  margin-top: 12px;
   color: var(--pd-god);
   font-size: 12.5px;
   min-height: 1.4em;
 }
 
-/* KPI */
+/* ---------- KPIカード ---------- */
+
 .pd-kpi-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -127,42 +177,153 @@ body {
 }
 
 .pd-kpi {
-  padding: 16px 18px;
-  border-radius: 12px;
+  position: relative;
+  padding: 18px 20px;
+  border-radius: 14px;
   border: 1px solid var(--pd-border);
-  background: var(--pd-panel);
+  background: linear-gradient(160deg, var(--pd-panel-alt) 0%, var(--pd-panel) 100%);
+  overflow: hidden;
+}
+
+.pd-kpi::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: var(--pd-kpi-accent, var(--pd-accent));
+  opacity: 0.85;
 }
 
 .pd-kpi-label {
   color: var(--pd-muted);
   font-size: 12px;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .pd-kpi-value {
-  font-size: 26px;
+  font-size: 28px;
   font-weight: 800;
+  letter-spacing: -0.01em;
 }
 
-/* セクション */
+.pd-kpi-sub {
+  margin-top: 4px;
+  font-size: 11.5px;
+  color: var(--pd-faint);
+}
+
+/* ---------- セクション共通 ---------- */
+
 .pd-section {
-  margin-bottom: 32px;
-  padding: 20px;
-  border-radius: 14px;
+  margin-bottom: 28px;
+  padding: 24px;
+  border-radius: 16px;
   border: 1px solid var(--pd-border);
   background: var(--pd-panel);
 }
 
+.pd-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
 .pd-section h2 {
-  margin: 0 0 4px;
-  font-size: 16px;
+  margin: 0;
+  font-size: 17px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pd-section-glyph {
+  font-size: 15px;
 }
 
 .pd-section-note {
   color: var(--pd-muted);
   font-size: 12.5px;
-  margin: 0 0 16px;
+  margin: 6px 0 18px;
 }
+
+.pd-subsection-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--pd-muted);
+  letter-spacing: 0.03em;
+  margin: 0 0 10px;
+  text-transform: uppercase;
+}
+
+/* ---------- 難易度オーバービュー(4枚同時表示) ---------- */
+
+.pd-difficulty-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.pd-difficulty-card {
+  padding: 16px 18px;
+  border-radius: 13px;
+  border: 1px solid var(--pd-border);
+  background: var(--pd-panel-alt);
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.pd-difficulty-card:hover {
+  transform: translateY(-2px);
+}
+
+.pd-difficulty-card.is-active {
+  border-color: var(--pd-diff-color, var(--pd-accent));
+  box-shadow: 0 0 0 1px var(--pd-diff-color, var(--pd-accent)) inset;
+}
+
+.pd-difficulty-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--pd-diff-color, var(--pd-ink));
+  margin-bottom: 10px;
+}
+
+.pd-difficulty-total {
+  font-size: 24px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.pd-difficulty-mini-chart canvas {
+  width: 100%;
+  height: 48px;
+  display: block;
+}
+
+.pd-difficulty-stats {
+  display: flex;
+  gap: 14px;
+  margin-top: 10px;
+  font-size: 11.5px;
+  color: var(--pd-muted);
+}
+
+.pd-difficulty-stats strong {
+  color: var(--pd-ink);
+  font-size: 12.5px;
+}
+
+/* ---------- チャートグリッド ---------- */
 
 .pd-chart-grid {
   display: grid;
@@ -171,28 +332,61 @@ body {
   margin-bottom: 20px;
 }
 
+.pd-chart-box {
+  position: relative;
+}
+
 .pd-chart-box canvas {
   width: 100%;
   height: 180px;
   display: block;
+  cursor: crosshair;
+}
+
+.pd-chart-box.pd-chart-tall canvas {
+  height: 220px;
 }
 
 .pd-chart-caption {
   color: var(--pd-muted);
   font-size: 12px;
-  margin: 6px 0 0;
+  margin: 8px 0 0;
 }
 
-/* 難易度タブ */
+.pd-tooltip {
+  position: absolute;
+  pointer-events: none;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(7, 9, 15, 0.95);
+  border: 1px solid var(--pd-border);
+  color: var(--pd-ink);
+  font-size: 12px;
+  white-space: nowrap;
+  transform: translate(-50%, -110%);
+  opacity: 0;
+  transition: opacity 0.1s ease;
+  z-index: 5;
+}
+
+.pd-tooltip.is-visible {
+  opacity: 1;
+}
+
+/* ---------- 難易度タブ ---------- */
+
 .pd-tabs {
   display: flex;
   gap: 6px;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
   flex-wrap: wrap;
 }
 
 .pd-tab {
-  padding: 6px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
   border-radius: 999px;
   border: 1px solid var(--pd-border);
   background: rgba(255, 255, 255, 0.04);
@@ -200,6 +394,7 @@ body {
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .pd-tab.is-active {
@@ -212,7 +407,12 @@ body {
 .pd-tab[data-difficulty="hard"].is-active { background: var(--pd-hard); }
 .pd-tab[data-difficulty="god"].is-active { background: var(--pd-god); }
 
-/* テーブル */
+/* ---------- テーブル ---------- */
+
+.pd-table-wrap {
+  overflow-x: auto;
+}
+
 .pd-table {
   width: 100%;
   border-collapse: collapse;
@@ -221,8 +421,8 @@ body {
 
 .pd-table th,
 .pd-table td {
-  padding: 7px 10px;
-  border-bottom: 1px solid var(--pd-border);
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--pd-border-soft);
   text-align: left;
   white-space: nowrap;
 }
@@ -230,21 +430,93 @@ body {
 .pd-table th {
   color: var(--pd-muted);
   font-weight: 700;
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
+
+.pd-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.pd-table .pd-rank-1 { color: var(--pd-hard); font-weight: 800; }
+.pd-table .pd-rank-2 { color: #d7dbe8; font-weight: 800; }
+.pd-table .pd-rank-3 { color: #c88a5a; font-weight: 800; }
 
 .pd-empty {
   color: var(--pd-muted);
   font-size: 13px;
-  padding: 12px 0;
+  padding: 16px 0;
+  text-align: center;
 }
+
+/* ---------- 活動パターン(時間帯・曜日・頻出ニックネーム) ---------- */
+
+.pd-activity-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 800px) {
+  .pd-activity-grid { grid-template-columns: 1fr; }
+}
+
+.pd-nickname-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.pd-nickname-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 13px;
+}
+
+.pd-nickname-count {
+  color: var(--pd-accent);
+  font-weight: 800;
+  font-size: 12.5px;
+}
+
+/* ---------- フッター注記 ---------- */
 
 .pd-footnote {
   color: var(--pd-muted);
   font-size: 12px;
-  line-height: 1.8;
+  line-height: 1.9;
   border-top: 1px solid var(--pd-border);
-  padding-top: 16px;
-  margin-top: 8px;
+  padding-top: 20px;
+  margin-top: 12px;
+}
+
+.pd-footnote strong {
+  color: var(--pd-ink);
+}
+
+.pd-unavailable {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px dashed var(--pd-border);
+  font-size: 12px;
+  color: var(--pd-muted);
+  line-height: 1.8;
+}
+
+.pd-unavailable strong {
+  color: var(--pd-ink);
 }
 
 .pd-hidden {
@@ -252,6 +524,7 @@ body {
 }
 
 @media (max-width: 560px) {
-  .pd-shell { padding: 20px 14px 48px; }
-  .pd-gate { margin-top: 12vh; }
+  .pd-shell { padding: 20px 14px 56px; }
+  .pd-gate { margin-top: 10vh; padding: 24px; }
+  .pd-activity-grid { gap: 16px; }
 }

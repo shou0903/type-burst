@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { TypingAutomaton, countMora, segmentKana } from "@type-burst/typing-engine";
+import {
+  TypingAutomaton,
+  countMora,
+  enumerateRomajiCandidates,
+  segmentKana,
+} from "@type-burst/typing-engine";
 
 function typeAll(a: TypingAutomaton, keys: string): { accepted: number; rejected: number } {
   let accepted = 0;
@@ -188,5 +193,35 @@ describe("segmentKana", () => {
   it("促音を次のセグメントと結合する", () => {
     const segs = segmentKana("がっこう");
     expect(segs.map((s) => s.kana)).toEqual(["が", "っこ", "う"]);
+  });
+});
+
+describe("enumerateRomajiCandidates", () => {
+  it("TYPE BURSTで受理される複数候補を標準順に返す", () => {
+    const result = enumerateRomajiCandidates("し");
+    expect(result.normalizedReading).toBe("し");
+    expect(result.candidates.slice(0, 3)).toEqual(["shi", "si", "ci"]);
+    expect(result.truncated).toBe(false);
+  });
+
+  it("んの文脈ルールを候補へ反映する", () => {
+    const ambiguous = enumerateRomajiCandidates("かんじ");
+    expect(ambiguous.candidates).toContain("kanji");
+    expect(ambiguous.candidates).toContain("kannji");
+    expect(ambiguous.candidates).toContain("kan'ji");
+
+    const vowel = enumerateRomajiCandidates("かんい");
+    expect(vowel.candidates).not.toContain("kani");
+    expect(vowel.candidates).toContain("kanni");
+  });
+
+  it("候補が多い文字列は上限で打ち切る", () => {
+    const result = enumerateRomajiCandidates("ししし", { maxCandidates: 2 });
+    expect(result.candidates).toHaveLength(2);
+    expect(result.truncated).toBe(true);
+  });
+
+  it("未対応文字はTypingAutomatonと同じエラーを返す", () => {
+    expect(() => enumerateRomajiCandidates("漢字")).toThrow(/未対応のかな/);
   });
 });

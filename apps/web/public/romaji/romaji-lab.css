@@ -1,0 +1,294 @@
+.romaji-hero {
+  background: linear-gradient(135deg, rgba(8, 120, 184, 0.08), rgba(217, 79, 65, 0.05));
+}
+
+.romaji-hero h1 {
+  max-width: 760px;
+}
+
+.romaji-hero-points {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 25px;
+}
+
+.romaji-hero-points span,
+.quick-examples button,
+.drill-category {
+  border: 1px solid #cbd7e3;
+  border-radius: 999px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.84);
+  color: var(--blue-deep);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.section-kicker {
+  margin-bottom: 8px;
+  color: var(--blue);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+}
+
+.lab-panel h2,
+.lab-practice h2,
+.lab-drill h2 {
+  margin-bottom: 8px;
+}
+
+.lab-intro {
+  max-width: 760px;
+  margin: 0 0 22px;
+  color: var(--muted);
+}
+
+.romaji-form {
+  display: flex;
+  align-items: end;
+  gap: 12px;
+  max-width: 760px;
+}
+
+.romaji-form .field {
+  flex: 1;
+}
+
+.romaji-form .primary-button {
+  min-width: 174px;
+}
+
+.quick-examples {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 15px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.quick-examples button,
+.drill-category {
+  cursor: pointer;
+  color: var(--ink);
+  transition: border-color 140ms ease, background-color 140ms ease, transform 140ms ease;
+}
+
+.quick-examples button:hover,
+.drill-category:hover,
+.drill-category.is-selected {
+  border-color: var(--blue);
+  background: #eaf7fd;
+  color: var(--blue-deep);
+  transform: translateY(-1px);
+}
+
+.lab-message {
+  margin: 15px 0 0;
+  font-weight: 800;
+}
+
+.lab-error {
+  color: #a3332a;
+}
+
+.lab-result {
+  margin-top: 30px;
+  border-top: 1px solid var(--line);
+  padding-top: 26px;
+}
+
+.lab-result[hidden],
+.lab-practice[hidden] {
+  display: none;
+}
+
+.result-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.result-reading {
+  display: block;
+  margin-top: 4px;
+  font-size: clamp(26px, 4vw, 40px);
+  letter-spacing: 0.06em;
+}
+
+.result-note {
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: #fff5dc;
+  color: #8b5b00;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.result-summary {
+  margin: 16px 0 12px;
+  color: var(--muted);
+}
+
+.candidate-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.candidate-card {
+  display: flex;
+  min-height: 92px;
+  flex-direction: column;
+  justify-content: space-between;
+  border: 1px solid #cbd7e3;
+  border-radius: 12px;
+  padding: 15px 16px;
+  background: #fff;
+}
+
+.candidate-card.is-recommended {
+  border-color: rgba(217, 79, 65, 0.48);
+  background: linear-gradient(135deg, #fff8f4, #fff);
+}
+
+.candidate-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  min-height: 20px;
+}
+
+.candidate-badge {
+  border-radius: 999px;
+  padding: 3px 8px;
+  background: #eaf7fd;
+  color: var(--blue-deep);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.candidate-badge.primary {
+  background: #ffe5dc;
+  color: #a3332a;
+}
+
+.candidate-romaji {
+  display: block;
+  margin: 8px 0;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  overflow-wrap: anywhere;
+}
+
+.candidate-use {
+  align-self: flex-start;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--blue-deep);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 900;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.candidate-footnote {
+  margin: 16px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.lab-practice,
+.lab-drill {
+  margin-top: 24px;
+}
+
+.practice-target-label {
+  margin: 0 0 3px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.lab-stage {
+  margin-top: 18px;
+  outline: none;
+}
+
+.lab-stage:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(8, 120, 184, 0.14);
+}
+
+.drill-categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 18px 0 0;
+}
+
+.drill-category {
+  border-radius: 8px;
+  padding: 9px 13px;
+}
+
+.lab-drill .typing-status {
+  margin-bottom: 18px;
+}
+
+.content-panel details {
+  border-bottom: 1px solid var(--line);
+  padding: 16px 0;
+}
+
+.content-panel details:first-of-type {
+  border-top: 1px solid var(--line);
+}
+
+.content-panel summary {
+  cursor: pointer;
+  color: var(--ink);
+  font-weight: 900;
+}
+
+.content-panel details p {
+  margin: 12px 0 0;
+}
+
+@media (max-width: 700px) {
+  .romaji-form {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .romaji-form .primary-button {
+    width: 100%;
+  }
+
+  .candidate-list {
+    grid-template-columns: 1fr;
+  }
+
+  .result-heading {
+    align-items: start;
+    flex-direction: column;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quick-examples button,
+  .drill-category {
+    transition: none;
+  }
+}

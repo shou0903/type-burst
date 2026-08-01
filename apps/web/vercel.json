@@ -37,6 +37,11 @@
       "source": "/tools/index.html",
       "destination": "/tools",
       "permanent": true
+    },
+    {
+      "source": "/romaji/index.html",
+      "destination": "/romaji",
+      "permanent": true
     }
   ],
   "rewrites": [

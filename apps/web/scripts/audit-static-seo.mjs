@@ -2,7 +2,12 @@ import { access, readFile, readdir } from "node:fs/promises";
 import { constants } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
-import { BUNDLED_TOOL_PAGES, BUNDLED_TOOL_PATHS } from "./bundled-seo-pages.mjs";
+import {
+  BUNDLED_APP_PAGES,
+  BUNDLED_APP_PATHS,
+  BUNDLED_TOOL_PAGES,
+  BUNDLED_TOOL_PATHS,
+} from "./bundled-seo-pages.mjs";
 
 const appRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const publicRoot = join(appRoot, "public");
@@ -41,6 +46,9 @@ function localTarget(urlPath) {
   if (BUNDLED_TOOL_PATHS.includes(urlPath)) {
     return join(appRoot, "tools", urlPath.slice("/tools/".length));
   }
+  if (BUNDLED_APP_PATHS.includes(urlPath)) {
+    return join(appRoot, BUNDLED_APP_PAGES[BUNDLED_APP_PATHS.indexOf(urlPath)] ?? "");
+  }
   if (urlPath.startsWith("/src/")) return join(appRoot, urlPath.slice(1));
   if (urlPath === "/guides" || urlPath === "/guides/") return join(publicRoot, "guides", "index.html");
   if (urlPath === "/tools" || urlPath === "/tools/") return join(publicRoot, "tools", "index.html");
@@ -49,10 +57,12 @@ function localTarget(urlPath) {
 }
 
 const bundledToolPaths = new Set(BUNDLED_TOOL_PAGES.map((name) => join(appRoot, "tools", name)));
+const bundledAppPaths = new Set(BUNDLED_APP_PAGES.map((name) => join(appRoot, name)));
 const htmlFiles = [
   join(appRoot, "index.html"),
   ...(await listHtmlFiles(publicRoot)),
   ...BUNDLED_TOOL_PAGES.map((name) => join(appRoot, "tools", name)),
+  ...BUNDLED_APP_PAGES.map((name) => join(appRoot, name)),
 ];
 const canonicals = new Map();
 for (const path of htmlFiles) {
@@ -62,6 +72,7 @@ for (const path of htmlFiles) {
   const includedInSitemap =
     path === join(appRoot, "index.html") ||
     bundledToolPaths.has(path) ||
+    bundledAppPaths.has(path) ||
     publicPath === "about.html" ||
     publicPath === "press.html" ||
     publicPath.startsWith("guides/") ||
@@ -69,6 +80,7 @@ for (const path of htmlFiles) {
   const monetizedPage =
     path === join(appRoot, "index.html") ||
     bundledToolPaths.has(path) ||
+    bundledAppPaths.has(path) ||
     publicPath === "about.html" ||
     (publicPath.startsWith("guides/") && publicPath !== "guides/editorial-policy.html") ||
     publicPath.startsWith("tools/");
@@ -241,7 +253,11 @@ for (const path of htmlFiles) {
       });
     }
   }
-  if (canonical && new URL(canonical, origin).pathname.startsWith("/tools/") && !noindex) {
+  if (
+    canonical &&
+    (new URL(canonical, origin).pathname.startsWith("/tools/") || new URL(canonical, origin).pathname === "/romaji") &&
+    !noindex
+  ) {
     const app = structuredItems.find((item) => item?.["@type"] === "WebApplication");
     if (!app?.name || !app?.url || !app?.operatingSystem || !app?.isAccessibleForFree) {
       failures.push(`${label}: WebApplicationのname/url/operatingSystem/isAccessibleForFreeが不足しています`);
@@ -330,6 +346,7 @@ for (const [source, destination] of [
   ["/index.html", "/"],
   ["/guides/index.html", "/guides"],
   ["/tools/index.html", "/tools"],
+  ["/romaji/index.html", "/romaji"],
 ]) {
   const redirect = vercelConfig.redirects?.find((item) => item.source === source);
   if (!redirect?.permanent || redirect.destination !== destination) {

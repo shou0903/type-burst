@@ -1,5 +1,5 @@
 import { readFile, readdir, writeFile } from "node:fs/promises";
-import { BUNDLED_TOOL_PAGES } from "./bundled-seo-pages.mjs";
+import { BUNDLED_APP_PAGES, BUNDLED_TOOL_PAGES } from "./bundled-seo-pages.mjs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -68,6 +68,7 @@ function indexableImagesFrom(html) {
 
 const indexPath = join(appRoot, "index.html");
 const bundledSeoPages = BUNDLED_TOOL_PAGES.map((name) => join(appRoot, "tools", name));
+const bundledAppPages = BUNDLED_APP_PAGES.map((name) => join(appRoot, name));
 const publicHtml = await listHtmlFiles(publicRoot);
 const searchLandingFiles = publicHtml.filter((path) => {
   const pathFromPublic = relative(publicRoot, path).replaceAll("\\", "/");
@@ -80,7 +81,7 @@ const searchLandingFiles = publicHtml.filter((path) => {
 });
 
 const pages = [];
-for (const sourcePath of [indexPath, ...searchLandingFiles, ...bundledSeoPages]) {
+for (const sourcePath of [indexPath, ...searchLandingFiles, ...bundledSeoPages, ...bundledAppPages]) {
   const html = await readFile(sourcePath, "utf8");
   if (/<meta\s+name=["']robots["'][^>]*content=["'][^"']*noindex/i.test(html)) continue;
   pages.push({

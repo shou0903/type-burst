@@ -16,6 +16,7 @@ export default defineConfig({
         numberSymbolPractice: r("tools/number-symbol-practice.html"),
         inputMethodCheck: r("tools/input-method-check.html"),
         typingWorkload: r("tools/typing-workload.html"),
+        romajiLab: r("romaji/index.html"),
       },
     },
   },

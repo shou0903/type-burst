@@ -19,3 +19,7 @@ export const BUNDLED_TOOL_PAGES = [
 
 /** URLパス("/tools/xxx.html")の一覧 */
 export const BUNDLED_TOOL_PATHS = BUNDLED_TOOL_PAGES.map((name) => `/tools/${name}`);
+
+/** Viteでバンドルする、tools以外の検索向けアプリページ */
+export const BUNDLED_APP_PAGES = ["romaji/index.html"];
+export const BUNDLED_APP_PATHS = ["/romaji"];

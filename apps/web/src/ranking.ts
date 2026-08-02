@@ -12,6 +12,19 @@ export interface RankingEntry {
   submittedAt: string;
 }
 
+export interface RankingViewer {
+  rank: number;
+  total: number;
+  score: number;
+  scoreToNext: number | null;
+  percentile: number;
+}
+
+export interface RankingResponse {
+  entries: RankingEntry[];
+  viewer: RankingViewer | null;
+}
+
 export type SubmitScoreResult =
   | { ok: true; updated: boolean }
   | { ok: false; reason: string };
@@ -52,5 +65,19 @@ export async function fetchTopScores(
   const res = await fetch(`/api/scores?difficulty=${difficulty}&limit=${limit}`);
   if (!res.ok) throw new Error(`ランキング取得に失敗しました(${res.status})`);
   const data = (await res.json()) as { entries: RankingEntry[] };
-  return data.entries;
+  return data.entries ?? [];
+}
+
+/** 上位表と、匿名playerIdに紐づく本人の順位を同時に取得する。 */
+export async function fetchRanking(
+  difficulty: SurvivalDifficulty,
+  limit = 100,
+): Promise<RankingResponse> {
+  const playerId = loadPlayerId();
+  const res = await fetch(
+    `/api/scores?difficulty=${difficulty}&limit=${limit}&playerId=${encodeURIComponent(playerId)}`,
+  );
+  if (!res.ok) throw new Error(`ランキング取得に失敗しました(${res.status})`);
+  const data = (await res.json()) as { entries: RankingEntry[]; viewer?: RankingViewer | null };
+  return { entries: data.entries ?? [], viewer: data.viewer ?? null };
 }

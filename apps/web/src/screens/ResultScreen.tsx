@@ -131,7 +131,7 @@ export function ResultScreen({
   if (result.mode === "survival") {
     const summary = result.summary;
     const sameDifficultyHistory = history.filter(
-      (r) => (r.difficulty ?? "normal") === summary.difficulty,
+      (r) => r.mode !== "daily" && (r.difficulty ?? "normal") === summary.difficulty,
     );
     const previous = sameDifficultyHistory[1];
     const previousBest = sameDifficultyHistory
@@ -226,6 +226,7 @@ export function ResultScreen({
         </div>
 
         {hint && <p className="result-hint">{hint}</p>}
+        <p className="result-next-step">次は「タイピング分析」で、今回の弱点と伸びしろを確認できます。</p>
 
         <RankingSubmitBox summary={summary} />
 
@@ -238,7 +239,7 @@ export function ResultScreen({
             build={() => buildSurvivalShare(summary, rank, loadNickname())}
           />
           <button
-            className="btn-secondary"
+            className="btn-secondary btn-analysis"
             onClick={() => onShowAnalysis(summary.analysis, sameDifficultyHistory)}
           >
             タイピング分析を見る
@@ -330,7 +331,7 @@ function DailyResultScreen({
   const remaining = Math.max(0, DAILY_RANKED_ATTEMPTS - attempts);
   const best = dailyBestScore(progress, result.challengeId);
   const sameDifficultyHistory = history.filter(
-    (item) => (item.difficulty ?? "normal") === summary.difficulty,
+    (item) => item.mode === "daily" && (item.difficulty ?? "normal") === summary.difficulty,
   );
   // 共有カードに順位を載せたいので、ランキング欄が取得した自分の順位を受け取る(D-091)
   const [viewer, setViewer] = useState<DailyLeaderboardResponse["viewer"]>(null);
@@ -398,7 +399,7 @@ function DailyResultScreen({
         }
       />
       <button
-        className="btn-secondary"
+        className="btn-secondary btn-analysis"
         onClick={() => onShowAnalysis(summary.analysis, sameDifficultyHistory)}
       >
         タイピング分析を見る

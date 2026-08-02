@@ -81,12 +81,14 @@ export function LandingScreen({
 }: Props): JSX.Element {
   const [guideDifficulty] = useState<SurvivalDifficulty | null>(guideSurvivalDifficulty);
   const [difficulty, setDifficulty] = useState<CpuDifficulty>("normal");
+  const firstPlay = progress.totalGames === 0;
   const [survivalDifficulty, setSurvivalDifficulty] = useState<SurvivalDifficulty>(
-    () => guideDifficulty ?? "normal",
+    () => guideDifficulty ?? (firstPlay ? "easy" : "normal"),
   );
   const [howtoOpen, setHowtoOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const best = bestScore(results, survivalDifficulty);
+  const survivalResults = useMemo(() => results.filter((entry) => entry.mode !== "daily"), [results]);
+  const best = bestScore(survivalResults, survivalDifficulty);
   const record = loadDuelRecord();
   const titleProgress = useMemo(() => titleProgressForScore(progress.totalScore), [progress.totalScore]);
   const activeTier = SURVIVAL_TIERS.find((t) => t.id === survivalDifficulty) ?? SURVIVAL_TIERS[1]!;
@@ -270,6 +272,19 @@ export function LandingScreen({
               </>
             )}
           </p>
+
+          {firstPlay && (
+            <section className="lp-first-play" aria-label="初回プレイ案内">
+              <div>
+                <span className="lp-first-play-kicker">FIRST RUN</span>
+                <strong>初めてなら、まずチュートリアル</strong>
+                <p>入力・連鎖・TYPE BURSTを実際に触ってから、初級サバイバルへ進めます。</p>
+              </div>
+              <button type="button" onClick={() => onStart({ type: "tutorial" })}>
+                チュートリアルを見る
+              </button>
+            </section>
+          )}
         </div>
 
         <div className="lp-hero-stage">
@@ -314,7 +329,7 @@ export function LandingScreen({
         </div>
 
         <RankingDeck difficulty={survivalDifficulty} onOpen={onShowRanking} />
-        <GrowthDeck progress={progress} results={results} onOpen={onShowGrowth} />
+        <GrowthDeck progress={progress} results={survivalResults} onOpen={onShowGrowth} />
         <TutorialDeck onOpen={() => onStart({ type: "tutorial" })} />
       </section>
 

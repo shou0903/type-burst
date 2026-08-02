@@ -125,6 +125,8 @@ export class PlayerCore {
   private readonly phrasePool: readonly JapanesePhrase[];
   private readonly garbagePool: readonly JapanesePhrase[];
   private readonly firstKeyCache = new Map<string, string>();
+  /** 直近に出した語を短いクールダウンに入れ、連続リフィル時の既視感を抑える。 */
+  private readonly recentPhraseIds: string[] = [];
   private readonly refillRowsOnAllClear: number | null;
   private readonly includeRefillSpecials: boolean;
   private readonly dangerEnabled: boolean;
@@ -948,6 +950,15 @@ export class PlayerCore {
       pool = [...this.phrasePool];
     }
 
+    const freshPool = pool.filter((phrase) => !this.recentPhraseIds.includes(phrase.id));
+    if (freshPool.length > 0) pool = freshPool;
+
+    const choose = (phrase: JapanesePhrase): JapanesePhrase => {
+      this.recentPhraseIds.push(phrase.id);
+      if (this.recentPhraseIds.length > 24) this.recentPhraseIds.shift();
+      return phrase;
+    };
+
     // ランダムな開始位置から全候補を1周し、入力列が別ブロックの完成形と
     // 前方一致する語を除外する。「か」と「かき」のような組み合わせで、
     // 長い方を狙っても短い方が先に消えてしまう干渉を防ぐ(D-065)。
@@ -959,25 +970,33 @@ export class PlayerCore {
       if (this.hasTypingConflict(candidate.readingKana)) continue;
       if (safeFallback === null) safeFallback = candidate;
       const first = this.firstKeyOf(candidate.id, candidate.readingKana);
-      if (!usedFirstKeys.has(first)) return candidate;
+      if (!usedFirstKeys.has(first)) return choose(candidate);
       // 盤面に使える先頭キーは有限なので、全プールを走査してまで重複を
       // 避けようとしない。入力完成形の衝突回避は維持したまま、候補探索を抑える。
       safeCandidatesChecked += 1;
-      if (safeCandidatesChecked >= 12) return safeFallback;
+      if (safeCandidatesChecked >= 12) return choose(safeFallback);
     }
-    return safeFallback ?? pool[start]!;
+    return choose(safeFallback ?? pool[start]!);
   }
 
   private pickGarbagePhrase(): JapanesePhrase {
     const usedIds = new Set(this.blocks.map((b) => b.phraseId));
     const pool = this.garbagePool.filter((p) => !usedIds.has(p.id));
     const candidates = pool.length > 0 ? pool : this.garbagePool;
-    const start = this.rng.int(candidates.length);
-    for (let offset = 0; offset < candidates.length; offset++) {
-      const candidate = candidates[(start + offset) % candidates.length]!;
-      if (!this.hasTypingConflict(candidate.readingKana)) return candidate;
+    const freshCandidates = candidates.filter((phrase) => !this.recentPhraseIds.includes(phrase.id));
+    const preferred = freshCandidates.length > 0 ? freshCandidates : candidates;
+    const start = this.rng.int(preferred.length);
+    for (let offset = 0; offset < preferred.length; offset++) {
+      const candidate = preferred[(start + offset) % preferred.length]!;
+      if (!this.hasTypingConflict(candidate.readingKana)) return this.rememberPhrase(candidate);
     }
-    return candidates[start]!;
+    return this.rememberPhrase(preferred[start]!);
+  }
+
+  private rememberPhrase(phrase: JapanesePhrase): JapanesePhrase {
+    this.recentPhraseIds.push(phrase.id);
+    if (this.recentPhraseIds.length > 24) this.recentPhraseIds.shift();
+    return phrase;
   }
 
   private hasTypingConflict(readingKana: string): boolean {
@@ -1080,6 +1099,7 @@ export class PlayerCore {
         Math.max(0, 1 - this.riseTimerMs / this.currentRiseInterval()),
       ),
       riseWarningActive: this.riseWarningIssued,
+      riseMsLeft: Math.max(0, this.riseTimerMs),
       gauge: this.gauge / this.config.special.gaugeMax,
       burstReady: this.burstReady,
       perfectStreak: this.perfectStreak,

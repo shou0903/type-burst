@@ -114,6 +114,8 @@ export interface PlayerSnapshot {
   /** 次の行上昇までの進行 0〜1 */
   risePressure: number;
   riseWarningActive: boolean;
+  /** 次の行上昇までの残り時間(ms) */
+  riseMsLeft: number;
   /** 必殺技ゲージ 0〜1 */
   gauge: number;
   burstReady: boolean;

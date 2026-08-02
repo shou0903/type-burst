@@ -43,12 +43,17 @@ export function DailyChallengeCard({ progress, onStart }: Props): JSX.Element {
             盤面は最初から満杯。ボム・プリズム・TYPE BURSTを使って全消しすると、
             次の満杯盤面が即スタートします。2分間、止まらずスコアを伸ばそう。
           </p>
+          <ul className="daily-rules">
+            <li>制限時間は2:00。最高スコアを競います</li>
+            <li>ランキング挑戦は1日3回まで</li>
+            <li>4回目以降は練習（ランキング外）</li>
+          </ul>
 
           <div className="daily-stats">
             <DailyStat label="今日のベスト" value={best > 0 ? best.toLocaleString() : "未挑戦"} />
             <DailyStat
-              label="ランキング挑戦"
-              value={ranked ? `あと${remaining}回` : "本日分は終了"}
+              label="ランキング挑戦（残り）"
+              value={ranked ? `${remaining}/3回` : "0/3回"}
             />
           </div>
 
@@ -61,8 +66,8 @@ export function DailyChallengeCard({ progress, onStart }: Props): JSX.Element {
           </button>
           <p className="daily-attempt-help">
             {ranked
-              ? `今回を含め、ランキングへ記録できるのはあと${remaining}回です`
-              : "練習スコアはランキングへ送信されません"}
+              ? `ランキング対象は残り${remaining}回。練習は何度でも可能です`
+              : "本日のランキング枠は終了。練習スコアは送信されません"}
           </p>
         </div>
 
@@ -77,7 +82,7 @@ export function DailyChallengeCard({ progress, onStart }: Props): JSX.Element {
             <small>最長 {progress.bestStreak}日</small>
           </div>
           <div className="daily-protection">
-            <span>連続記録キープ</span>
+            <span>連続記録保護</span>
             <strong>{progress.freezes}回分</strong>
           </div>
         </div>

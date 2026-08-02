@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import type { SurvivalDifficulty } from "@type-burst/game-core";
 import { useFitToViewport } from "../hooks/useFitToViewport";
-import { fetchTopScores, type RankingEntry } from "../ranking";
-import { loadNickname } from "../storage";
+import { fetchRanking, type RankingEntry, type RankingViewer } from "../ranking";
 
 const SURVIVAL_DIFFICULTY_LABELS: Record<SurvivalDifficulty, string> = {
   easy: "初級",
@@ -28,7 +27,7 @@ interface Props {
 type LoadState =
   | { status: "loading" }
   | { status: "error"; message: string }
-  | { status: "loaded"; entries: RankingEntry[] };
+  | { status: "loaded"; entries: RankingEntry[]; viewer: RankingViewer | null };
 
 function formatTime(ms: number): string {
   const total = Math.floor(ms / 1000);
@@ -46,14 +45,13 @@ export function RankingScreen({ onBack }: Props): JSX.Element {
   const { ref, style } = useFitToViewport<HTMLDivElement>();
   const [difficulty, setDifficulty] = useState<SurvivalDifficulty>("normal");
   const [state, setState] = useState<LoadState>({ status: "loading" });
-  const myName = loadNickname();
 
   useEffect(() => {
     let cancelled = false;
     setState({ status: "loading" });
-    fetchTopScores(difficulty, 100)
-      .then((entries) => {
-        if (!cancelled) setState({ status: "loaded", entries });
+    fetchRanking(difficulty, 100)
+      .then((response) => {
+        if (!cancelled) setState({ status: "loaded", entries: response.entries, viewer: response.viewer });
       })
       .catch((e: unknown) => {
         if (!cancelled) {
@@ -74,9 +72,9 @@ export function RankingScreen({ onBack }: Props): JSX.Element {
   }, [onBack]);
 
   const entries = state.status === "loaded" ? state.entries : [];
+  const viewer = state.status === "loaded" ? state.viewer : null;
   const podium = entries.slice(0, 3);
   const rest = entries.slice(3);
-  const myRank = myName ? entries.findIndex((e) => e.nickname === myName) : -1;
 
   return (
     <div ref={ref} style={style} className="screen ranking rk">
@@ -115,15 +113,21 @@ export function RankingScreen({ onBack }: Props): JSX.Element {
         <p className="rk-status">まだ記録がありません。最初のランカーになろう！</p>
       )}
 
+      {viewer && (
+        <p className="rk-mine">
+          あなたのベストは <strong>{viewer.rank}位</strong> ／ 全
+          {viewer.total.toLocaleString()}人中
+          <span className="rk-mine-detail">
+            上位 {viewer.percentile.toFixed(1)}% ・ {viewer.score.toLocaleString()}点
+            {viewer.scoreToNext === null
+              ? " ・ 現在1位"
+              : ` ・ 次の順位まであと${viewer.scoreToNext.toLocaleString()}点`}
+          </span>
+        </p>
+      )}
+
       {podium.length > 0 && (
         <>
-          {myRank >= 0 && (
-            <p className="rk-mine">
-              あなた（{myName}）は <strong>{myRank + 1}位</strong> ／ 全
-              {entries.length.toLocaleString()}人中
-            </p>
-          )}
-
           {/* 表彰台: 2位・1位・3位の順に並べ、1位を高くする */}
           <div className="rk-podium">
             {[1, 0, 2].map((idx) => {
@@ -133,9 +137,7 @@ export function RankingScreen({ onBack }: Props): JSX.Element {
               return (
                 <div
                   key={e.id}
-                  className={`rk-plinth rk-plinth-${place}${
-                    myName && e.nickname === myName ? " rk-is-me" : ""
-                  }`}
+                  className={`rk-plinth rk-plinth-${place}`}
                 >
                   <div className="rk-crown">{place === 1 ? "👑" : place}</div>
                   <div className="rk-plinth-name">{e.nickname}</div>
@@ -163,7 +165,7 @@ export function RankingScreen({ onBack }: Props): JSX.Element {
                 {rest.map((e, i) => (
                   <div
                     key={e.id}
-                    className={`rk-row${myName && e.nickname === myName ? " rk-is-me" : ""}`}
+                    className="rk-row"
                   >
                     <span className="rk-rank">{i + 4}</span>
                     <span className="rk-name">{e.nickname}</span>

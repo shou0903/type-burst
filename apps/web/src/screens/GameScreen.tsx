@@ -251,8 +251,21 @@ export function GameScreen({
             </div>
           )}
 
-          <div className={`danger-badge badge-reserved${player?.danger ? "" : " badge-hidden"}`}>
-            DANGER!
+          <div
+            className={`danger-badge badge-reserved${player?.danger ? "" : " badge-hidden"}`}
+            role="status"
+            aria-live={player?.danger ? "polite" : "off"}
+            aria-atomic="true"
+            aria-label={
+              player?.danger
+                ? `DANGER。次の落下まで${Math.max(0, player.riseMsLeft / 1000).toFixed(1)}秒`
+                : undefined
+            }
+          >
+            <strong>DANGER!</strong>
+            <span className="danger-countdown">
+              次の落下まで {player ? Math.max(0, player.riseMsLeft / 1000).toFixed(1) : "0.0"}秒
+            </span>
           </div>
 
           <div className="key-help">Enter: バースト / Esc・BS: 選択キャンセル</div>

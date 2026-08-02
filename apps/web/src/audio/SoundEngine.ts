@@ -120,6 +120,12 @@ export class SoundEngine {
     this.tone(310, 90, { type: "square", gain: 0.05, delayMs: 140 });
   }
 
+  /** DANGER突入時の一度だけの警告音。低く短く、連打しても耳に刺さらない。 */
+  danger(): void {
+    this.tone(180, 140, { type: "square", gain: 0.1, endFreq: 120 });
+    this.tone(120, 180, { type: "sawtooth", gain: 0.06, endFreq: 80, delayMs: 90 });
+  }
+
   countdownTick(): void {
     this.tone(660, 90, { type: "sine", gain: 0.1 });
   }

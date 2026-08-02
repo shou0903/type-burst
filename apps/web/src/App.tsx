@@ -27,7 +27,7 @@ import {
   type DailyRecordResult,
 } from "./daily";
 import { queueSnapshotUpload } from "./playerData";
-import { trackAttributedGameStart } from "./seoAttribution";
+import { trackAttributedGameStart, trackFunnelEvent } from "./seoAttribution";
 
 type ResultScreenState = {
   name: "result";
@@ -81,6 +81,7 @@ export function App(): JSX.Element {
   const startGame = (mode: GameMode): void => {
     sound.unlock();
     trackAttributedGameStart(mode.type);
+    trackFunnelEvent("Mode Started", { mode: mode.type });
     const resolvedMode =
       mode.type === "daily"
         ? {
@@ -92,6 +93,7 @@ export function App(): JSX.Element {
   };
 
   const finishGame = (result: GameResult): void => {
+    trackFunnelEvent("Game Finished", { mode: result.mode });
     if (result.mode === "survival") {
       const history = appendResult(result.summary);
       setScreen({ name: "result", result, history, duelRecord: null, dailyRecord: null });
@@ -101,7 +103,7 @@ export function App(): JSX.Element {
         result.summary,
         result.ranked,
       );
-      const history = appendResult(result.summary);
+      const history = appendResult(result.summary, "daily");
       setDailyProgress(dailyRecord.progress);
       setScreen({ name: "result", result, history, duelRecord: null, dailyRecord });
     } else {
@@ -130,9 +132,17 @@ export function App(): JSX.Element {
           dailyProgress={dailyProgress}
           onUpdateSettings={updateSettings}
           onStart={startGame}
-          onShowRanking={() => setScreen({ name: "ranking" })}
+          onShowRanking={() => {
+            trackFunnelEvent("Navigation", { destination: "ranking" });
+            setScreen({ name: "ranking" });
+          }}
           onShowGrowth={() =>
-            setScreen({ name: "analysis", analysis: null, recentHistory: loadResults(), back: { name: "landing" } })
+            setScreen({
+              name: "analysis",
+              analysis: null,
+              recentHistory: loadResults().filter((entry) => entry.mode !== "daily"),
+              back: { name: "landing" },
+            })
           }
         />
       );
@@ -159,11 +169,15 @@ export function App(): JSX.Element {
           dailyProgress={dailyProgress}
           dailyRecord={screen.dailyRecord}
           reducedMotion={settings.reducedMotion}
-          onRetry={(mode) => startGame(mode)}
+          onRetry={(mode) => {
+            trackFunnelEvent("Result Action", { action: "retry", mode: mode.type });
+            startGame(mode);
+          }}
           onBackToTitle={() => setScreen({ name: "landing" })}
-          onShowAnalysis={(analysis, recentHistory) =>
-            setScreen({ name: "analysis", analysis, recentHistory, back: resultScreen })
-          }
+          onShowAnalysis={(analysis, recentHistory) => {
+            trackFunnelEvent("Result Action", { action: "analysis", mode: resultScreen.result.mode });
+            setScreen({ name: "analysis", analysis, recentHistory, back: resultScreen });
+          }}
         />
       );
     }

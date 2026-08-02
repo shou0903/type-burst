@@ -48,3 +48,18 @@ export function trackAttributedGameStart(mode: string): void {
   }
   track("Game Started", { mode, source });
 }
+
+/**
+ * 匿名の導線イベント。個人を特定する値・入力内容・スコアは送らず、
+ * 画面改善に必要な大まかな行動だけを集計する。
+ */
+export function trackFunnelEvent(
+  name: string,
+  properties: Record<string, string | number | boolean> = {},
+): void {
+  try {
+    track(name, properties);
+  } catch {
+    // 計測サービスが利用できなくてもゲームを止めない。
+  }
+}

@@ -277,6 +277,20 @@ body {
   line-height: 1.75;
 }
 
+.daily-rules {
+  display: grid;
+  gap: 4px;
+  margin: 10px 0 14px;
+  padding-left: 18px;
+  color: #9da6c8;
+  font-size: 11.5px;
+  line-height: 1.55;
+}
+
+.daily-rules li::marker {
+  color: #ffd75e;
+}
+
 .daily-stats {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1093,11 +1107,24 @@ body {
 }
 
 .danger-badge {
+  display: grid;
+  gap: 2px;
   text-align: center;
   font-family: "Arial Black", sans-serif;
   color: #ff5a46;
   font-size: calc(20px * var(--font-scale));
   animation: blink 0.5s steps(2) infinite;
+}
+
+.danger-badge strong {
+  letter-spacing: 0.08em;
+}
+
+.danger-countdown {
+  color: #ffd38a;
+  font-family: inherit;
+  font-size: calc(11px * var(--font-scale));
+  letter-spacing: 0.03em;
 }
 
 /*
@@ -1730,6 +1757,14 @@ body {
   font-size: 12px;
 }
 
+.result-next-step {
+  width: min(680px, 100%);
+  margin: -2px 0 0;
+  color: var(--water-lit);
+  font-size: 12px;
+  text-align: center;
+}
+
 .survival-result .ranking-submit-box {
   width: min(680px, 100%);
   max-width: none;
@@ -1756,6 +1791,13 @@ body {
 
 .result-actions .btn-secondary {
   font-size: 13px;
+}
+
+.btn-analysis {
+  border-color: rgba(111, 192, 255, 0.55);
+  color: var(--water-lit);
+  background: rgba(111, 192, 255, 0.1);
+  font-weight: 800;
 }
 
 .result-celebration {
@@ -3392,6 +3434,13 @@ body {
 
 .data-transfer-lede { margin: 12px 0 16px; }
 
+.data-transfer-sync-note {
+  margin: -7px 0 16px;
+  color: var(--faint);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
 .data-transfer-grid,
 .transfer-compare {
   display: grid;
@@ -3750,6 +3799,56 @@ body {
 .lp-tier-hint strong {
   color: var(--light-lit);
   font-variant-numeric: tabular-nums;
+}
+
+.lp-first-play {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 13px;
+  padding: 11px 13px;
+  border: 1px solid rgba(111, 192, 255, 0.35);
+  border-radius: 11px;
+  background: rgba(111, 192, 255, 0.08);
+}
+
+.lp-first-play > div {
+  display: grid;
+  gap: 3px;
+}
+
+.lp-first-play-kicker {
+  color: var(--water-lit);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+}
+
+.lp-first-play strong {
+  color: var(--text);
+  font-size: 13px;
+}
+
+.lp-first-play p {
+  margin: 0;
+  color: var(--dim);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.lp-first-play button {
+  flex: none;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid rgba(111, 192, 255, 0.55);
+  border-radius: 8px;
+  color: #07131e;
+  background: var(--water-lit);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
 }
 
 .lp-sep {
@@ -5073,6 +5172,14 @@ body {
   font-size: 15px;
 }
 
+.rk-mine-detail {
+  display: block;
+  margin-top: 3px;
+  color: var(--faint);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
 /* ---------- 表彰台 ---------- */
 
 .rk-podium {
@@ -5623,6 +5730,13 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+.an-data-note {
+  margin: -4px 0 0;
+  color: var(--faint);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
 /* ---------- 成長グラフ ---------- */
 
 .an-charts {
@@ -5790,6 +5904,17 @@ body {
   color: var(--text);
 }
 
+.an-focus-link {
+  flex: none;
+  margin-left: auto;
+  align-self: center;
+  color: var(--water-lit);
+  font-size: 11px;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 /* ---------- 今回のプレイ ---------- */
 
 .an-grid {
@@ -5917,6 +6042,12 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+.an-cap-sub {
+  color: var(--faint);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+}
+
 .an-cap-finger {
   font-size: 9.5px;
   color: var(--faint);
@@ -6036,6 +6167,26 @@ body {
 
   .an-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .lp-first-play {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .lp-first-play button {
+    width: 100%;
+  }
+
+  .an-focus {
+    flex-wrap: wrap;
+  }
+
+  .an-focus-link {
+    width: 100%;
+    margin-left: 0;
   }
 }
 

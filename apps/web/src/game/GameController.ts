@@ -266,6 +266,9 @@ export class GameController {
       case "riseWarning":
         this.sound.riseWarning();
         break;
+      case "dangerChanged":
+        if (event.danger) this.sound.danger();
+        break;
       case "countdownTick":
         this.sound.countdownTick();
         break;

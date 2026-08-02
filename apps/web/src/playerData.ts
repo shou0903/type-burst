@@ -16,6 +16,7 @@ import {
 import type { LifetimeProgress } from "@type-burst/progression";
 
 const SNAPSHOT_THROTTLE_MS = 30_000;
+const LAST_SNAPSHOT_UPLOAD_KEY = "typeblast.snapshot-uploaded-at.v1";
 let lastSnapshotUploadAt = 0;
 
 export interface PlayerSnapshot {
@@ -82,7 +83,34 @@ export function queueSnapshotUpload(): void {
   const now = Date.now();
   if (now - lastSnapshotUploadAt < SNAPSHOT_THROTTLE_MS) return;
   lastSnapshotUploadAt = now;
-  void request("snapshot", { snapshot: buildPlayerSnapshot() }).catch(() => undefined);
+  void request("snapshot", { snapshot: buildPlayerSnapshot() })
+    .then(() => {
+      try {
+        localStorage.setItem(LAST_SNAPSHOT_UPLOAD_KEY, String(now));
+        window.dispatchEvent(new Event("typeburst:snapshot-uploaded"));
+      } catch {
+        // localStorage不可でも同期処理自体は成功している。
+      }
+    })
+    .catch(() => undefined);
+}
+
+export function loadLastSnapshotUploadAt(): number | null {
+  try {
+    const value = Number(localStorage.getItem(LAST_SNAPSHOT_UPLOAD_KEY));
+    return Number.isFinite(value) && value > 0 ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearLastSnapshotUploadAt(): void {
+  try {
+    localStorage.removeItem(LAST_SNAPSHOT_UPLOAD_KEY);
+    window.dispatchEvent(new Event("typeburst:snapshot-uploaded"));
+  } catch {
+    // localStorage不可でもクラウド削除の結果は変わらない。
+  }
 }
 
 export async function issueTransferCode(): Promise<string> {

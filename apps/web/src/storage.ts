@@ -45,6 +45,9 @@ export interface StoredResult {
   survivedMs: number;
   playedAt: string;
   difficulty: SurvivalDifficulty;
+  /** 記録を作ったルール。旧データはサバイバルとして移行する。 */
+  mode?: "survival" | "daily";
+  ruleset?: "survival-v1" | "daily-v2";
 }
 
 export type DuelRecord = Record<CpuDifficulty, { wins: number; losses: number }>;
@@ -94,8 +97,8 @@ export function loadResults(): StoredResult[] {
   try {
     const raw = localStorage.getItem(RESULTS_KEY);
     if (!raw) return [];
-    const parsed = JSON.parse(raw) as StoredResult[];
-    return Array.isArray(parsed) ? parsed : [];
+    const parsed = JSON.parse(raw) as unknown[];
+    return Array.isArray(parsed) ? parsed.flatMap(normalizeStoredResult) : [];
   } catch {
     return [];
   }
@@ -115,7 +118,10 @@ export function replaceResults(value: unknown): StoredResult[] {
 }
 
 /** サバイバル結果を直近 MAX_STORED_RESULTS 件だけ保持する(設計書 §27, D-054で10→60件に拡大) */
-export function appendResult(summary: SurvivalSummary): StoredResult[] {
+export function appendResult(
+  summary: SurvivalSummary,
+  mode: "survival" | "daily" = "survival",
+): StoredResult[] {
   const results = loadResults();
   results.unshift({
     score: summary.score,
@@ -126,6 +132,8 @@ export function appendResult(summary: SurvivalSummary): StoredResult[] {
     survivedMs: summary.survivedMs,
     playedAt: new Date().toISOString(),
     difficulty: summary.difficulty,
+    mode,
+    ruleset: mode === "daily" ? "daily-v2" : "survival-v1",
   });
   const trimmed = results.slice(0, MAX_STORED_RESULTS);
   try {
@@ -145,7 +153,7 @@ export function appendResult(summary: SurvivalSummary): StoredResult[] {
  */
 export function bestScore(results: StoredResult[], difficulty: SurvivalDifficulty): number {
   return results
-    .filter((r) => (r.difficulty ?? "normal") === difficulty)
+    .filter((r) => r.mode !== "daily" && (r.difficulty ?? "normal") === difficulty)
     .reduce((max, r) => Math.max(max, r.score), 0);
 }
 
@@ -280,7 +288,7 @@ function normalizeStoredResult(value: unknown): StoredResult[] {
     typeof result.playedAt === "string" &&
     (difficulty === undefined || difficulty === "easy" || difficulty === "normal" || difficulty === "hard" || difficulty === "god")
   )) return [];
-  return [{
+  const normalized: StoredResult = {
     score: result.score,
     maxChain: result.maxChain,
     kpm: result.kpm,
@@ -289,5 +297,15 @@ function normalizeStoredResult(value: unknown): StoredResult[] {
     survivedMs: result.survivedMs,
     playedAt: result.playedAt,
     difficulty: difficulty ?? "normal",
-  }];
+  };
+  // 旧形式の保存データは余計なキーを増やさず、そのままサバイバルとして扱う。
+  // 新形式のデイリー記録だけはモード情報を保持して分析を分離する。
+  if (result.mode === "daily" || result.ruleset === "daily-v2") {
+    normalized.mode = "daily";
+    normalized.ruleset = "daily-v2";
+  } else if (result.mode === "survival" || result.ruleset === "survival-v1") {
+    normalized.mode = "survival";
+    normalized.ruleset = "survival-v1";
+  }
+  return [normalized];
 }

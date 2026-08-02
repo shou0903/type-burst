@@ -64,6 +64,7 @@ export function AttractBoard({ reducedMotion, options }: Props): JSX.Element {
     let round = createRound(seedIndex);
     let rafId = 0;
     let last = performance.now();
+    let isVisible = true;
 
     // RAFの初回発火を待たずに初期盤面を1枚描いておく。これが無いと、RAFが
     // 動き出すまでの間(あるいはRAFが抑制される環境で)「自動プレイ中」と
@@ -71,6 +72,10 @@ export function AttractBoard({ reducedMotion, options }: Props): JSX.Element {
     renderer.draw(round.core.getSnapshot(), STATIC_META, 16);
 
     const step = (now: number): void => {
+      if (document.hidden || !isVisible) {
+        rafId = 0;
+        return;
+      }
       rafId = requestAnimationFrame(step);
       const dt = Math.min(100, Math.max(0, now - last));
       // 概ね30fpsへ間引く。ここで last を更新してしまうと dt が毎フレームの
@@ -93,24 +98,38 @@ export function AttractBoard({ reducedMotion, options }: Props): JSX.Element {
       renderer.draw(round.core.getSnapshot(), STATIC_META, dt);
     };
 
-    const handleVisibility = (): void => {
-      if (document.hidden) {
-        cancelAnimationFrame(rafId);
-        rafId = 0;
-      } else if (rafId === 0) {
-        last = performance.now();
-        rafId = requestAnimationFrame(step);
-      }
+    const stopLoop = (): void => {
+      if (rafId !== 0) cancelAnimationFrame(rafId);
+      rafId = 0;
     };
 
-    document.addEventListener("visibilitychange", handleVisibility);
-    if (!document.hidden) {
+    const startLoop = (): void => {
+      if (document.hidden || !isVisible || rafId !== 0) return;
+      last = performance.now();
       rafId = requestAnimationFrame(step);
-    }
+    };
+
+    const handleVisibility = (): void => {
+      if (document.hidden) stopLoop();
+      else startLoop();
+    };
+
+    const observer = typeof IntersectionObserver === "function"
+      ? new IntersectionObserver(([entry]) => {
+          isVisible = entry?.isIntersecting ?? true;
+          if (isVisible) startLoop();
+          else stopLoop();
+        }, { threshold: 0.01 })
+      : null;
+    observer?.observe(canvas);
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    startLoop();
 
     return () => {
       document.removeEventListener("visibilitychange", handleVisibility);
-      if (rafId !== 0) cancelAnimationFrame(rafId);
+      observer?.disconnect();
+      stopLoop();
     };
   }, [reducedMotion, options]);
 

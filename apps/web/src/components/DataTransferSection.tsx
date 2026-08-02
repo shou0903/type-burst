@@ -1,9 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { titleProgressForScore } from "@type-burst/progression";
 import {
   buildPlayerSnapshot,
+  clearLastSnapshotUploadAt,
   deleteCloudPlayerData,
   issueTransferCode,
+  loadLastSnapshotUploadAt,
   previewRestore,
   replaceLocalPlayerData,
   restoreFromCode,
@@ -18,7 +20,28 @@ export function DataTransferSection(): JSX.Element {
   const [pending, setPending] = useState<PendingRestore | null>(null);
   const [busy, setBusy] = useState<"issue" | "lookup" | "restore" | "delete" | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [lastSyncAt, setLastSyncAt] = useState<number | null>(() => loadLastSnapshotUploadAt());
+  const modalTitleRef = useRef<HTMLHeadingElement>(null);
   const current = useMemo(() => buildPlayerSnapshot(), []);
+
+  useEffect(() => {
+    const handleSync = (): void => setLastSyncAt(loadLastSnapshotUploadAt());
+    window.addEventListener("typeburst:snapshot-uploaded", handleSync);
+    return () => window.removeEventListener("typeburst:snapshot-uploaded", handleSync);
+  }, []);
+
+  useEffect(() => {
+    if (!pending) return;
+    const handleKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === "Escape" && busy !== "restore") {
+        event.preventDefault();
+        setPending(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    window.requestAnimationFrame(() => modalTitleRef.current?.focus());
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [pending, busy]);
 
   const issue = async (): Promise<void> => {
     setBusy("issue");
@@ -76,6 +99,7 @@ export function DataTransferSection(): JSX.Element {
     setMessage(null);
     try {
       await deleteCloudPlayerData();
+      clearLastSnapshotUploadAt();
       setCode(null);
       setMessage("クラウドに保存した記録と引き継ぎコードを削除しました。端末内の記録は残っています。");
     } catch {
@@ -96,6 +120,12 @@ export function DataTransferSection(): JSX.Element {
       </div>
       <p className="data-transfer-lede">
         匿名の引き継ぎコードで、称号・成長記録・デイリー連続記録・対戦戦績を別のPCへ移せます。
+      </p>
+      <p className="data-transfer-sync-note">
+        ゲーム終了時に自動保存されます。通信に失敗してもプレイは中断されません。
+        {lastSyncAt
+          ? ` 最終保存: ${new Date(lastSyncAt).toLocaleString("ja-JP")}`
+          : " まだサーバー保存履歴はありません。"}
       </p>
 
       <div className="data-transfer-grid">
@@ -148,7 +178,7 @@ export function DataTransferSection(): JSX.Element {
         <div className="transfer-modal-backdrop" role="presentation">
           <section className="transfer-modal" role="dialog" aria-modal="true" aria-labelledby="transfer-compare-title">
             <p className="data-transfer-kicker">RESTORE CHECK</p>
-            <h2 id="transfer-compare-title">この記録で上書きしますか？</h2>
+            <h2 id="transfer-compare-title" ref={modalTitleRef} tabIndex={-1}>この記録で上書きしますか？</h2>
             <p>
               自動マージは行いません。<strong>この端末の現在の記録は失われます。</strong>
             </p>

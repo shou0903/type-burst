@@ -117,12 +117,10 @@ async function handleGet(req: VercelRequest, res: VercelResponse): Promise<void>
     TOP_LIMIT_MAX,
     Number.isFinite(requested) && requested > 0 ? Math.floor(requested) : TOP_LIMIT_DEFAULT,
   );
+  const viewerId = sanitizePlayerId(req.query.playerId);
 
-  const ids = await redis.zrevrange(leaderboardKey(difficulty), 0, limit - 1);
-  if (ids.length === 0) {
-    res.status(200).json({ entries: [] });
-    return;
-  }
+  const key = leaderboardKey(difficulty);
+  const ids = await redis.zrevrange(key, 0, limit - 1);
 
   const pipeline = redis.pipeline();
   for (const member of ids) pipeline.hgetall(entryKeyForMember(difficulty, member));
@@ -146,8 +144,41 @@ async function handleGet(req: VercelRequest, res: VercelResponse): Promise<void>
     }
   }
 
-  res.setHeader("Cache-Control", "s-maxage=30, stale-while-revalidate=60");
-  res.status(200).json({ entries });
+  let viewer: {
+    rank: number;
+    total: number;
+    score: number;
+    scoreToNext: number | null;
+    percentile: number;
+  } | null = null;
+  if (viewerId) {
+    const [rankIndex, rawScore, total] = await Promise.all([
+      redis.zrevrank(key, playerMember(viewerId)),
+      redis.zscore(key, playerMember(viewerId)),
+      redis.zcard(key),
+    ]);
+    const score = Number(rawScore) || 0;
+    if (rankIndex !== null && score > 0) {
+      const next =
+        rankIndex > 0
+          ? await redis.zrevrange(key, rankIndex - 1, rankIndex - 1, "WITHSCORES")
+          : [];
+      const nextScore = next.length >= 2 ? Number(next[1]) : null;
+      viewer = {
+        rank: rankIndex + 1,
+        total,
+        score,
+        scoreToNext: nextScore === null ? null : Math.max(1, nextScore - score + 1),
+        percentile: total > 0 ? Math.max(0.1, Math.round(((rankIndex + 1) / total) * 1000) / 10) : 100,
+      };
+    }
+  }
+
+  res.setHeader(
+    "Cache-Control",
+    viewerId ? "private, no-store" : "s-maxage=30, stale-while-revalidate=60",
+  );
+  res.status(200).json({ entries, viewer });
 }
 
 async function handlePost(req: VercelRequest, res: VercelResponse): Promise<void> {

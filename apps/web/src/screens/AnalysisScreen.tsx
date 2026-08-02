@@ -94,6 +94,9 @@ export function AnalysisScreen({ analysis, recentHistory, progress, onBack }: Pr
   const focus = analysis ? buildNextFocus(analysis, weakestFinger) : null;
   const paceInsight = analysis ? buildPaceInsight(analysis) : null;
   const trendInsight = buildTrendInsight(recentHistory);
+  const historyScope = recentHistory.some((entry) => entry.mode === "daily")
+    ? "デイリーチャレンジ"
+    : "サバイバル";
   const titleProgress = titleProgressForScore(progress.totalScore);
   const played = progress.totalGames > 0;
 
@@ -168,10 +171,13 @@ export function AnalysisScreen({ analysis, recentHistory, progress, onBack }: Pr
           <h2>成長の推移</h2>
           {recentHistory.length >= 2 && (
             <span className="an-section-note">
-              直近{Math.min(recentHistory.length, MAX_GROWTH_POINTS)}戦・古い→新しい
+              {historyScope}・直近{Math.min(recentHistory.length, MAX_GROWTH_POINTS)}戦・古い→新しい
             </span>
           )}
         </div>
+        <p className="an-data-note">
+          {historyScope}の記録だけを集計しています。デイリーとサバイバルのルール差で、成長の見え方が混ざらないようにしています。
+        </p>
 
         {recentHistory.length >= 2 ? (
           <>
@@ -221,6 +227,11 @@ export function AnalysisScreen({ analysis, recentHistory, progress, onBack }: Pr
             <section className="an-focus">
               <span className="an-focus-badge">次に意識すること</span>
               <p>{focus}</p>
+              {analysis.weakKeys[0] && (
+                <a className="an-focus-link" href="/tools/weak-key-practice.html">
+                  苦手キーを練習する
+                </a>
+              )}
             </section>
           )}
 
@@ -290,6 +301,7 @@ export function AnalysisScreen({ analysis, recentHistory, progress, onBack }: Pr
                           {k.key === "-" ? "ー" : k.key.toUpperCase()}
                         </span>
                         <span className="an-cap-rate">{Math.round(k.missRate * 100)}%</span>
+                        <span className="an-cap-sub">{k.correct + k.incorrect}打鍵</span>
                         <span className="an-cap-finger">{FINGER_LABEL_OF_KEY[k.key] ?? ""}</span>
                       </div>
                     ))}
@@ -576,7 +588,12 @@ function KeyTile({
   const attempts = stat ? stat.correct + stat.incorrect : 0;
   if (attempts === 0) {
     return (
-      <div className="an-key an-key-none" title="未使用">
+      <div
+        className="an-key an-key-none"
+        title="未使用"
+        role="img"
+        aria-label={`${label ?? keyChar.toUpperCase()}、未使用`}
+      >
         {label ?? keyChar.toUpperCase()}
       </div>
     );
@@ -587,6 +604,8 @@ function KeyTile({
       className="an-key"
       style={{ background: heatColor(heat), color: "#10131f" }}
       title={`${attempts}回・ミス率${Math.round(stat!.missRate * 100)}%・平均${Math.round(stat!.avgIntervalMs)}ms`}
+      role="img"
+      aria-label={`${label ?? keyChar.toUpperCase()}、${attempts}回、ミス率${Math.round(stat!.missRate * 100)}%、平均${Math.round(stat!.avgIntervalMs)}ミリ秒`}
     >
       {label ?? keyChar.toUpperCase()}
     </div>

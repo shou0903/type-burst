@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { Analytics } from "@vercel/analytics/react";
 import { App } from "./App";
-import { AdSlots } from "./components/AdSlots";
 import { SmallScreenGuard } from "./components/SmallScreenGuard";
 import { captureContentAttribution } from "./seoAttribution";
 
@@ -19,7 +18,6 @@ export function AppRoot(): JSX.Element {
   return (
     <SmallScreenGuard>
       <>
-        <AdSlots />
         <App />
         {/* Cookie不使用・個人を特定しない集計のみのためGoogle CMPとは無関係に常時計測(D-037) */}
         <Analytics />

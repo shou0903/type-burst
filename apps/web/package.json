@@ -7,6 +7,7 @@
     "dev": "vite",
     "seo:sitemap": "node scripts/generate-sitemap.mjs",
     "seo:audit": "node scripts/audit-static-seo.mjs",
+    "adsense:audit": "node scripts/audit-adsense-readiness.mjs",
     "seo:production-audit": "node scripts/audit-production-seo.mjs",
     "seo:indexnow": "node scripts/submit-indexnow.mjs",
     "build": "npm run seo:sitemap && vite build && node scripts/inject-static-observability.mjs",

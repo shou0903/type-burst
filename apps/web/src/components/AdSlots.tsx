@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { AD_SLOT_LEFT, AD_SLOT_RIGHT, ADSENSE_CLIENT_ID, isAdsenseConfigured } from "../adsConfig";
 
-/** ゲーム盤面(最大幅約1050px)と両側の広告が重ならない最小ビューポート幅 */
-const MIN_WIDTH_FOR_ADS = 1450;
+/** 1120pxのホーム本文と左右160px広告の間に、それぞれ20px以上の余白を確保できる幅 */
+const MIN_WIDTH_FOR_ADS = 1520;
 
 function AdSlot({ side, slotId }: { side: "left" | "right"; slotId: string }): JSX.Element {
   useEffect(() => {
@@ -15,7 +15,7 @@ function AdSlot({ side, slotId }: { side: "left" | "right"; slotId: string }): J
   }, []);
 
   return (
-    <div className={`ad-slot ad-slot-${side}`}>
+    <aside className={`ad-slot ad-slot-${side}`} aria-label={`${side === "left" ? "左" : "右"}側の広告`}>
       {/* ナビゲーションと誤認されないよう、広告であることを明示するラベル(D-081) */}
       <span className="ad-slot-label" aria-hidden="true">
         広告
@@ -28,7 +28,7 @@ function AdSlot({ side, slotId }: { side: "left" | "right"; slotId: string }): J
         data-ad-format="auto"
         data-full-width-responsive="true"
       />
-    </div>
+    </aside>
   );
 }
 

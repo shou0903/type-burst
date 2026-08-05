@@ -2219,7 +2219,7 @@ body {
   font-size: 10px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgba(237, 244, 255, 0.38);
+  color: rgba(237, 244, 255, 0.7);
 }
 
 /* ---------- Analysis screen ---------- */
@@ -2878,6 +2878,23 @@ body {
   color: #ffd75e;
 }
 
+.mobile-landing-nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+}
+
+.mobile-landing-nav a {
+  padding: 6px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  color: #c3c9e2;
+  font-size: 11px;
+  text-decoration: none;
+}
+
 .mobile-landing-demo-wrap {
   width: 100%;
   display: flex;
@@ -3141,6 +3158,8 @@ body {
 
 .mobile-landing-footer {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 8px;
   font-size: 12px;
   color: #7d84a3;
@@ -3234,6 +3253,12 @@ body {
 .screen.landing.lp > * {
   position: relative;
   z-index: 1;
+}
+
+/* 上の直下要素ルールより明示的にし、広告を本文フローへ混入させない。 */
+.screen.landing.lp > .ad-slot {
+  position: fixed;
+  z-index: 5;
 }
 
 /* ---------- 上部レール ---------- */
@@ -3339,6 +3364,34 @@ body {
   color: var(--text);
   background: var(--panel-2);
   border-color: var(--line-hi);
+}
+
+.lp-primary-nav {
+  width: min(1120px, 100%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: -8px;
+  padding: 0 2px;
+  font-size: 11.5px;
+}
+
+.lp-primary-nav a {
+  padding: 6px 9px;
+  border-radius: 7px;
+  color: var(--dim);
+  text-decoration: none;
+}
+
+.lp-primary-nav a:hover,
+.lp-primary-nav a:focus-visible {
+  color: var(--text);
+  background: var(--panel-2);
+}
+
+.lp-primary-nav a[aria-current="page"] {
+  color: var(--fire-lit);
+  background: rgba(194, 64, 47, 0.1);
 }
 
 /* ---------- 設定 ---------- */
@@ -4147,6 +4200,177 @@ body {
   box-shadow: 0 0 0 var(--light-dk);
 }
 
+/* ---------- 上達コンテンツ ---------- */
+
+.lp-content {
+  width: min(1120px, 100%);
+  display: grid;
+  gap: 18px;
+  margin-top: 6px;
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background:
+    linear-gradient(135deg, rgba(111, 192, 255, 0.055), transparent 44%),
+    var(--panel);
+}
+
+.lp-content-lead {
+  display: grid;
+  gap: 8px;
+  max-width: 820px;
+}
+
+.lp-content-kicker {
+  margin: 0;
+  color: var(--water-lit);
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 9.5px;
+  font-weight: 900;
+  letter-spacing: 0.2em;
+}
+
+.lp-content h2,
+.lp-content h3 {
+  margin: 0;
+  color: var(--text);
+}
+
+.lp-content h2 {
+  font-size: clamp(22px, 2.4vw, 32px);
+  letter-spacing: 0.015em;
+}
+
+.lp-content h3 {
+  font-size: 15px;
+}
+
+.lp-content p {
+  margin: 0;
+  color: var(--dim);
+  font-size: 13.5px;
+  line-height: 1.9;
+}
+
+.lp-content-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.lp-content-grid article {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: rgba(5, 9, 21, 0.42);
+}
+
+.lp-content-grid article > span {
+  color: var(--fire-lit);
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+}
+
+.lp-content-grid article a,
+.lp-content-links a {
+  color: var(--water-lit);
+  font-size: 12px;
+  font-weight: 800;
+  text-underline-offset: 3px;
+}
+
+.lp-content-grid article a {
+  margin-top: auto;
+}
+
+.lp-practice-path {
+  display: grid;
+  grid-template-columns: minmax(190px, 0.8fr) minmax(0, 2fr);
+  gap: 18px;
+  align-items: center;
+  padding: 18px;
+  border: 1px solid rgba(255, 223, 112, 0.22);
+  border-radius: 11px;
+  background: rgba(194, 154, 31, 0.06);
+}
+
+.lp-practice-path > div {
+  display: grid;
+  gap: 6px;
+}
+
+.lp-practice-path ol {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lp-practice-path li {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border-left: 2px solid var(--light-lit);
+  background: rgba(5, 9, 21, 0.34);
+}
+
+.lp-practice-path strong {
+  color: var(--light-lit);
+  font-size: 12px;
+}
+
+.lp-practice-path span {
+  color: var(--dim);
+  font-size: 11.5px;
+  line-height: 1.55;
+}
+
+.lp-metric-guide {
+  display: grid;
+  gap: 11px;
+}
+
+.lp-metric-guide dl {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.lp-metric-guide dl > div {
+  padding: 12px;
+  border-top: 2px solid var(--water);
+  background: rgba(5, 9, 21, 0.28);
+}
+
+.lp-metric-guide dt {
+  margin-bottom: 4px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.lp-metric-guide dd {
+  margin: 0;
+  color: var(--dim);
+  font-size: 11px;
+  line-height: 1.65;
+}
+
+.lp-content-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+}
+
 /* ---------- 遊び方・注記・フッター ---------- */
 
 .lp-disclosure {
@@ -4220,12 +4444,26 @@ body {
   .lp-decks {
     grid-template-columns: 1fr 1fr;
   }
+
+  .lp-content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .lp-practice-path {
+    grid-template-columns: 1fr;
+  }
+
+  .lp-metric-guide dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 /* ---------- アクセシビリティ ---------- */
 
 :root.high-contrast .lp-deck,
 :root.high-contrast .lp-howto,
+:root.high-contrast .lp-content,
+:root.high-contrast .lp-content-grid article,
 :root.high-contrast .lp-settings,
 :root.high-contrast .lp-tier {
   background: rgba(255, 255, 255, 0.12);

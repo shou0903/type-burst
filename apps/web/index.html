@@ -22,9 +22,14 @@
     <link rel="manifest" href="/manifest.webmanifest" />
     <style>
       html, body { margin: 0; min-height: 100%; background: #090c17; color: #edf4ff; }
-      .seo-prerender { width: min(760px, calc(100% - 40px)); margin: 0 auto; padding: 72px 0; font-family: sans-serif; line-height: 1.8; }
+      .seo-prerender { width: min(980px, calc(100% - 40px)); margin: 0 auto; padding: 56px 0 80px; font-family: sans-serif; line-height: 1.8; }
       .seo-prerender h1 { letter-spacing: 0.05em; }
+      .seo-prerender h2 { margin-top: 36px; }
+      .seo-prerender nav { display: flex; flex-wrap: wrap; gap: 8px 18px; padding: 12px 0 20px; border-bottom: 1px solid #27304a; }
+      .seo-prerender-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+      .seo-prerender-grid section { padding: 16px; border: 1px solid #27304a; border-radius: 10px; }
       .seo-prerender a { color: #78d9ff; }
+      @media (max-width: 720px) { .seo-prerender-grid { grid-template-columns: 1fr; } }
     </style>
 
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
@@ -83,7 +88,14 @@
               "width": 512,
               "height": 512
             },
-            "email": "typeblast.official@outlook.jp"
+            "email": "typeblast.official@outlook.jp",
+            "contactPoint": {
+              "@type": "ContactPoint",
+              "contactType": "customer support",
+              "email": "typeblast.official@outlook.jp",
+              "url": "https://type-burst.com/contact.html",
+              "availableLanguage": "Japanese"
+            }
           },
           {
             "@type": ["VideoGame", "WebApplication"],
@@ -123,15 +135,68 @@
   <body>
     <div id="root">
       <main class="seo-prerender">
+        <nav aria-label="サイト内メニュー">
+          <a href="/">ゲーム</a>
+          <a href="/about.html">遊び方・特徴</a>
+          <a href="/guides">タイピング練習ガイド</a>
+          <a href="/tools">無料測定ツール</a>
+          <a href="/contact.html">お問い合わせ</a>
+        </nav>
         <h1>TYPE BURST（タイプバースト）</h1>
         <p>
           TYPE BURST（タイプバースト／たいぷばーすと）は、日本語をローマ字で入力してブロックを爆破する、無料のタイピング×連鎖パズルゲームです。
         </p>
         <p>ブロックを消す順番まで考える「つなげるパズルタイピング」だから、タイピングパズルやパズルタイピングを探している人にも、速さと連鎖の両方を楽しめます。</p>
         <p>登録やインストールは不要。PCブラウザとキーボードがあれば、初級・中級・上級・神級のサバイバルやCPU対戦をすぐに遊べます。</p>
-        <p><a href="/about.html">TYPE BURSTの遊び方とゲーム紹介</a></p>
-        <p><a href="/guides">タイピング練習ガイド</a> ／ <a href="/tools">無料タイピング測定ツール</a> ／ <a href="/tools/typing-speed-test.html">タイピング速度を測る</a></p>
-        <p><a href="/guides/typing-mistakes.html">ミスタイプ対策</a> ／ <a href="/tools/typing-accuracy-check.html">正確率・ミスタイプ率を計算</a></p>
+        <p>
+          サバイバル、CPU対戦、2分間のデイリーチャレンジを用意し、プレイ後にはKPM、正確率、最大連鎖、
+          苦手キーを確認できます。数字を見て次の練習を選べるため、ただスコアを競うだけで終わりません。
+        </p>
+
+        <h2>遊んだ結果を、次の上達につなげる</h2>
+        <p>
+          TYPE BURSTでは、打ち終えたブロックが爆発し、同じ色がつながるとまとめて消えます。
+          そのため入力速度だけでなく、どの場所を消せば連鎖が起きるかという判断も必要です。
+          初心者は正確率を優先し、慣れたら速度と連鎖を同時に狙うことで、自分の段階に合わせて遊べます。
+        </p>
+        <div class="seo-prerender-grid">
+          <section>
+            <h2>初めての練習</h2>
+            <p>初級で正確率95％以上を目標にし、打ち間違いによる手戻りを減らします。キー位置から始める場合は、順番を飛ばさず短時間ずつ進めます。</p>
+            <a href="/guides/typing-beginner.html">初心者向け7ステップ</a>
+          </section>
+          <section>
+            <h2>ミスの原因を確認</h2>
+            <p>KPMだけでなく、正確率と苦手キーを一緒に見ます。特定の文字で止まる場合と、長い文章の後半で崩れる場合では練習方法が違います。</p>
+            <a href="/guides/typing-mistakes.html">ミスタイプ対策</a>
+          </section>
+          <section>
+            <h2>同じ条件で測定</h2>
+            <p>文章の難しさや測定時間が違えば速度も変わります。同じツールで複数回測り、最高値だけでなく正確率と中央値を比べます。</p>
+            <a href="/tools/typing-speed-test.html">60秒で速度を測る</a>
+          </section>
+        </div>
+
+        <h2>迷った日の10分メニュー</h2>
+        <ol>
+          <li>2分：速度測定でKPMと正確率を確認する</li>
+          <li>3分：苦手キーまたはローマ字を限定して練習する</li>
+          <li>5分：TYPE BURSTをプレイし、正確率を保ったまま連鎖を狙う</li>
+        </ol>
+        <h2>結果画面で見る4つの指標</h2>
+        <dl>
+          <dt>KPM</dt><dd>1分あたりの打鍵数です。測定時間と問題の難しさをそろえて比較します。</dd>
+          <dt>正確率</dt><dd>速さの土台です。低下した日は速度を少し落とし、どの文字でミスしたかを確認します。</dd>
+          <dt>最大連鎖</dt><dd>盤面を見て消す順番を選べたかの目安であり、入力速度とは別のゲーム攻略指標です。</dd>
+          <dt>苦手キー</dt><dd>止まりやすい文字を特定し、すべてを打ち直すのではなく対象だけを短く反復するために使います。</dd>
+        </dl>
+        <p>
+          <a href="/about.html">TYPE BURSTの詳しい遊び方</a> ／
+          <a href="/guides">タイピング練習ガイド</a> ／
+          <a href="/tools">無料タイピング測定ツール</a> ／
+          <a href="/guides/editorial-policy.html">記事の制作・更新方針</a> ／
+          <a href="/privacy.html">プライバシーポリシー</a>
+        </p>
       </main>
     </div>
     <script type="module" src="/src/main.tsx"></script>

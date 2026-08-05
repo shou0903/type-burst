@@ -6,6 +6,7 @@ import { bestScore, loadDuelRecord, type FontScale, type Settings, type StoredRe
 import type { DailyProgress } from "../daily";
 import { DailyChallengeCard } from "../components/DailyChallengeCard";
 import { DataTransferSection } from "../components/DataTransferSection";
+import { AdSlots } from "../components/AdSlots";
 import { AttractBoard } from "../components/AttractBoard";
 import { RomajiTicker } from "../components/RomajiTicker";
 import { GrowthDeck, RankingDeck, TutorialDeck } from "../components/HomeDecks";
@@ -123,6 +124,7 @@ export function LandingScreen({
 
   return (
     <div className="screen landing lp">
+      <AdSlots />
       {/* ── 上部レール ──────────────────────────────────────── */}
       <header className="lp-rail">
         <div className="lp-mark">
@@ -154,6 +156,13 @@ export function LandingScreen({
           ⚙
         </button>
       </header>
+
+      <nav className="lp-primary-nav" aria-label="サイト内メニュー">
+        <a href="/" aria-current="page">ゲーム</a>
+        <a href="/about.html">遊び方・特徴</a>
+        <a href="/guides">タイピング練習ガイド</a>
+        <a href="/tools">無料測定ツール</a>
+      </nav>
 
       {settingsOpen && (
         <section className="lp-settings" aria-label="設定">
@@ -335,6 +344,77 @@ export function LandingScreen({
 
       <DailyChallengeCard progress={dailyProgress} onStart={onStart} />
 
+      <section className="lp-content" aria-labelledby="lp-content-title">
+        <div className="lp-content-lead">
+          <p className="lp-content-kicker">PLAY, MEASURE, IMPROVE</p>
+          <h2 id="lp-content-title">遊んだ結果を、次の上達につなげる。</h2>
+          <p>
+            TYPE BURSTは、表示された日本語をローマ字で打つ速さだけを競うゲームではありません。
+            どのブロックを先に消せば同じ色がつながるかを考え、タイピングと連鎖パズルを同時に楽しめます。
+            プレイ後はKPM、正確率、最大連鎖、苦手キーを確認できるため、感覚だけで終わらず次の練習を決められます。
+          </p>
+        </div>
+
+        <div className="lp-content-grid">
+          <article>
+            <span>01</span>
+            <h3>初めてなら正確率を優先</h3>
+            <p>
+              まずは初級で、速さより打ち間違いを減らします。正確率95％以上を安定させてから中級へ進むと、
+              Backspaceによる手戻りが減り、結果として速度も上がりやすくなります。
+            </p>
+            <a href="/guides/typing-beginner.html">初心者向け7ステップを見る</a>
+          </article>
+          <article>
+            <span>02</span>
+            <h3>速度が伸びないなら原因を分ける</h3>
+            <p>
+              KPMだけで判断せず、正確率と苦手キーを一緒に見ます。特定の文字で止まるならキーを限定して練習し、
+              長い文章で落ちるなら短文から長文へ段階的に伸ばします。
+            </p>
+            <a href="/guides/typing-mistakes.html">ミスの原因を切り分ける</a>
+          </article>
+          <article>
+            <span>03</span>
+            <h3>測定条件をそろえて比べる</h3>
+            <p>
+              文章の長さや測定時間が違えば速度の数字も変わります。同じツール・同じ時間で複数回測り、
+              最高値だけでなく正確率と中央値を見ると、本当の変化を判断しやすくなります。
+            </p>
+            <a href="/tools/typing-speed-test.html">60秒で速度を測定する</a>
+          </article>
+        </div>
+
+        <div className="lp-practice-path" aria-labelledby="lp-practice-path-title">
+          <div>
+            <p className="lp-content-kicker">10 MINUTE ROUTINE</p>
+            <h3 id="lp-practice-path-title">迷った日の10分メニュー</h3>
+          </div>
+          <ol>
+            <li><strong>2分</strong><span>速度測定でKPMと正確率を確認</span></li>
+            <li><strong>3分</strong><span>苦手キーまたはローマ字を限定して練習</span></li>
+            <li><strong>5分</strong><span>正確率を保ったまま連鎖を狙う</span></li>
+          </ol>
+        </div>
+
+        <div className="lp-metric-guide" aria-labelledby="lp-metric-guide-title">
+          <h3 id="lp-metric-guide-title">結果画面で見る4つの指標</h3>
+          <dl>
+            <div><dt>KPM</dt><dd>1分あたりの打鍵数。測定時間と問題の難しさをそろえて比較します。</dd></div>
+            <div><dt>正確率</dt><dd>速さの土台。低下した日は、速度を少し落としてミスの場所を確認します。</dd></div>
+            <div><dt>最大連鎖</dt><dd>盤面を見て消す順番を選べたかの目安。速度とは別のゲーム攻略指標です。</dd></div>
+            <div><dt>苦手キー</dt><dd>止まりやすい文字を特定し、全部を打ち直さず対象だけ短く反復します。</dd></div>
+          </dl>
+        </div>
+
+        <div className="lp-content-links" aria-label="目的別の案内">
+          <a href="/guides/how-to-type-faster.html">タイピングを速くする方法</a>
+          <a href="/guides/typing-result-analysis.html">結果画面の数字の見方</a>
+          <a href="/romaji">ローマ字入力を調べて試す</a>
+          <a href="/about.html">ゲームのルールと全モード</a>
+        </div>
+      </section>
+
       {/* ── 遊び方 ──────────────────────────────────────────── */}
       <button
         className="lp-disclosure"
@@ -360,6 +440,8 @@ export function LandingScreen({
         <a href="/about.html">TYPE BURST（タイプバースト）とは</a>
         <a href="/guides">タイピング練習ガイド</a>
         <a href="/tools">無料タイピング測定</a>
+        <a href="/guides/editorial-policy.html">記事制作方針</a>
+        <a href="/contact.html">お問い合わせ</a>
         <a href="/press.html">報道関係者向け</a>
         <a href="/terms.html" target="_blank" rel="noreferrer">
           利用規約

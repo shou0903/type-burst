@@ -101,6 +101,12 @@ export function MobileLanding(): JSX.Element {
         </p>
       </div>
 
+      <nav className="mobile-landing-nav" aria-label="サイト内メニュー">
+        <a href="/about.html">ゲーム紹介</a>
+        <a href="/guides">練習ガイド</a>
+        <a href="/tools">無料ツール</a>
+      </nav>
+
       <div className="mobile-landing-demo-wrap">
         <AttractBoard reducedMotion={reducedMotion} />
         <p className="mobile-landing-demo-caption">
@@ -164,6 +170,10 @@ export function MobileLanding(): JSX.Element {
         <a href="/guides">練習ガイド</a>
         <span aria-hidden="true">・</span>
         <a href="/tools">無料タイピング測定</a>
+        <span aria-hidden="true">・</span>
+        <a href="/guides/editorial-policy.html">記事制作方針</a>
+        <span aria-hidden="true">・</span>
+        <a href="/contact.html">お問い合わせ</a>
         <span aria-hidden="true">・</span>
         <a href="/press.html">報道関係者向け</a>
         <span aria-hidden="true">・</span>

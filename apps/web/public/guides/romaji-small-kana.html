@@ -31,7 +31,7 @@
             "description": "促音・拗音・小さい母音のローマ字入力方法を、実例とともに整理した記事。",
             "inLanguage": "ja",
             "datePublished": "2026-07-28",
-            "dateModified": "2026-08-05",
+            "dateModified": "2026-08-07",
             "mainEntityOfPage": "https://type-burst.com/guides/romaji-small-kana.html",
             "author": { "@type": "Organization", "name": "TYPE BURST運営チーム", "url": "https://type-burst.com/guides/editorial-policy.html" },
             "publisher": { "@type": "Organization", "name": "TYPE BURST運営チーム" },
@@ -165,9 +165,29 @@
             <li><code>x</code> — 左手の下段。ホームポジションから離れる</li>
             <li><code>l</code> — 右手のホームポジション上。指を動かさずに押せる</li>
           </ul>
-          <p>位置だけで言えば <code>l</code> が有利ですが、<code>x</code> の方が広く知られています。<strong>どちらでもよいので、片方に統一してください。</strong>その都度考えることが、いちばん速度を落とします。</p>
+           <p>位置だけで言えば <code>l</code> が有利ですが、<code>x</code> の方が広く知られています。<strong>どちらでもよいので、片方に統一してください。</strong>その都度考えることが、いちばん速度を落とします。</p>
 
-          <h2 id="faq">よくある質問</h2>
+           <h2 id="route-guide">迷ったときの入力ルートを決める</h2>
+           <p>小さい文字は、音をまとめて打てる場合と、単独の小文字として打つ場合を分けると混乱しません。まず「前の音と一緒か」「次に子音があるか」を確認し、次の表から一つのルートを選びます。</p>
+           <div class="table-wrap"><table><thead><tr><th>読み</th><th>基本ルート</th><th>単独で出すルート</th><th>注意点</th></tr></thead><tbody>
+             <tr><td>きゃ・しゅ・ちょ</td><td><code>kya</code> / <code>shu</code> / <code>cho</code></td><td><code>ki xya</code> など</td><td>前の音とまとめる方が短い</td></tr>
+             <tr><td>がっこう・きって</td><td><code>gakkou</code> / <code>kitte</code></td><td><code>gaxtukou</code> / <code>galtukou</code></td><td>次の子音の重複か、xtu/ltu系を使う</td></tr>
+             <tr><td>あっ・っぽい</td><td>—</td><td><code>axtu</code> / <code>xtupoi</code></td><td>次が母音なら子音を重ねない</td></tr>
+             <tr><td>ふぁ・てぃ</td><td><code>fa</code> / <code>thi</code></td><td>環境によって分解入力</td><td>早見表と判定表示を優先する</td></tr>
+           </tbody></table></div>
+           <h2 id="mini-drill">小文字だけを直す3分ドリル</h2>
+           <ol class="practice-plan">
+             <li><strong>1分：</strong>「っ」を含む5語を、次の子音の重複で入力する。</li>
+             <li><strong>1分：</strong>「ゃ・ゅ・ょ」を含む5語を、まとめた綴りで入力する。</li>
+             <li><strong>1分：</strong>同じ語をもう一度打ち、x/lを途中で変えない。</li>
+           </ol>
+           <p>同じ語を繰り返しても入力できない場合は、キーボードの問題ではなく、ゲームやIMEが受け付ける表記の違いかもしれません。<a href="/tools/romaji-table.html">早見表</a>で分解形を確認し、別の正しい綴りを試してください。</p>
+
+           <h2 id="compatibility">教材とゲームで表記が違うとき</h2>
+           <p>「正しいはずなのに判定されない」ときは、ローマ字の知識ではなく受け付ける候補の違いを疑います。まず表示されている読みをひらがな単位へ分け、基本形を1つずつ入力します。ゲームでは代替表記を受け付けても、別の教材やIMEでは受け付けないことがあるため、1つのサービスの結果だけで入力方式全体を否定しないでください。</p>
+           <ul class="check-grid"><li><strong>1：</strong>小さい文字が前の音と結合しているか確認</li><li><strong>2：</strong>基本形（kya、gakkouなど）を先に試す</li><li><strong>3：</strong>通らなければ早見表の分解形へ切り替える</li><li><strong>4：</strong>通った綴りを自分の標準としてメモする</li></ul>
+
+           <h2 id="faq">よくある質問</h2>
           <h3>小さい「つ」はどうやって打ちますか？</h3>
           <p>後ろに文字が続く場合は、次の文字の子音を重ねます。「がっこう」なら <code>gakkou</code>、「まって」なら <code>matte</code> です。小さい「つ」だけを単独で出したいときは <code>xtu</code> または <code>ltu</code> と入力します。</p>
           <h3>小さい「ゃ」「ゅ」「ょ」はどうやって打ちますか？</h3>
@@ -190,7 +210,7 @@
             <a href="/guides/typing-mistakes.html"><small>TROUBLE GUIDE</small>ミスタイプの原因と直し方</a>
           </nav>
         </article>
-        <aside class="article-toc"><p>CONTENTS</p><ol><li><a href="#sokuon">小さい「っ」</a></li><li><a href="#youon">小さい「ゃゅょ」</a></li><li><a href="#small-vowel">小さい「ぁぃぅぇぉ」</a></li><li><a href="#x-or-l">xとlの選び方</a></li><li><a href="#faq">よくある質問</a></li></ol></aside>
+        <aside class="article-toc"><p>CONTENTS</p><ol><li><a href="#sokuon">小さい「っ」</a></li><li><a href="#youon">小さい「ゃゅょ」</a></li><li><a href="#small-vowel">小さい「ぁぃぅぇぉ」</a></li><li><a href="#x-or-l">xとlの選び方</a></li><li><a href="#route-guide">入力ルートの決め方</a></li><li><a href="#mini-drill">3分ドリル</a></li><li><a href="#compatibility">表記が違うとき</a></li><li><a href="#faq">よくある質問</a></li></ol></aside>
       </div>
     </main>
     <footer class="site-footer"><div class="site-footer-inner"><span>© TYPE BURST運営チーム</span><div class="footer-links"><a href="/">ゲーム</a><a href="/guides">練習ガイド</a><a href="/tools">無料ツール</a><a href="/privacy.html">プライバシー</a></div></div></footer>

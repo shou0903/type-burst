@@ -31,7 +31,7 @@
             "description": "「ん」を単独nで打てる条件と、nnが必要になる条件を整理し、実例で確認できる記事。",
             "inLanguage": "ja",
             "datePublished": "2026-07-28",
-            "dateModified": "2026-07-28",
+            "dateModified": "2026-08-07",
             "mainEntityOfPage": "https://type-burst.com/guides/romaji-n-input.html",
             "author": { "@type": "Organization", "name": "TYPE BURST運営チーム", "url": "https://type-burst.com/guides/editorial-policy.html" },
             "publisher": { "@type": "Organization", "name": "TYPE BURST運営チーム" },
@@ -156,9 +156,27 @@
           <p>条件を一切考えなくて済みます。打鍵数はわずかに増えますが、変換ミスによる打ち直しがなくなるため、<strong>結果的にこちらの方が速い人も多い</strong>です。特に、まだ入力に慣れていない段階ではこちらを勧めます。</p>
           <h3>速度を優先する：条件で使い分ける</h3>
           <p>「次が子音なら n 一つ」だけ覚えます。日本語では「ん」の次に子音が来る語が多数派なので、実際の打鍵数はかなり減ります。ただし、判断が一瞬でも遅れるとむしろ手が止まるため、<strong>無意識に切り替えられるまで練習してから採用</strong>してください。</p>
-          <div class="note">どちらの方法でも、入力される文字はまったく同じです。「正しい打ち方」が1つに決まっているわけではないので、自分が止まらない方を選んでください。</div>
+           <div class="note">どちらの方法でも、入力される文字はまったく同じです。「正しい打ち方」が1つに決まっているわけではないので、自分が止まらない方を選んでください。</div>
 
-          <h2 id="faq">よくある質問</h2>
+           <h2 id="decision-tree">nを打つ前の判断を1秒にする</h2>
+           <p>「ん」で毎回止まる人は、文字を暗記するより、nの次に何が来るかだけを確認します。母音やyが続く場合は、nを重ねて「ん」を確定させます。次が子音、句読点、文の終わりなら、単独のnが使える場合があります。ただし入力システムやゲームの判定に差があるため、安定しないときはnnへ戻します。</p>
+           <div class="table-wrap"><table><thead><tr><th>次に来るもの</th><th>安全な入力</th><th>例</th></tr></thead><tbody>
+             <tr><td>母音（a・i・u・e・o）</td><td>nn</td><td>かんい → <code>kanni</code></td></tr>
+             <tr><td>yで始まる音</td><td>nn</td><td>しんよう → <code>shinnyou</code></td></tr>
+             <tr><td>な行</td><td>nn</td><td>あんない → <code>annnai</code></td></tr>
+             <tr><td>語末・句読点</td><td>nn</td><td>にほん → <code>nihonn</code></td></tr>
+             <tr><td>子音で始まる次の音</td><td>nも可</td><td>かんぱい → <code>kanpai</code> / <code>kannpai</code></td></tr>
+           </tbody></table></div>
+           <h2 id="practice-sheet">「ん」だけを含む語で再測定する</h2>
+           <p>理解したつもりでも、文章全体へ戻ると判断が遅くなります。次の語を5語ずつ入力し、1回目はすべてnn、2回目は条件に応じてnを使います。正確率が同じなら短い方を採用し、迷いが増えるならnnへ戻してください。</p>
+           <div class="worksheet" aria-label="んの入力練習メモ">
+             <h3>記録する3項目</h3>
+             <div class="worksheet-row"><span class="worksheet-label">止まった語</span><span>例：原因、案内、日本</span></div>
+             <div class="worksheet-row"><span class="worksheet-label">選んだ形</span><span>n / nn / n' / xn</span></div>
+             <div class="worksheet-row"><span class="worksheet-label">次の方針</span><span>確実さを優先するか、条件付きで短くするか</span></div>
+           </div>
+
+           <h2 id="faq">よくある質問</h2>
           <h3>「ん」は n と nn のどちらで打つべきですか？</h3>
           <p>迷ったときは常に <code>nn</code> と打てば必ず正しく変換されます。単独の <code>n</code> で済むのは、次に来る文字が子音で始まるときだけです。速度を優先するなら条件を覚えて使い分け、確実さを優先するなら <code>nn</code> に統一してください。どちらでも入力結果は同じです。</p>
           <h3>なぜ「かんい」を kani と打つと「かに」になるのですか？</h3>
@@ -181,7 +199,7 @@
             <a href="/guides/typing-mistakes.html"><small>TROUBLE GUIDE</small>ミスタイプの原因と直し方</a>
           </nav>
         </article>
-        <aside class="article-toc"><p>CONTENTS</p><ol><li><a href="#rule">単独nが使える条件</a></li><li><a href="#why">kaniが「かに」になる理由</a></li><li><a href="#triple-n">nが3つ並ぶ語</a></li><li><a href="#end">語末の「ん」</a></li><li><a href="#alternatives">n'とxn</a></li><li><a href="#mistakes">よくある間違い</a></li><li><a href="#practice">どちらを覚えるか</a></li><li><a href="#faq">よくある質問</a></li></ol></aside>
+        <aside class="article-toc"><p>CONTENTS</p><ol><li><a href="#rule">単独nが使える条件</a></li><li><a href="#why">kaniが「かに」になる理由</a></li><li><a href="#triple-n">nが3つ並ぶ語</a></li><li><a href="#end">語末の「ん」</a></li><li><a href="#alternatives">n'とxn</a></li><li><a href="#mistakes">よくある間違い</a></li><li><a href="#practice">どちらを覚えるか</a></li><li><a href="#decision-tree">判断を1秒にする</a></li><li><a href="#practice-sheet">再測定シート</a></li><li><a href="#faq">よくある質問</a></li></ol></aside>
       </div>
     </main>
     <footer class="site-footer"><div class="site-footer-inner"><span>© TYPE BURST運営チーム</span><div class="footer-links"><a href="/">ゲーム</a><a href="/guides">練習ガイド</a><a href="/tools">無料ツール</a><a href="/privacy.html">プライバシー</a></div></div></footer>

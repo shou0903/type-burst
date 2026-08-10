@@ -568,6 +568,21 @@ h1 {
   text-underline-offset: 3px;
 }
 
+.content-panel details {
+  border-bottom: 1px solid var(--line);
+  padding: 16px 2px;
+}
+
+.content-panel summary {
+  cursor: pointer;
+  color: #172136;
+  font-weight: 900;
+}
+
+.content-panel details p {
+  margin: 10px 0 0;
+}
+
 .table-wrap {
   margin: 24px 0;
   overflow-x: auto;

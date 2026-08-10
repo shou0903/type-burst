@@ -6,8 +6,8 @@
     <meta name="theme-color" content="#f5f3ee" />
     <meta name="google-adsense-account" content="ca-pub-5471900652537950" />
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5471900652537950" crossorigin="anonymous"></script>
-    <title>TYPE BURST｜ローマ字入力を調べて練習</title>
-    <meta name="description" content="ローマ字入力の打ち方を、かなで調べてその場で練習。ん・っ・小さい文字・ティなどの候補をTYPE BURSTと同じ判定で確認できます。無料・登録不要。" />
+    <title>TYPE BURST｜ローマ字入力ラボ・打ち方を調べて練習</title>
+    <meta name="description" content="ローマ字入力の打ち方を、かなから調べてその場で練習。「ん」のn・nn、小さい「っ・ゃゅょ」、「ティ」などを複数の正しい入力候補で確認できます。無料・登録不要。" />
     <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
     <link rel="canonical" href="https://type-burst.com/romaji" />
     <link rel="stylesheet" href="/tools/tools.css" />
@@ -16,7 +16,7 @@
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="ja_JP" />
     <meta property="og:site_name" content="TYPE BURST" />
-    <meta property="og:title" content="TYPE BURST｜ローマ字入力を調べて練習" />
+    <meta property="og:title" content="TYPE BURST｜ローマ字入力ラボ・打ち方を調べて練習" />
     <meta property="og:description" content="迷いやすいローマ字入力を調べて、TYPE BURSTと同じ判定でその場で試せる無料ラボ。" />
     <meta property="og:url" content="https://type-burst.com/romaji" />
     <meta property="og:image" content="https://type-burst.com/og-image-v3.png" />
@@ -35,7 +35,7 @@
             "applicationCategory": "EducationalApplication",
             "operatingSystem": "Web",
             "browserRequirements": "JavaScriptとキーボードに対応したブラウザ",
-            "dateModified": "2026-08-01",
+            "dateModified": "2026-08-11",
             "inLanguage": "ja",
             "isAccessibleForFree": true,
             "offers": { "@type": "Offer", "price": "0", "priceCurrency": "JPY" },
@@ -71,6 +71,11 @@
                 "@type": "Question",
                 "name": "無料で使えますか？",
                 "acceptedAnswer": { "@type": "Answer", "text": "無料・登録不要で使えます。入力した文字列はサーバーへ保存・送信しません。" }
+              },
+              {
+                "@type": "Question",
+                "name": "公式のローマ字表記とキーボードのローマ字入力は同じですか？",
+                "acceptedAnswer": { "@type": "Answer", "text": "別のものです。国の「ローマ字のつづり方」は日本語をアルファベットで表記する基準で、キーボードのローマ字入力方法を変更するものではありません。このラボはパソコンで日本語を入力するための打ち方を扱います。" }
               }
             ]
           }
@@ -187,11 +192,15 @@
           <h3>「ティ」「ディ」「トゥ」などの外来語</h3>
           <p>外来語には <code>thi</code>、<code>dhi</code>、<code>twu</code> など、通常の五十音表だけでは見つけにくい表記があります。カタカナをそのまま入力して候補を調べられます。</p>
           <p>一覧で全体を確認したい場合は<a href="/tools/romaji-table.html">ローマ字入力早見表</a>、「ん」や小さい文字の理由まで知りたい場合は<a href="/guides/romaji-n-input.html">「ん」の入力ガイド</a>と<a href="/guides/romaji-small-kana.html">小さい文字の入力ガイド</a>も利用できます。</p>
+          <h2>ローマ字表記とキーボード入力は別のもの</h2>
+          <p>国が定める「ローマ字のつづり方」は、日本語をアルファベットで書き表すための基準です。一方、このラボが扱うのは、パソコンで日本語を入力するためにキーをどう押すかという入力方法です。文化庁も、キーボード入力はローマ字を便宜的に利用する別の仕組みであり、国のつづり方の変更によって入力方法が変わるものではないと説明しています。</p>
+          <p class="note">このページでは表札や固有名詞のローマ字表記ではなく、日本語タイピングのキー入力を案内します。制度上の表記基準は、文化庁の<a href="https://www.bunka.go.jp/seisaku/bunkashingikai/sokai/sokai_25/98/index.html" target="_blank" rel="noopener noreferrer">「ローマ字のつづり方に関する答申」</a>を確認してください。</p>
           <h2>ローマ字入力ラボ FAQ</h2>
           <details><summary>漢字や文章をそのまま入力できますか？</summary><p>初期版はひらがな・カタカナ・長音記号を対象にしています。漢字を含む文章は、読み方をかなにして入力してください。</p></details>
           <details><summary>表示された候補はTYPE BURST本編でも使えますか？</summary><p>はい。ラボの試打とTYPE BURST本編は同じtyping-engineで判定します。表示された候補はゲームでも受理されます。</p></details>
           <details><summary>「ん」や「っ」に入力方法が複数あるのはなぜですか？</summary><p>後ろに続く音との区切りを保つため、日本語入力では複数の表記が使われます。ラボでは前後のかなに応じて受理される主な候補を確認できます。</p></details>
           <details><summary>無料で使えますか？</summary><p>無料・登録不要で使えます。入力した文字列はサーバーへ保存・送信しません。</p></details>
+          <details><summary>公式のローマ字表記とキーボードのローマ字入力は同じですか？</summary><p>別のものです。国の「ローマ字のつづり方」は日本語をアルファベットで表記する基準で、キーボードのローマ字入力方法を変更するものではありません。このラボはパソコンで日本語を入力するための打ち方を扱います。</p></details>
           <div class="cta"><h2>調べた入力をゲームで定着させる</h2><p>TYPE BURSTは、ローマ字を打ってブロックを消す無料タイピングゲームです。登録不要で、PCブラウザからすぐ遊べます。</p><a href="/?mode=survival&amp;difficulty=easy&amp;source=romaji-lab#play">TYPE BURSTを無料でプレイ</a></div>
         </article>
       </div>

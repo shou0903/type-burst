@@ -26,11 +26,11 @@ function setupConverter() {
       result.hidden = true;
       return;
     }
-    const fromKpm = source.value === "kpm";
-    const kpm = fromKpm ? input : input * 5;
-    const wpm = fromKpm ? input / 5 : input;
-    headline.textContent = fromKpm ? `${format(wpm, 1)} WPM` : `${format(kpm, 0)} KPM`;
-    detail.textContent = `${format(kpm, 0)} KPM ≒ ${format(wpm, 1)} WPM（1語＝5打鍵の一般的な換算）`;
+    const kpm = source.value === "wpm" ? input * 5 : source.value === "kph" ? input / 60 : input;
+    const wpm = kpm / 5;
+    const kph = kpm * 60;
+    headline.textContent = source.value === "kpm" ? `${format(wpm, 1)} WPM` : `${format(kpm, 1)} KPM`;
+    detail.textContent = `${format(kpm, 1)} KPM ≒ ${format(wpm, 1)} WPM ≒ ${format(kph, 0)} KPH（1語＝5打鍵の一般的な換算）`;
     result.hidden = false;
   };
   form.addEventListener("submit", (event) => {

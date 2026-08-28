@@ -9,9 +9,12 @@ import { RankingScreen } from "./screens/RankingScreen";
 import { AnalysisScreen } from "./screens/AnalysisScreen";
 import {
   appendResult,
+  loadDuelRecord,
   loadProgress,
   loadResults,
   loadSettings,
+  loadTutorialCompleted,
+  markTutorialCompleted,
   recordDuel,
   saveSettings,
   type DuelRecord,
@@ -27,7 +30,13 @@ import {
   type DailyRecordResult,
 } from "./daily";
 import { queueSnapshotUpload } from "./playerData";
-import { trackAttributedGameStart, trackFunnelEvent } from "./seoAttribution";
+import {
+  trackAttributedGameStart,
+  trackFunnelEvent,
+  trackLandingView,
+  trackTutorialCompleted,
+} from "./seoAttribution";
+import { hasRecordedPlay } from "./onboarding";
 
 type ResultScreenState = {
   name: "result";
@@ -57,9 +66,20 @@ export function App(): JSX.Element {
   const [settings, setSettings] = useState<Settings>(() => loadSettings());
   const [progress, setProgress] = useState<LifetimeProgress>(() => loadProgress());
   const [dailyProgress, setDailyProgress] = useState<DailyProgress>(() => loadDailyProgress());
+  const [tutorialCompleted, setTutorialCompleted] = useState<boolean>(() => loadTutorialCompleted());
   const [screen, setScreen] = useState<Screen>({ name: "landing" });
+  // tutorial完了直後に同じGameScreenを再利用しないためのマウント世代。
+  const [gameSession, setGameSession] = useState(0);
 
   sound.enabled = settings.soundOn;
+  const currentResults = loadResults();
+  const hasPlayed = hasRecordedPlay(
+    progress,
+    currentResults,
+    dailyProgress,
+    loadDuelRecord(),
+  );
+  const firstRun = !hasPlayed && !tutorialCompleted;
 
   useEffect(() => {
     document.documentElement.style.setProperty("--font-scale", String(settings.fontScale));
@@ -78,10 +98,15 @@ export function App(): JSX.Element {
     });
   };
 
+  useEffect(() => {
+    if (screen.name !== "landing") return;
+    trackLandingView();
+  }, [progress.totalGames, screen.name, tutorialCompleted]);
+
   const startGame = (mode: GameMode): void => {
     sound.unlock();
-    trackAttributedGameStart(mode.type);
-    trackFunnelEvent("Mode Started", { mode: mode.type });
+    const firstPlay = !hasPlayed;
+    trackAttributedGameStart(mode.type, firstPlay);
     const resolvedMode =
       mode.type === "daily"
         ? {
@@ -89,11 +114,27 @@ export function App(): JSX.Element {
             ranked: isDailyRankedAttempt(loadDailyProgress(), mode.challengeId),
           }
         : mode;
+    setGameSession((current) => current + 1);
     setScreen({ name: "game", mode: resolvedMode });
   };
 
+  const completeTutorial = (): void => {
+    const firstPlay = firstRun;
+    markTutorialCompleted();
+    setTutorialCompleted(true);
+    trackTutorialCompleted(firstPlay);
+    if (firstPlay) {
+      // 初回完了直後だけは迷わせず初級へ渡す。復習した既存ユーザーは
+      // 期待どおりタイトルへ戻し、勝手に別モードを開始しない。
+      startGame({ type: "survival", difficulty: "easy" });
+    } else {
+      setScreen({ name: "landing" });
+    }
+  };
+
   const finishGame = (result: GameResult): void => {
-    trackFunnelEvent("Game Finished", { mode: result.mode });
+    const firstPlay = progress.totalGames === 0;
+    trackFunnelEvent("Game Finished", { mode: result.mode, firstPlay });
     if (result.mode === "survival") {
       const history = appendResult(result.summary);
       setScreen({ name: "result", result, history, duelRecord: null, dailyRecord: null });
@@ -127,13 +168,13 @@ export function App(): JSX.Element {
       return (
         <LandingScreen
           settings={settings}
-          results={loadResults()}
+          results={currentResults}
           progress={progress}
           dailyProgress={dailyProgress}
+          firstRun={firstRun}
           onUpdateSettings={updateSettings}
           onStart={startGame}
           onShowRanking={() => {
-            trackFunnelEvent("Navigation", { destination: "ranking" });
             setScreen({ name: "ranking" });
           }}
           onShowGrowth={() =>
@@ -149,11 +190,14 @@ export function App(): JSX.Element {
     case "game":
       return (
         <GameScreen
+          key={gameSession}
           mode={screen.mode}
           sound={sound}
           reducedMotion={settings.reducedMotion}
           highContrast={settings.highContrast}
           fontScale={settings.fontScale}
+          tutorialCompletionStartsGame={firstRun}
+          onTutorialComplete={completeTutorial}
           onFinish={finishGame}
           onQuit={() => setScreen({ name: "landing" })}
         />

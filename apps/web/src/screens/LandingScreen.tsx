@@ -3,7 +3,11 @@ import type { CpuDifficulty, SurvivalDifficulty } from "@type-burst/game-core";
 import { titleProgressForScore, type LifetimeProgress } from "@type-burst/progression";
 import type { GameMode } from "../game/GameController";
 import { bestScore, loadDuelRecord, type FontScale, type Settings, type StoredResult } from "../storage";
-import type { DailyProgress } from "../daily";
+import {
+  dailyChallengeId,
+  isDailyRankedAttempt,
+  type DailyProgress,
+} from "../daily";
 import { DailyChallengeCard } from "../components/DailyChallengeCard";
 import { DataTransferSection } from "../components/DataTransferSection";
 import { AdSlots } from "../components/AdSlots";
@@ -11,6 +15,11 @@ import { AttractBoard } from "../components/AttractBoard";
 import { RomajiTicker } from "../components/RomajiTicker";
 import { GrowthDeck, RankingDeck, TutorialDeck } from "../components/HomeDecks";
 import { HERO_RENDERER_OPTIONS } from "../render/BoardRenderer";
+import {
+  parseDailyEntryIntent,
+  regularModeUrl,
+  type DailyEntryIntent,
+} from "../landingIntent";
 
 const FONT_SCALE_LABELS: Array<{ value: FontScale; label: string }> = [
   { value: 1, label: "標準" },
@@ -23,6 +32,7 @@ interface Props {
   results: StoredResult[];
   progress: LifetimeProgress;
   dailyProgress: DailyProgress;
+  firstRun: boolean;
   onUpdateSettings: (patch: Partial<Settings>) => void;
   onStart: (mode: GameMode) => void;
   onShowRanking: () => void;
@@ -75,16 +85,22 @@ export function LandingScreen({
   results,
   progress,
   dailyProgress,
+  firstRun,
   onUpdateSettings,
   onStart,
   onShowRanking,
   onShowGrowth,
 }: Props): JSX.Element {
   const [guideDifficulty] = useState<SurvivalDifficulty | null>(guideSurvivalDifficulty);
+  const [dailyEntry, setDailyEntry] = useState<DailyEntryIntent>(() =>
+    parseDailyEntryIntent(window.location.search),
+  );
   const [difficulty, setDifficulty] = useState<CpuDifficulty>("normal");
-  const firstPlay = progress.totalGames === 0;
+  // 記事のCTAで難易度を明示して来た人は、その約束どおり選択済みの
+  // サバイバルへ案内する。一般の初回訪問だけをチュートリアルへ送る。
+  const onboardingActive = firstRun && guideDifficulty === null && dailyEntry === null;
   const [survivalDifficulty, setSurvivalDifficulty] = useState<SurvivalDifficulty>(
-    () => guideDifficulty ?? (firstPlay ? "easy" : "normal"),
+    () => guideDifficulty ?? (firstRun ? "easy" : "normal"),
   );
   const [howtoOpen, setHowtoOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -93,6 +109,23 @@ export function LandingScreen({
   const record = loadDuelRecord();
   const titleProgress = useMemo(() => titleProgressForScore(progress.totalScore), [progress.totalScore]);
   const activeTier = SURVIVAL_TIERS.find((t) => t.id === survivalDifficulty) ?? SURVIVAL_TIERS[1]!;
+
+  const dismissDailyEntry = (): void => {
+    setDailyEntry(null);
+    window.history.replaceState(null, "", regularModeUrl(window.location.href));
+  };
+
+  const startDailyEntry = (): void => {
+    const challengeId = dailyChallengeId();
+    // URLの入口指定は一度だけ消費する。ゲーム後にタイトルへ戻った時まで
+    // 共有専用CTAを復活させず、source自体はsessionStorageの匿名計測に残す。
+    window.history.replaceState(null, "", regularModeUrl(window.location.href));
+    onStart({
+      type: "daily",
+      challengeId,
+      ranked: isDailyRankedAttempt(dailyProgress, challengeId),
+    });
+  };
 
   useEffect(() => {
     const handler = (e: KeyboardEvent): void => {
@@ -110,17 +143,25 @@ export function LandingScreen({
       }
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
-        onStart({ type: "survival", difficulty: survivalDifficulty });
+        if (dailyEntry !== null) {
+          startDailyEntry();
+        } else {
+          onStart(
+            onboardingActive
+              ? { type: "tutorial" }
+              : { type: "survival", difficulty: survivalDifficulty },
+          );
+        }
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [onStart, survivalDifficulty]);
+  }, [dailyEntry, dailyProgress, onboardingActive, onStart, survivalDifficulty]);
 
   useEffect(() => {
-    if (guideDifficulty === null) return;
+    if (guideDifficulty === null && dailyEntry === null) return;
     document.getElementById("play")?.focus({ preventScroll: true });
-  }, [guideDifficulty]);
+  }, [dailyEntry, guideDifficulty]);
 
   return (
     <div className="screen landing lp">
@@ -240,57 +281,97 @@ export function LandingScreen({
           {/* 主行動: 盤面のブロックと同じ質感で描き、押すと沈んで「爆破」する */}
           <button
             id="play"
-            className="lp-play"
-            onClick={() => onStart({ type: "survival", difficulty: survivalDifficulty })}
+            className={`lp-play${onboardingActive ? " lp-play-onboarding" : ""}${
+              dailyEntry !== null ? " lp-play-daily" : ""
+            }`}
+            onClick={() => {
+              if (dailyEntry !== null) {
+                startDailyEntry();
+                return;
+              }
+              onStart(
+                onboardingActive
+                  ? { type: "tutorial" }
+                  : { type: "survival", difficulty: survivalDifficulty },
+              );
+            }}
           >
             <span className="lp-play-face">
               <span className="lp-play-glyph" aria-hidden="true">
-                ▲
+                {dailyEntry !== null ? "★" : "▲"}
               </span>
-              <span className="lp-play-label">サバイバルを始める</span>
+              <span className="lp-play-label">
+                {dailyEntry !== null
+                  ? "今日の2分勝負に挑戦"
+                  : onboardingActive
+                    ? "チュートリアルから始める"
+                    : "サバイバルを始める"}
+              </span>
               <span className="lp-play-key">ENTER</span>
             </span>
           </button>
 
-          <div className="lp-tiers" role="group" aria-label="サバイバルの難易度">
-            {SURVIVAL_TIERS.map((tier, i) => (
-              <button
-                key={tier.id}
-                type="button"
-                className="lp-tier"
-                data-lv={i + 1}
-                aria-pressed={tier.id === survivalDifficulty}
-                onClick={() => setSurvivalDifficulty(tier.id)}
-              >
-                <span className="lp-tier-glyph" aria-hidden="true">
-                  {tier.glyph}
-                </span>
-                <span className="lp-tier-label">{tier.label}</span>
+          {dailyEntry !== null ? (
+            <section
+              className="lp-daily-invite"
+              aria-label={dailyEntry === "share" ? "共有されたデイリーチャレンジ" : "デイリーチャレンジ"}
+            >
+              <div>
+                <span className="lp-daily-invite-kicker">TODAY&apos;S CHALLENGE</span>
+                <strong>
+                  {dailyEntry === "share" ? "友だちの記録に、今日の共通盤面で挑戦" : "全員共通の盤面で2分勝負"}
+                </strong>
+                <p>登録不要。ランキング挑戦は1日3回、練習は何度でもできます。</p>
+              </div>
+              <button type="button" onClick={dismissDailyEntry}>
+                通常モードを見る
               </button>
-            ))}
-          </div>
+            </section>
+          ) : (
+            <>
+              <div className="lp-tiers" role="group" aria-label="サバイバルの難易度">
+                {SURVIVAL_TIERS.map((tier, i) => (
+                  <button
+                    key={tier.id}
+                    type="button"
+                    className="lp-tier"
+                    data-lv={i + 1}
+                    aria-pressed={tier.id === survivalDifficulty}
+                    onClick={() => setSurvivalDifficulty(tier.id)}
+                  >
+                    <span className="lp-tier-glyph" aria-hidden="true">
+                      {tier.glyph}
+                    </span>
+                    <span className="lp-tier-label">{tier.label}</span>
+                  </button>
+                ))}
+              </div>
 
-          <p className="lp-tier-hint" data-lv={SURVIVAL_TIERS.indexOf(activeTier) + 1}>
-            {activeTier.hint}
-            {best > 0 && (
-              <>
-                <span className="lp-sep" aria-hidden="true">
-                  ・
-                </span>
-                自己ベスト <strong>{best.toLocaleString()}</strong>
-              </>
-            )}
-          </p>
+              <p className="lp-tier-hint" data-lv={SURVIVAL_TIERS.indexOf(activeTier) + 1}>
+                {activeTier.hint}
+                {best > 0 && (
+                  <>
+                    <span className="lp-sep" aria-hidden="true">・</span>
+                    自己ベスト <strong>{best.toLocaleString()}</strong>
+                  </>
+                )}
+              </p>
+            </>
+          )}
 
-          {firstPlay && (
+          {onboardingActive && (
             <section className="lp-first-play" aria-label="初回プレイ案内">
               <div>
                 <span className="lp-first-play-kicker">FIRST RUN</span>
-                <strong>初めてなら、まずチュートリアル</strong>
-                <p>入力・連鎖・TYPE BURSTを実際に触ってから、初級サバイバルへ進めます。</p>
+                <strong>入力・連鎖・TYPE BURSTを7ステップで体験</strong>
+                <p>操作を覚えたら、そのまま初級サバイバルへ進めます。</p>
               </div>
-              <button type="button" onClick={() => onStart({ type: "tutorial" })}>
-                チュートリアルを見る
+              <button
+                className="lp-first-play-escape"
+                type="button"
+                onClick={() => onStart({ type: "survival", difficulty: "easy" })}
+              >
+                説明を飛ばして初級へ
               </button>
             </section>
           )}

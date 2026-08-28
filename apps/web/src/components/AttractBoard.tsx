@@ -55,7 +55,10 @@ export function AttractBoard({ reducedMotion, options }: Props): JSX.Element {
     if (reducedMotion) {
       // prefers-reduced-motion: 初期盤面を1枚だけ描き、以降は一切更新しない
       // (仕様書§20のアニメーション削減方針、D-023を踏襲)
-      const { core } = createRound(0);
+      const { core, driver } = createRound(0);
+      // 静止画でも「入力して消す」ゲームだと一目で分かるよう、候補ブロックへ
+      // 1打だけ通した代表フレームを描く。連続アニメーションは発生させない。
+      driver.prime();
       renderer.draw(core.getSnapshot(), STATIC_META, 16);
       return;
     }
@@ -69,6 +72,7 @@ export function AttractBoard({ reducedMotion, options }: Props): JSX.Element {
     // RAFの初回発火を待たずに初期盤面を1枚描いておく。これが無いと、RAFが
     // 動き出すまでの間(あるいはRAFが抑制される環境で)「自動プレイ中」と
     // ラベルの付いた枠が空白のまま見えてしまう。
+    round.driver.prime();
     renderer.draw(round.core.getSnapshot(), STATIC_META, 16);
 
     const step = (now: number): void => {
@@ -92,6 +96,7 @@ export function AttractBoard({ reducedMotion, options }: Props): JSX.Element {
         // ループのため、あふれたら次のシードで最初から作り直す
         seedIndex += 1;
         round = createRound(seedIndex);
+        round.driver.prime();
         renderer.clearEffects();
       }
 

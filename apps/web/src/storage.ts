@@ -16,6 +16,8 @@ const SETTINGS_KEY = "typeblast.settings.v1";
 const RESULTS_KEY = "typeblast.results.v2";
 const DUEL_RECORD_KEY = "typeblast.duel.v1";
 const NICKNAME_KEY = "typeblast.nickname.v1";
+/** 初回導線の完了状態。履歴やスコアとは独立した軽量な端末設定として扱う。 */
+const TUTORIAL_COMPLETED_KEY = "typeblast.tutorial-completed.v1";
 /** 生涯累計プレイ統計(D-054)。既存の typeblast.results.v2 とは別キーで保持する
  * (results は直近履歴のみを保持する用途のため、性質の異なるデータを混在させない)。 */
 const PROGRESS_KEY = "typeblast.progress.v1";
@@ -28,6 +30,51 @@ export type FontScale = 1 | 1.15 | 1.3;
  * 60件でも1件あたり数十バイト程度で、localStorageの容量上は十分小さい。
  */
 const MAX_STORED_RESULTS = 60;
+
+// private/session storage が使えない環境でも、同一ページ内の導線は壊さない。
+// ページをまたいだ永続化が必要な場合は localStorage、private mode 等で
+// localStorage が拒否された場合は sessionStorage、両方が拒否された場合は
+// このメモリ値を順にフォールバックとして使う。
+let tutorialCompletedInMemory = false;
+
+function readTutorialCompletionMarker(): string | null {
+  try {
+    if (typeof localStorage !== "undefined") {
+      const value = localStorage.getItem(TUTORIAL_COMPLETED_KEY);
+      if (value !== null) return value;
+    }
+  } catch {
+    // private mode / storage disabled
+  }
+  try {
+    if (typeof sessionStorage !== "undefined") {
+      return sessionStorage.getItem(TUTORIAL_COMPLETED_KEY);
+    }
+  } catch {
+    // sessionStorage も無効な環境ではメモリ値へフォールバックする。
+  }
+  return null;
+}
+
+function writeTutorialCompletionMarker(): void {
+  try {
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem(TUTORIAL_COMPLETED_KEY, "1");
+      return;
+    }
+  } catch {
+    // private mode / storage disabled
+  }
+  try {
+    if (typeof sessionStorage !== "undefined") {
+      sessionStorage.setItem(TUTORIAL_COMPLETED_KEY, "1");
+      return;
+    }
+  } catch {
+    // sessionStorage も無効な環境ではメモリ値を使う。
+  }
+  tutorialCompletedInMemory = true;
+}
 
 export interface Settings {
   soundOn: boolean;
@@ -69,6 +116,20 @@ function defaultSettings(): Settings {
     fontScale: 1,
   };
 }
+
+/**
+ * 初回チュートリアルを完了したか。保存に失敗してもゲーム本編は継続し、
+ * 少なくとも現在のページでは完了後の導線へ進める。
+ */
+export function loadTutorialCompleted(): boolean {
+  return readTutorialCompletionMarker() === "1" || tutorialCompletedInMemory;
+}
+
+export function markTutorialCompleted(): void {
+  tutorialCompletedInMemory = true;
+  writeTutorialCompletionMarker();
+}
+
 const DEFAULT_DUEL_RECORD: DuelRecord = {
   easy: { wins: 0, losses: 0 },
   normal: { wins: 0, losses: 0 },

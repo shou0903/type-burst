@@ -7,6 +7,7 @@ import {
   shareImageKey,
   shareMetaKey,
 } from "./_shared/shareStore.js";
+import { normalizeShareTarget } from "../shareTarget.js";
 
 /**
  * 共有カードの保管(D-091)。
@@ -57,6 +58,7 @@ async function handlePost(req: VercelRequest, res: VercelResponse): Promise<void
   const image = typeof body.image === "string" ? body.image : "";
   const title = sanitizeText(body.ogTitle, MAX_TITLE);
   const description = sanitizeText(body.ogDescription, MAX_DESCRIPTION);
+  const targetPath = normalizeShareTarget(body.targetPath);
 
   if (!title || !description) {
     res.status(400).json({ error: "Invalid metadata" });
@@ -79,6 +81,7 @@ async function handlePost(req: VercelRequest, res: VercelResponse): Promise<void
     title,
     description,
     createdAt: new Date().toISOString(),
+    targetPath,
   });
   pipeline.expire(shareMetaKey(id), SHARE_TTL_SECONDS);
   pipeline.set(shareImageKey(id), image, "EX", SHARE_TTL_SECONDS);

@@ -18,6 +18,13 @@ export interface RendererOptions {
   drawText: boolean;
   /** カウントダウン・GO・終了などのオーバーレイを描くか */
   overlays: boolean;
+  /**
+   * アトラクト/ヒーロー用。盤面の外へはみ出しやすい大きな演出文字を、
+   * 論理キャンバス内に収めて描く。通常のゲーム盤面では指定しない。
+   */
+  popupBounds?: boolean;
+  /** 初回フレームに、盤面を見ただけで操作が伝わるヒントを描く */
+  demoCue?: boolean;
 }
 
 export const MAIN_RENDERER_OPTIONS: RendererOptions = {
@@ -48,6 +55,8 @@ export const ATTRACT_RENDERER_OPTIONS: RendererOptions = {
   pad: 8,
   drawText: true,
   overlays: false,
+  popupBounds: true,
+  demoCue: true,
 };
 
 /**
@@ -61,6 +70,8 @@ export const HERO_RENDERER_OPTIONS: RendererOptions = {
   pad: 10,
   drawText: true,
   overlays: false,
+  popupBounds: true,
+  demoCue: true,
 };
 
 export function canvasSize(opts: RendererOptions): { w: number; h: number } {
@@ -138,6 +149,32 @@ interface Vec {
 interface TextLayout {
   size: number;
   lines: string[];
+}
+
+/**
+ * Popup のアニメーション拡大率を安全な横幅に制限する。
+ *
+ * Canvas の実際の文字幅と分離した純粋関数にしておくことで、狭いアトラクト盤面でも
+ * 「文字が切れない」という契約をテストできる。maxWidth/measureWidth が不正な場合は
+ * 元の拡大率をそのまま返し、メインゲームの描画挙動を変えない。
+ */
+export function constrainPopupScale(
+  measuredWidth: number,
+  desiredScale: number,
+  maxWidth: number,
+): number {
+  if (!Number.isFinite(measuredWidth) || measuredWidth <= 0) return desiredScale;
+  if (!Number.isFinite(maxWidth) || maxWidth <= 0) return desiredScale;
+  if (!Number.isFinite(desiredScale) || desiredScale <= 0) return 0;
+  return Math.min(desiredScale, maxWidth / measuredWidth);
+}
+
+/** アトラクト/ヒーロー popup 用の安全な論理横幅を返す */
+export function popupSafeWidth(canvasWidth: number, outerScale = 1, margin = 12): number {
+  if (!Number.isFinite(canvasWidth) || canvasWidth <= 0) return 0;
+  const safeScale = Number.isFinite(outerScale) && outerScale > 0 ? outerScale : 1;
+  const safeMargin = Number.isFinite(margin) && margin >= 0 ? margin : 0;
+  return Math.max(0, (canvasWidth - safeMargin * 2) / safeScale);
 }
 
 /**
@@ -505,11 +542,16 @@ export class BoardRenderer {
     ctx.save();
     ctx.clearRect(0, 0, this.w, this.h);
 
+    const demoBounds = this.opts.popupBounds === true;
     if (this.shakeAmp > 0.3) {
-      ctx.translate(
-        (Math.random() * 2 - 1) * this.shakeAmp,
-        (Math.random() * 2 - 1) * this.shakeAmp,
-      );
+      // コンパクトなヒーロー/アトラクトCanvasでは18pxの画面揺れだけで
+      // 安全域を越えるため、パーティクル等は残して全体平行移動だけ止める。
+      if (!demoBounds) {
+        ctx.translate(
+          (Math.random() * 2 - 1) * this.shakeAmp,
+          (Math.random() * 2 - 1) * this.shakeAmp,
+        );
+      }
       this.shakeAmp *= Math.exp(-dtMs / 100);
     } else {
       this.shakeAmp = 0;
@@ -517,8 +559,12 @@ export class BoardRenderer {
 
     // ズームパンチ(D-050): 連鎖ヒットで一瞬拡大して素早く戻る。大連鎖スローモー中は
     // さらに一段ズームインしたまま維持し、「魅せる」間を強調する(D-051)
-    const bigChainZoom = snapshot.bigChainImpact && !this.reducedMotion ? 0.07 : 0;
-    const zoomScale = 1 + this.punchAmp + bigChainZoom;
+    // ヒーロー/アトラクト盤面はキャンバス自体が表示領域いっぱいのため、全体を
+    // 拡大するパンチ演出を適用すると ALL CLEAR / TYPE BURST が端で切れる。
+    // それらのモードではフラッシュ・リング・パーティクルを残し、ポップアップを
+    // 安全に見せるため外側のズームだけを無効化する(本番盤面は従来どおり)。
+    const bigChainZoom = snapshot.bigChainImpact && !this.reducedMotion && !demoBounds ? 0.07 : 0;
+    const zoomScale = demoBounds ? 1 : 1 + this.punchAmp + bigChainZoom;
     if (zoomScale > 1.001) {
       ctx.translate(this.w / 2, this.h / 2);
       ctx.scale(zoomScale, zoomScale);
@@ -533,9 +579,10 @@ export class BoardRenderer {
     this.drawBackground(snapshot);
     this.drawBlocks(snapshot, dtMs);
     this.drawDangerLine(snapshot);
+    if (this.opts.demoCue && this.firstDraw) this.drawDemoCue();
     this.updateAndDrawParticles(dtMs);
     this.updateAndDrawRings(dtMs);
-    this.updateAndDrawPopups(dtMs);
+    this.updateAndDrawPopups(dtMs, zoomScale);
     this.drawDangerVignette(snapshot);
     this.drawBigChainVignette(snapshot);
     this.drawFeverOverlay(snapshot);
@@ -545,6 +592,30 @@ export class BoardRenderer {
 
     ctx.restore();
     this.firstDraw = false;
+  }
+
+  /** 初回だけ表示する、ゲームの目的が瞬時に伝わる軽量な操作ヒント */
+  private drawDemoCue(): void {
+    const ctx = this.ctx;
+    const maxWidth = Math.max(120, this.w - this.opts.pad * 2 - 18);
+    const width = Math.min(190, maxWidth);
+    const height = Math.min(28, Math.max(22, this.opts.cellH * 0.72));
+    const x = (this.w - width) / 2;
+    const y = Math.max(this.opts.pad + 4, Math.min(this.h - height - this.opts.pad, this.h * 0.48));
+
+    ctx.save();
+    ctx.fillStyle = "rgba(10,12,24,0.82)";
+    roundRect(ctx, x, y, width, height, Math.min(9, height / 3));
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255,215,94,0.72)";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.font = `900 ${Math.max(10, Math.min(14, height * 0.5))}px "Arial Black", sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = "#ffd75e";
+    ctx.fillText("⌨  TYPE TO BLAST", this.w / 2, y + height / 2 + 0.5);
+    ctx.restore();
   }
 
   private drawBackground(snapshot: PlayerSnapshot): void {
@@ -1000,17 +1071,48 @@ export class BoardRenderer {
     this.rings = next;
   }
 
-  private updateAndDrawPopups(dtMs: number): void {
+  private updateAndDrawPopups(dtMs: number, outerScale = 1): void {
     const ctx = this.ctx;
     const next: Popup[] = [];
     for (const popup of this.popups) {
       popup.age += dtMs;
       if (popup.age >= popup.life) continue;
       const t = popup.age / popup.life;
-      const scale = t < 0.15 ? 0.6 + (t / 0.15) * 0.55 : 1.15 - t * 0.15;
+      const animationScale = t < 0.15 ? 0.6 + (t / 0.15) * 0.55 : 1.15 - t * 0.15;
+
+      // Main gameplay keeps the historical popup rendering exactly as-is. The attract and
+      // hero canvases are tightly sized (304/392 logical px), so their signature labels need
+      // a little breathing room for both the stroke and the outer canvas transform.
+      let scale = animationScale;
+      let popupX = popup.x;
+      let popupY = popup.y - t * 30;
+      if (this.opts.popupBounds) {
+        const margin = Math.max(12, this.opts.pad + 4);
+        const availableWidth = popupSafeWidth(this.w, outerScale, margin);
+        ctx.font = `900 ${popup.size}px "Arial Black", sans-serif`;
+        const measuredWidth = ctx.measureText(popup.text).width;
+        // Leave a few logical pixels for the stroke and shadow. The resulting scale includes
+        // the animation overshoot, so it remains inside the viewport at its largest frame.
+        const visualSafety = 24;
+        scale = constrainPopupScale(
+          measuredWidth,
+          animationScale,
+          Math.max(24, availableWidth - visualSafety),
+        );
+
+        const halfWidth = (measuredWidth * scale + visualSafety) / 2;
+        const safeLeft = margin;
+        const safeRight = this.w - margin;
+        popupX = Math.min(safeRight - halfWidth, Math.max(safeLeft + halfWidth, popupX));
+
+        const halfHeight = Math.max(12, popup.size * scale * 0.65);
+        const safeTop = margin;
+        const safeBottom = this.h - margin;
+        popupY = Math.min(safeBottom - halfHeight, Math.max(safeTop + halfHeight, popupY));
+      }
       ctx.save();
       ctx.globalAlpha = t > 0.7 ? 1 - (t - 0.7) / 0.3 : 1;
-      ctx.translate(popup.x, popup.y - t * 30);
+      ctx.translate(popupX, popupY);
       ctx.scale(scale, scale);
       ctx.font = `900 ${popup.size}px "Arial Black", sans-serif`;
       ctx.textAlign = "center";

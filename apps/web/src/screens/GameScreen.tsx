@@ -9,6 +9,8 @@ interface Props {
   reducedMotion: boolean;
   highContrast: boolean;
   fontScale: number;
+  tutorialCompletionStartsGame: boolean;
+  onTutorialComplete: () => void;
   onFinish: (result: GameResult) => void;
   onQuit: () => void;
 }
@@ -26,6 +28,8 @@ export function GameScreen({
   reducedMotion,
   highContrast,
   fontScale,
+  tutorialCompletionStartsGame,
+  onTutorialComplete,
   onFinish,
   onQuit,
 }: Props): JSX.Element {
@@ -94,13 +98,17 @@ export function GameScreen({
               disabled={!snapshot.stepComplete}
               onClick={() => {
                 if (snapshot.isLastStep) {
-                  onQuit();
+                  onTutorialComplete();
                 } else {
                   controllerRef.current?.advanceTutorialStep();
                 }
               }}
             >
-              {snapshot.isLastStep ? "タイトルへ戻る" : "次へ →"}
+              {snapshot.isLastStep
+                ? tutorialCompletionStartsGame
+                  ? "初級サバイバルへ"
+                  : "タイトルへ戻る"
+                : "次へ →"}
             </button>
           </div>
         </div>
@@ -270,7 +278,7 @@ export function GameScreen({
 
           <div className="key-help">Enter: バースト / Esc・BS: 選択キャンセル</div>
 
-          <button className="btn-quit" onClick={onQuit} tabIndex={-1}>
+          <button className="btn-quit" onClick={onQuit}>
             やめる
           </button>
         </aside>

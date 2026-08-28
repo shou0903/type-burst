@@ -12,6 +12,11 @@
 
 import type { DuelSummary, SurvivalDifficulty, SurvivalSummary } from "@type-burst/game-core";
 import type { ShareAccent, ShareCardData } from "./shareCard";
+import {
+  DAILY_SHARE_TARGET,
+  HOME_SHARE_TARGET,
+  type ShareTarget,
+} from "../../shareTarget";
 
 export interface ShareContent {
   card: ShareCardData;
@@ -20,6 +25,8 @@ export interface ShareContent {
   /** OGP用。リンクカードのタイトルとして表示される */
   ogTitle: string;
   ogDescription: string;
+  /** 共有結果ページのCTAが戻す、同一サイト内の許可済み導線 */
+  targetPath: ShareTarget;
 }
 
 const SURVIVAL_LABELS: Record<SurvivalDifficulty, string> = {
@@ -91,6 +98,7 @@ export function buildSurvivalShare(
     ogDescription: `最大${summary.maxChain}連鎖・KPM ${summary.kpm}・正確率 ${percent(
       summary.accuracy,
     )}。TYPE BURSTは登録不要で遊べる無料タイピングゲームです。`,
+    targetPath: HOME_SHARE_TARGET,
   };
 }
 
@@ -157,6 +165,7 @@ export function buildDailyShare({
       viewer ? `本日${viewer.rank}位` : "デイリーチャレンジ"
     } スコア ${score}`,
     ogDescription: `${challengeId}のデイリーチャレンジ。全員が同じ問題に挑む2分勝負です。TYPE BURSTは登録不要で遊べる無料タイピングゲーム。`,
+    targetPath: DAILY_SHARE_TARGET,
   };
 }
 
@@ -197,5 +206,6 @@ export function buildDuelShare(summary: DuelSummary, nickname: string | null): S
       summary.won ? "勝利" : "敗北"
     } スコア ${score}`,
     ogDescription: `最大${summary.player.maxChain}連鎖・KPM ${summary.player.kpm}。TYPE BURSTは登録不要で遊べる無料タイピングゲームです。`,
+    targetPath: HOME_SHARE_TARGET,
   };
 }

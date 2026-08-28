@@ -3741,6 +3741,32 @@ body {
   border-radius: 5px;
 }
 
+/* 共有されたデイリーへの入口は光属性。通常サバイバルの火属性と見分けつつ、
+   盤面と同じ物理感（上面＋厚み＋押し込み）は崩さない。 */
+.lp-play-daily {
+  box-shadow:
+    0 7px 0 var(--light-dk),
+    0 10px 26px rgba(0, 0, 0, 0.5);
+}
+
+.lp-play-daily .lp-play-face {
+  color: #17120a;
+  border-top-color: rgba(255, 255, 255, 0.58);
+  background: linear-gradient(180deg, #ffe681 0%, var(--light-lit) 45%, #d49b28 100%);
+}
+
+.lp-play-daily:hover {
+  box-shadow:
+    0 9px 0 var(--light-dk),
+    0 14px 30px rgba(0, 0, 0, 0.55);
+}
+
+.lp-play-daily:active {
+  box-shadow:
+    0 0 0 var(--light-dk),
+    0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
 /* ---------- 難易度: 4属性の形と色で段階を示す ---------- */
 
 .lp-tiers {
@@ -3902,6 +3928,86 @@ body {
   font-size: 11px;
   font-weight: 900;
   cursor: pointer;
+}
+
+.lp-daily-invite {
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 3px;
+  padding: 12px 13px;
+  border: 1px solid rgba(255, 215, 94, 0.4);
+  border-radius: 11px;
+  background: rgba(255, 215, 94, 0.08);
+}
+
+.lp-daily-invite > div {
+  display: grid;
+  gap: 3px;
+}
+
+.lp-daily-invite-kicker {
+  color: var(--light-lit);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+}
+
+.lp-daily-invite strong {
+  color: var(--text);
+  font-size: 13px;
+}
+
+.lp-daily-invite p {
+  margin: 0;
+  color: var(--dim);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.lp-daily-invite button {
+  flex: none;
+  min-height: 36px;
+  padding: 0 11px;
+  border: 1px solid rgba(255, 215, 94, 0.45);
+  border-radius: 8px;
+  color: var(--light-lit);
+  background: transparent;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.lp-daily-invite button:hover {
+  color: #17120a;
+  background: var(--light-lit);
+}
+
+.lp-daily-invite button:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 3px;
+}
+
+/* 初回導線の主役はチュートリアル。サバイバル直行は明確な逃げ道として
+   残しつつ、主CTAと競合しないアウトラインの二次ボタンにする。 */
+.lp-first-play .lp-first-play-escape {
+  color: var(--water-lit);
+  background: rgba(111, 192, 255, 0.08);
+  border-color: rgba(111, 192, 255, 0.45);
+}
+
+.lp-first-play .lp-first-play-escape:hover {
+  color: #07131e;
+  background: var(--water-lit);
+}
+
+.lp-first-play .lp-first-play-escape:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 3px;
 }
 
 .lp-sep {
@@ -4455,6 +4561,15 @@ body {
 
   .lp-metric-guide dl {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* SmallScreenGuardのPC下限(1024px)付近でも、広い空白を作らず実演盤面まで
+   ファーストビューに残す。盤面とCTAの同時理解を優先し、間隔だけを詰める。 */
+@media (min-width: 961px) and (max-width: 1040px) {
+  .lp-hero {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 24px;
   }
 }
 
@@ -6456,6 +6571,289 @@ body {
 :root.reduced-motion .an-rank-fill,
 :root.reduced-motion .an-bar-fill {
   transition: none;
+}
+
+/* ---------- 週次成長サマリー(JP-RET-001) ---------- */
+
+.an-weekly {
+  width: min(1000px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 15px 17px;
+  background: linear-gradient(135deg, rgba(95, 232, 182, 0.08), rgba(255, 255, 255, 0.025));
+  border: 1px solid rgba(95, 232, 182, 0.24);
+  border-radius: 13px;
+}
+
+.an-weekly-head {
+  padding-bottom: 8px;
+}
+
+.an-weekly-scope {
+  flex: none;
+  padding: 4px 9px;
+  color: var(--wind-lit);
+  background: rgba(95, 232, 182, 0.1);
+  border: 1px solid rgba(95, 232, 182, 0.28);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.an-weekly-source {
+  margin: -3px 0 0;
+  color: var(--faint);
+  font-size: 11px;
+  line-height: 1.65;
+}
+
+.an-weekly-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 11px;
+}
+
+.an-weekly-card {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 13px 14px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--line);
+  border-radius: 11px;
+}
+
+.an-weekly-card-empty {
+  border-style: dashed;
+}
+
+.an-weekly-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.an-weekly-card-head h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+
+.an-weekly-card-head span {
+  color: var(--faint);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.an-weekly-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.an-weekly-stats div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 9px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+}
+
+.an-weekly-stats dt {
+  color: var(--faint);
+  font-size: 11px;
+}
+
+.an-weekly-stats dd {
+  margin: 0;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.an-weekly-no-data,
+.an-weekly-empty,
+.an-weekly-state {
+  margin: 0;
+  color: var(--dim);
+  font-size: 11.5px;
+  line-height: 1.75;
+}
+
+.an-weekly-empty {
+  padding: 16px;
+  text-align: center;
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px dashed var(--line-hi);
+  border-radius: 10px;
+}
+
+.an-weekly-delta {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 9px;
+  padding: 9px 12px;
+  border-radius: 9px;
+  font-size: 11.5px;
+}
+
+.an-weekly-delta > span:first-child {
+  color: var(--dim);
+}
+
+.an-weekly-delta strong {
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.an-weekly-delta > span:last-child {
+  color: var(--dim);
+  font-weight: 800;
+}
+
+.an-weekly-delta-up {
+  color: #06281c;
+  background: var(--wind-lit);
+}
+
+.an-weekly-delta-up > span:first-child,
+.an-weekly-delta-up > span:last-child {
+  color: #164b39;
+}
+
+.an-weekly-delta-down {
+  color: var(--fire-lit);
+  background: rgba(255, 138, 112, 0.12);
+  border: 1px solid rgba(255, 138, 112, 0.24);
+}
+
+.an-weekly-delta-flat {
+  color: var(--dim);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid var(--line);
+}
+
+@media (max-width: 620px) {
+  .an-weekly-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .an-weekly-card-head {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .an-weekly-delta {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+}
+
+/* ---------- 次の一戦の目標(JP-RET-002/005) ---------- */
+
+.result-goal {
+  width: min(680px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 13px 16px;
+  background: linear-gradient(135deg, rgba(111, 192, 255, 0.12), rgba(255, 255, 255, 0.035));
+  border: 1px solid rgba(111, 192, 255, 0.34);
+  border-radius: 12px;
+}
+
+.result-goal-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.result-goal-kicker {
+  display: block;
+  color: var(--water-lit);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.2em;
+}
+
+.result-goal-head h2 {
+  margin: 3px 0 0;
+  color: var(--text);
+  font-size: 15px;
+  letter-spacing: 0.04em;
+}
+
+.result-goal-difficulty {
+  flex: none;
+  color: var(--dim);
+  font-size: 11px;
+}
+
+.result-goal-target,
+.result-goal-reason,
+.result-goal-previous {
+  margin: 0;
+  line-height: 1.75;
+}
+
+.result-goal-target {
+  color: var(--text);
+  font-size: 14px;
+}
+
+.result-goal-target strong {
+  margin-inline: 4px;
+  color: var(--water-lit);
+  font-size: 17px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.result-goal-reason {
+  color: var(--dim);
+  font-size: 11.5px;
+}
+
+.result-goal-previous {
+  padding-top: 8px;
+  color: var(--faint);
+  font-size: 11.5px;
+  border-top: 1px solid var(--line);
+}
+
+.result-goal-previous strong {
+  margin-left: 4px;
+  color: var(--text);
+  font-weight: 900;
+}
+
+@media (max-width: 620px) {
+  .result-goal-head {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .result-goal-target {
+    font-size: 13px;
+  }
+
+  .result-goal-target strong {
+    font-size: 16px;
+  }
 }
 
 /* ==================================================================

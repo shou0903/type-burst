@@ -60,6 +60,28 @@ export class AttractDemoDriver {
     );
   }
 
+  /**
+   * 初回フレーム用の軽い「入力中」状態を作る。アトラクト表示は RAF の最初の
+   * tick を待たずに描くため、ここで狙うブロックへ1打だけ通して候補枠と進捗を
+   * 先に表示する。ゲーム本編の PlayerCore やスコア計算には使われない専用ドライバ。
+   */
+  prime(): void {
+    if (this.core.frozen || this.core.toppedOut || this.core.isResolving) return;
+    const blocks = this.core.getBlocksReadonly();
+    if (blocks.length === 0) return;
+
+    if (!this.plan) this.plan = this.pickPlan(blocks);
+    if (!this.plan || this.plan.keys.length === 0) return;
+
+    const key = this.plan.keys.charAt(this.plan.index);
+    if (!key) return;
+    this.plan.index += 1;
+    this.core.feedKey(key);
+    if (this.plan.index >= this.plan.keys.length) this.plan = null;
+    // 次の自動入力まで少し間を空け、初回の候補表示を読める時間を確保する。
+    this.keyTimerMs = this.thinkDelay() + this.keyInterval();
+  }
+
   advance(deltaMs: number): void {
     if (this.core.frozen || this.core.toppedOut) return;
 

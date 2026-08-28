@@ -10,6 +10,7 @@ import {
   createShareLink,
   downloadCanvas,
   lineShareUrl,
+  shareFallbackUrl,
   xIntentUrl,
   type ShareLink,
 } from "../share/shareApi";
@@ -34,8 +35,6 @@ type LinkState =
   | { status: "ready"; link: ShareLink }
   | { status: "failed" };
 
-const SITE_URL = "https://type-burst.com/";
-
 export function ShareSheet({ content, onClose }: Props): JSX.Element {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -51,7 +50,7 @@ export function ShareSheet({ content, onClose }: Props): JSX.Element {
     drawShareCard(canvas, content.card);
 
     let active = true;
-    createShareLink(canvas, content.ogTitle, content.ogDescription)
+    createShareLink(canvas, content.ogTitle, content.ogDescription, content.targetPath)
       .then((link) => active && setLinkState({ status: "ready", link }))
       .catch(() => active && setLinkState({ status: "failed" }));
     return () => {
@@ -65,10 +64,37 @@ export function ShareSheet({ content, onClose }: Props): JSX.Element {
     const previouslyFocused = document.activeElement;
     closeRef.current?.focus();
     const handler = (event: KeyboardEvent): void => {
-      if (event.key !== "Escape") return;
-      event.preventDefault();
-      event.stopPropagation();
-      onClose();
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        onClose();
+        return;
+      }
+      if (event.key !== "Tab") return;
+
+      const focusable = Array.from(
+        dialogRef.current?.querySelectorAll<HTMLElement>(
+          'a[href]:not([aria-disabled="true"]), button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      ).filter((element) => !element.hasAttribute("hidden"));
+      const first = focusable[0];
+      const last = focusable.at(-1);
+      if (!first || !last) {
+        event.preventDefault();
+        dialogRef.current?.focus();
+        return;
+      }
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      } else if (!dialogRef.current?.contains(document.activeElement)) {
+        event.preventDefault();
+        first.focus();
+      }
     };
     const node = dialogRef.current;
     node?.addEventListener("keydown", handler);
@@ -78,7 +104,8 @@ export function ShareSheet({ content, onClose }: Props): JSX.Element {
     };
   }, [onClose]);
 
-  const shareUrl = linkState.status === "ready" ? linkState.link.url : SITE_URL;
+  const shareUrl =
+    linkState.status === "ready" ? linkState.link.url : shareFallbackUrl(content.targetPath);
   const preparing = linkState.status === "preparing";
 
   const handleCopyLink = async (): Promise<void> => {
@@ -111,6 +138,7 @@ export function ShareSheet({ content, onClose }: Props): JSX.Element {
         role="dialog"
         aria-modal="true"
         aria-labelledby="sh-title"
+        tabIndex={-1}
         onMouseDown={(event) => event.stopPropagation()}
       >
         <header className="sh-head">
@@ -178,7 +206,7 @@ export function ShareSheet({ content, onClose }: Props): JSX.Element {
 
         {linkState.status === "failed" && (
           <p className="sh-note sh-note-warn">
-            共有リンクを作成できませんでした。画像の保存はそのまま使えます。
+            記録カード付きリンクを作成できませんでした。ゲームへのリンクと画像は共有できます。
           </p>
         )}
         {linkState.status === "ready" && (

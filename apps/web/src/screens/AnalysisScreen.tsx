@@ -2,6 +2,11 @@ import { useEffect } from "react";
 import type { FingerStat, KeyStat, TypingAnalysis } from "@type-burst/game-core";
 import { titleProgressForScore, type LifetimeProgress } from "@type-burst/progression";
 import type { StoredResult } from "../storage";
+import {
+  buildWeeklyGrowth,
+  type WeeklyAggregate,
+  type WeeklyGrowthSummary,
+} from "../weeklyGrowth";
 
 interface Props {
   /**
@@ -94,7 +99,14 @@ export function AnalysisScreen({ analysis, recentHistory, progress, onBack }: Pr
   const focus = analysis ? buildNextFocus(analysis, weakestFinger) : null;
   const paceInsight = analysis ? buildPaceInsight(analysis) : null;
   const trendInsight = buildTrendInsight(recentHistory);
-  const historyScope = recentHistory.some((entry) => entry.mode === "daily")
+  const showingDailyHistory = recentHistory.some(
+    (entry) => entry.mode === "daily" || entry.ruleset === "daily-v2",
+  );
+  // デイリー結果から開いた分析画面にはデイリー履歴しか渡されないため、
+  // ここで「サバイバル記録なし」と誤表示しない。週次サマリーはホームの
+  // 成長記録またはサバイバル結果から開いた時だけ表示する。
+  const weeklyGrowth = showingDailyHistory ? null : buildWeeklyGrowth(recentHistory);
+  const historyScope = showingDailyHistory
     ? "デイリーチャレンジ"
     : "サバイバル";
   const titleProgress = titleProgressForScore(progress.totalScore);
@@ -164,6 +176,8 @@ export function AnalysisScreen({ analysis, recentHistory, progress, onBack }: Pr
           <i>累計スコア</i>
         </span>
       </section>
+
+      {weeklyGrowth && <WeeklyGrowthSection summary={weeklyGrowth} />}
 
       {/* ── 成長グラフ: 「伸び」を数字で言い切る ──────────────── */}
       <section className="an-growth" aria-label="成長の推移">
@@ -352,6 +366,114 @@ export function AnalysisScreen({ analysis, recentHistory, progress, onBack }: Pr
       )}
     </div>
   );
+}
+
+const WEEKLY_DIFFICULTY_LABELS: Record<NonNullable<WeeklyGrowthSummary["difficulty"]>, string> = {
+  easy: "初級",
+  normal: "中級",
+  hard: "上級",
+  god: "神級",
+};
+
+function WeeklyGrowthSection({ summary }: { summary: WeeklyGrowthSummary }): JSX.Element {
+  const scope = summary.difficulty
+    ? `サバイバル・${WEEKLY_DIFFICULTY_LABELS[summary.difficulty]}`
+    : "サバイバル";
+
+  return (
+    <section className="an-weekly" aria-labelledby="an-weekly-title">
+      <div className="an-section-head an-weekly-head">
+        <h2 id="an-weekly-title">今週の成長</h2>
+        <span className="an-weekly-scope">{scope}</span>
+      </div>
+      <p className="an-weekly-source">
+        この端末に保存されたサバイバル記録を、JSTのカレンダー週（月曜〜日曜）で集計しています。
+      </p>
+
+      {summary.status === "empty" ? (
+        <p className="an-weekly-empty">
+          サバイバルの記録がまだありません。プレイすると、今週の積み上げがここに表示されます。
+        </p>
+      ) : (
+        <>
+          <div className="an-weekly-cards">
+            <WeeklyWeekCard label="今週" aggregate={summary.currentWeek} />
+            <WeeklyWeekCard label="前週" aggregate={summary.previousWeek} />
+          </div>
+
+          {summary.status === "comparison" && summary.bestScoreDelta !== null ? (
+            <div
+              className={`an-weekly-delta an-weekly-delta-${summary.bestScoreTrend}`}
+              aria-label={`ベストスコア前週比 ${weeklyDeltaText(summary.bestScoreDelta)}`}
+            >
+              <span>ベストスコア・前週比</span>
+              <strong>{weeklyDeltaSymbol(summary.bestScoreDelta)} {weeklyDeltaText(summary.bestScoreDelta)}</strong>
+              <span>{weeklyDeltaWord(summary.bestScoreDelta)}</span>
+            </div>
+          ) : (
+            <p className="an-weekly-state">
+              {summary.status === "current-only"
+                ? "前週の同じ難易度の記録がないため、伸びはまだ比較できません。"
+                : "今週の同じ難易度の記録がまだないため、伸びはまだ比較できません。"}
+            </p>
+          )}
+        </>
+      )}
+    </section>
+  );
+}
+
+function WeeklyWeekCard({ label, aggregate }: { label: string; aggregate: WeeklyAggregate }): JSX.Element {
+  const hasData = aggregate.playCount > 0;
+  return (
+    <section className={`an-weekly-card${hasData ? "" : " an-weekly-card-empty"}`} aria-label={`${label}のサバイバル集計`}>
+      <div className="an-weekly-card-head">
+        <h3>{label}</h3>
+        <span>{formatWeeklyRange(aggregate)}</span>
+      </div>
+      {hasData ? (
+        <dl className="an-weekly-stats">
+          <div><dt>プレイ回数</dt><dd>{aggregate.playCount}</dd></div>
+          <div><dt>ベストスコア</dt><dd>{aggregate.bestScore.toLocaleString()}</dd></div>
+          <div><dt>平均正確率</dt><dd>{formatWeeklyAccuracy(aggregate.averageAccuracy)}</dd></div>
+          <div><dt>最大連鎖</dt><dd>{aggregate.maxChain}</dd></div>
+        </dl>
+      ) : (
+        <p className="an-weekly-no-data">この週の同じ難易度の記録はありません。</p>
+      )}
+    </section>
+  );
+}
+
+function formatWeeklyAccuracy(value: number | null): string {
+  return value === null ? "—" : `${(value * 100).toFixed(1)}%`;
+}
+
+function formatWeeklyRange(aggregate: WeeklyAggregate): string {
+  const start = new Date(aggregate.weekStart);
+  const end = new Date(new Date(aggregate.weekEnd).getTime() - 24 * 60 * 60 * 1000);
+  const formatter = new Intl.DateTimeFormat("ja-JP", {
+    timeZone: "Asia/Tokyo",
+    month: "numeric",
+    day: "numeric",
+  });
+  return `${formatter.format(start)}〜${formatter.format(end)}`;
+}
+
+function weeklyDeltaSymbol(delta: number): string {
+  if (delta > 0) return "▲";
+  if (delta < 0) return "▼";
+  return "→";
+}
+
+function weeklyDeltaText(delta: number): string {
+  return `${delta > 0 ? "+" : ""}${delta.toLocaleString()}点`;
+}
+
+function weeklyDeltaWord(delta: number): string {
+  if (delta > 0) return "上昇";
+  if (delta < 0) return "下降";
+  return "変化なし";
 }
 
 /** 自己ベスト1件。色は盤面の属性色に揃える(ホーム画面と同じ語彙) */

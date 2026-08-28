@@ -1,3 +1,5 @@
+import type { ShareTarget } from "../../shareTarget";
+
 /** 共有カードのアップロードと、各SNSへの受け渡し(D-091)。 */
 
 export interface ShareLink {
@@ -9,6 +11,12 @@ export interface ShareLink {
 /** OGP画像として保存できる上限に収まるまで品質を落とす */
 const JPEG_QUALITIES = [0.9, 0.82, 0.72];
 const MAX_BASE64 = 560_000;
+const SITE_ORIGIN = "https://type-burst.com";
+
+/** API障害時も、許可済みのプレイ入口だけは共有できる。 */
+export function shareFallbackUrl(targetPath: ShareTarget): string {
+  return new URL(targetPath, SITE_ORIGIN).toString();
+}
 
 export function canvasToJpegBase64(canvas: HTMLCanvasElement): string {
   let encoded = "";
@@ -23,12 +31,13 @@ export async function createShareLink(
   canvas: HTMLCanvasElement,
   ogTitle: string,
   ogDescription: string,
+  targetPath: ShareTarget,
 ): Promise<ShareLink> {
   const image = canvasToJpegBase64(canvas);
   const response = await fetch("/api/share", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ image, ogTitle, ogDescription }),
+    body: JSON.stringify({ image, ogTitle, ogDescription, targetPath }),
   });
   if (!response.ok) throw new Error(`share failed: ${response.status}`);
   const data = (await response.json()) as { id?: string; path?: string };

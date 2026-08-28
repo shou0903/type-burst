@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { replaceResults } from "./storage";
+import { loadTutorialCompleted, markTutorialCompleted, replaceResults } from "./storage";
 
 const storage = new Map<string, string>();
 
@@ -30,5 +30,16 @@ describe("引き継ぎリザルトの復元", () => {
 
   it("壊れた記録は復元しない", () => {
     expect(replaceResults([{ ...legacyResult, score: "not-a-number" }])).toEqual([]);
+  });
+});
+
+describe("初回チュートリアル完了フラグ", () => {
+  beforeEach(() => storage.clear());
+
+  it("未完了から完了へ変わり、localStorageに保存する", () => {
+    expect(loadTutorialCompleted()).toBe(false);
+    markTutorialCompleted();
+    expect(loadTutorialCompleted()).toBe(true);
+    expect(storage.get("typeblast.tutorial-completed.v1")).toBe("1");
   });
 });

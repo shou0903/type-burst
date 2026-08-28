@@ -1,5 +1,10 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { SHARE_ID_PATTERN, escapeHtml, getRedis, shareMetaKey } from "./_shared/shareStore.js";
+import {
+  HOME_SHARE_TARGET,
+  isDailyShareTarget,
+  normalizeShareTarget,
+} from "../shareTarget.js";
 
 /**
  * 共有リンク /r/<id> の実体(D-091)。
@@ -28,12 +33,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   let description =
     "打ち切ったブロックが爆発する日本語タイピングゲーム。登録不要・完全無料でPCブラウザから遊べます。";
   let found = false;
+  let targetPath: ReturnType<typeof normalizeShareTarget> = HOME_SHARE_TARGET;
 
   try {
     const meta = await getRedis().hgetall(shareMetaKey(id));
     if (meta && meta.title) {
       title = meta.title;
       description = meta.description ?? description;
+      targetPath = normalizeShareTarget(meta.targetPath);
       found = true;
     }
   } catch {
@@ -44,20 +51,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
 
   res.setHeader("Content-Type", "text/html; charset=utf-8");
   res.setHeader("Cache-Control", "public, max-age=300, s-maxage=3600");
-  res.status(200).send(renderHtml({ id, title, description, imageUrl, found }));
+  res.status(200).send(renderHtml({ id, title, description, imageUrl, found, targetPath }));
 }
 
-function renderHtml(input: {
+export function renderHtml(input: {
   id: string;
   title: string;
   description: string;
   imageUrl: string;
   found: boolean;
+  targetPath: ReturnType<typeof normalizeShareTarget>;
 }): string {
   const title = escapeHtml(input.title);
   const description = escapeHtml(input.description);
   const imageUrl = escapeHtml(input.imageUrl);
   const pageTitle = `${title}｜TYPE BURST`;
+  const targetPath = escapeHtml(input.targetPath);
+  const dailyTarget = isDailyShareTarget(input.targetPath);
+  const ctaLabel = dailyTarget ? "今日の2分勝負に挑戦" : "この記録に挑戦する";
 
   return `<!doctype html>
 <html lang="ja">
@@ -161,13 +172,13 @@ body{
     タイピング×連鎖パズルです。速さだけでは勝てません。
   </p>
 
-  <a class="rp-cta" href="/">この記録に挑戦する<small>無料・登録不要</small></a>
+  <a class="rp-cta" href="${targetPath}">${ctaLabel}<small>無料・登録不要</small></a>
 
   <ul class="rp-features">
     <li><b class="rp-g1">◆</b>4段階の難易度</li>
     <li><b class="rp-g2">●</b>毎日のチャレンジ</li>
     <li><b class="rp-g3">★</b>苦手キーの分析</li>
-    <li><b class="rp-g4">▲</b>世界ランキング</li>
+    <li><b class="rp-g4">▲</b>スコアランキング</li>
   </ul>
 
   <p class="rp-note">

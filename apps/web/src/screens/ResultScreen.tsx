@@ -24,6 +24,11 @@ import {
   buildSurvivalShare,
   type ShareContent,
 } from "../share/shareContent";
+import { trackFunnelEvent } from "../seoAttribution";
+import {
+  buildNextMatchGoal,
+  type NextMatchGoal,
+} from "../nextMatchGoal";
 
 interface Props {
   result: GameResult;
@@ -139,7 +144,7 @@ export function ResultScreen({
       .reduce((max, r) => Math.max(max, r.score), 0);
     const isBest = summary.score > previousBest && summary.score > 0;
     const delta = previous ? summary.score - previous.score : null;
-    const hint = buildHint(summary.accuracy, summary.maxChain, summary.kpm, summary.phraseCount);
+    const nextMatchGoal = buildNextMatchGoal(summary, sameDifficultyHistory.slice(1));
 
     const rank = rankOf(summary.score);
 
@@ -225,8 +230,7 @@ export function ResultScreen({
           <span>BURST <strong>{summary.burstCount}</strong></span>
         </div>
 
-        {hint && <p className="result-hint">{hint}</p>}
-        <p className="result-next-step">次は「タイピング分析」で、今回の弱点と伸びしろを確認できます。</p>
+        <NextMatchGoalCard summary={nextMatchGoal} />
 
         <RankingSubmitBox summary={summary} />
 
@@ -236,6 +240,7 @@ export function ResultScreen({
           </button>
           <ShareAction
             score={summary.score}
+            mode="survival"
             build={() => buildSurvivalShare(summary, rank, loadNickname())}
           />
           <button
@@ -295,6 +300,7 @@ export function ResultScreen({
       </button>
       <ShareAction
         score={summary.player.score}
+        mode="duel"
         build={() => buildDuelShare(summary, loadNickname())}
       />
       <button className="btn-secondary" onClick={() => onShowAnalysis(summary.player.analysis, [])}>
@@ -388,6 +394,7 @@ function DailyResultScreen({
       </button>
       <ShareAction
         score={summary.score}
+        mode="daily"
         build={() =>
           buildDailyShare({
             summary,
@@ -696,17 +703,25 @@ function RankingSubmitBox({ summary }: { summary: SurvivalSummary }): JSX.Elemen
 function ShareAction({
   build,
   score,
+  mode,
 }: {
   build: () => ShareContent;
   /** 0点の記録は共有しても誰の役にも立たないため、ボタン自体を出さない */
   score: number;
+  mode: "survival" | "daily" | "duel";
 }): JSX.Element | null {
   const [content, setContent] = useState<ShareContent | null>(null);
   if (score <= 0) return null;
 
   return (
     <>
-      <button className="btn-share" onClick={() => setContent(build())}>
+      <button
+        className="btn-share"
+        onClick={() => {
+          trackFunnelEvent("Share Action", { action: "open", mode });
+          setContent(build());
+        }}
+      >
         <span className="btn-share-glyph" aria-hidden="true">💥</span>
         結果を共有する
       </button>
@@ -762,20 +777,33 @@ function rankOf(score: number): string {
   return "D";
 }
 
-function buildHint(
-  accuracy: number,
-  maxChain: number,
-  kpm: number,
-  phraseCount: number,
-): string | null {
-  if (accuracy < 0.85) {
-    return "ミスが多め。速さより「最後まで正確に打ち切る」ことを意識すると連鎖が安定します。";
-  }
-  if (maxChain <= 1 && phraseCount >= 3) {
-    return "同じ色が縦横につながる場所を狙って消すと、落下連鎖でスコアが大きく伸びます。";
-  }
-  if (kpm < 150) {
-    return "ホームポジションを意識して、次の文字を先読みしながら打ってみましょう。";
-  }
-  return null;
+function NextMatchGoalCard({ summary }: { summary: NextMatchGoal }): JSX.Element {
+  const previous = summary.previous;
+  return (
+    <section className="result-goal" aria-labelledby="result-goal-title">
+      <div className="result-goal-head">
+        <div>
+          <span className="result-goal-kicker">NEXT MATCH GOAL</span>
+          <h2 id="result-goal-title">次の一戦の目標</h2>
+        </div>
+        <span className="result-goal-difficulty">
+          サバイバル・{SURVIVAL_DIFFICULTY_LABELS[summary.difficulty]}
+        </span>
+      </div>
+
+      <p className="result-goal-target">
+        次の一戦は<strong>{summary.goal.targetText}</strong>を目指す
+      </p>
+      <p className="result-goal-reason">理由：{summary.goal.reason}</p>
+
+      {previous && (
+        <p className="result-goal-previous">
+          前回の目標「{previous.goal.targetText}」：
+          <strong>
+            {previous.achieved ? "✓ 達成" : "○ 未達成"}
+          </strong>
+        </p>
+      )}
+    </section>
+  );
 }

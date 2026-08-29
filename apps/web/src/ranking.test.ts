@@ -55,10 +55,10 @@ describe("通常ランキングの自己ベスト送信", () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({ entries: [], viewer: null, ruleset: "survival-v2" }), { status: 200 }),
+        new Response(JSON.stringify({ entries: [], viewer: null, ruleset: "survival-v1" }), { status: 200 }),
       )
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({ ok: true, updated: true, ruleset: "survival-v2" }), { status: 200 }),
+        new Response(JSON.stringify({ ok: true, updated: true, ruleset: "survival-v1" }), { status: 200 }),
       );
     vi.stubGlobal("fetch", fetchMock);
 
@@ -70,7 +70,7 @@ describe("通常ランキングの自己ベスト送信", () => {
       nickname: "バースト王",
       score: 12_340,
       difficulty: "normal",
-      ruleset: "survival-v2",
+      ruleset: "survival-v1",
     });
     expect(body.playerId).toMatch(/^[A-Za-z0-9-]{8,80}$/);
   });
@@ -81,10 +81,10 @@ describe("通常ランキングの自己ベスト送信", () => {
       vi
         .fn()
         .mockResolvedValueOnce(
-          new Response(JSON.stringify({ entries: [], viewer: null, ruleset: "survival-v2" }), { status: 200 }),
+          new Response(JSON.stringify({ entries: [], viewer: null, ruleset: "survival-v1" }), { status: 200 }),
         )
         .mockResolvedValueOnce(
-          new Response(JSON.stringify({ ok: true, updated: false, ruleset: "survival-v2" }), { status: 200 }),
+          new Response(JSON.stringify({ ok: true, updated: false, ruleset: "survival-v1" }), { status: 200 }),
         ),
     );
 
@@ -93,7 +93,7 @@ describe("通常ランキングの自己ベスト送信", () => {
 
   it("現行ルールのランキングを取得する", async () => {
     const fetchMock = vi.fn().mockImplementation(
-      () => new Response(JSON.stringify({ entries: [], viewer: null, ruleset: "survival-v2" }), { status: 200 }),
+      () => new Response(JSON.stringify({ entries: [], viewer: null, ruleset: "survival-v1" }), { status: 200 }),
     );
     vi.stubGlobal("fetch", fetchMock);
 
@@ -101,16 +101,41 @@ describe("通常ランキングの自己ベスト送信", () => {
     await expect(fetchRanking("normal", 3)).resolves.toEqual({ entries: [], viewer: null });
 
     expect(fetchMock.mock.calls[0]?.[0]).toBe(
-      "/api/scores?difficulty=normal&limit=3&ruleset=survival-v2",
+      "/api/scores?difficulty=normal&limit=3&ruleset=survival-v1",
     );
     expect(fetchMock.mock.calls[1]?.[0]).toMatch(
-      /\/api\/scores\?difficulty=normal&limit=3&ruleset=survival-v2&playerId=/,
+      /\/api\/scores\?difficulty=normal&limit=3&ruleset=survival-v1&playerId=/,
     );
   });
 
-  it("旧APIへロールバック中はv2スコアを送信しない", async () => {
+  it("ruleset識別子がない旧v1 APIとも表示・送信を継続する", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ entries: [], viewer: null }), { status: 200 }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ entries: [], viewer: null }), { status: 200 }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ ok: true, updated: true }), { status: 200 }),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(fetchTopScores("normal", 3)).resolves.toEqual([]);
+    await expect(submitScore("バースト王", summary)).resolves.toEqual({ ok: true, updated: true });
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock.mock.calls[1]?.[0]).toBe(
+      "/api/scores?difficulty=normal&limit=1&ruleset=survival-v1",
+    );
+  });
+
+  it("明示的に異なるrulesetのAPIへは送信しない", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ entries: [], viewer: null }), { status: 200 }),
+      new Response(JSON.stringify({ entries: [], viewer: null, ruleset: "survival-v2" }), {
+        status: 200,
+      }),
     );
     vi.stubGlobal("fetch", fetchMock);
 
@@ -119,8 +144,5 @@ describe("通常ランキングの自己ベスト送信", () => {
       reason: "ruleset_unsupported",
     });
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(fetchMock.mock.calls[0]?.[0]).toBe(
-      "/api/scores?difficulty=normal&limit=1&ruleset=survival-v2",
-    );
   });
 });

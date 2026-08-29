@@ -19,8 +19,6 @@ const SURVIVAL_DIFFICULTIES = ["easy", "normal", "hard", "god"] as const;
 type SurvivalDifficulty = (typeof SURVIVAL_DIFFICULTIES)[number];
 
 const SURVIVAL_KEY_PREFIX = "leaderboard:survival:alltime";
-/** 管理画面は現行通常サバイバルの統計を表示する。旧v1キーは移行・削除せず保持する。 */
-const SURVIVAL_RULESET = "survival-v2" as const;
 /** scores.ts の自己ベスト制(D-093)導入時に加わった、プレイヤー別記録の接頭辞 */
 const PLAYER_MEMBER_PREFIX = "player:";
 const DAILY_RULESET_VERSION = 2;
@@ -95,20 +93,17 @@ interface SurvivalEntry {
   submittedAt: string;
 }
 
-/**
- * scores.ts の entryKeyForMember と同じ解決ロジック(D-093の自己ベスト制に対応)。
- * 現行方式(自己ベスト)は member が "player:<id>" で、詳細は
- * score:survival:survival-v2:<difficulty>:player:<id> という専用キーに入る。
- * 移行前のv1記録は別キーに残すが、現行統計へ混在させない。
- * ここを更新し忘れると、自己ベスト制へ移行したプレイヤーの記録が
- * 集計から静かに漏れる。
- */
+/** scores.ts と同じv1キー解決。旧ランダムID記録も集計から落とさない。 */
 function entryKeyForMember(difficulty: SurvivalDifficulty, member: string): string {
   if (member.startsWith(PLAYER_MEMBER_PREFIX)) {
     const playerId = member.slice(PLAYER_MEMBER_PREFIX.length);
-    return `score:survival:${SURVIVAL_RULESET}:${difficulty}:player:${playerId}`;
+    return `score:survival:${difficulty}:player:${playerId}`;
   }
-  return `score:survival:${SURVIVAL_RULESET}:${member}`;
+  return `score:${member}`;
+}
+
+function survivalLeaderboardKey(difficulty: SurvivalDifficulty): string {
+  return `${SURVIVAL_KEY_PREFIX}:${difficulty}`;
 }
 
 async function buildSurvivalStats(redis: Redis): Promise<{
@@ -122,7 +117,7 @@ async function buildSurvivalStats(redis: Redis): Promise<{
   let totalSubmissionsAcrossDifficulties = 0;
 
   for (const difficulty of SURVIVAL_DIFFICULTIES) {
-    const key = `${SURVIVAL_KEY_PREFIX}:${SURVIVAL_RULESET}:${difficulty}`;
+    const key = survivalLeaderboardKey(difficulty);
     const [total, members] = await Promise.all([
       redis.zcard(key),
       redis.zrevrange(key, 0, MAX_SAMPLE - 1),

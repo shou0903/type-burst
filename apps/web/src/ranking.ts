@@ -1,6 +1,11 @@
 import type { SurvivalDifficulty, SurvivalSummary } from "@type-burst/game-core";
 import { loadPlayerId } from "./playerId";
-import { SURVIVAL_RULESET } from "./storage";
+
+/**
+ * 世界ランキングは既存記録を引き継ぐ。ゲーム内の端末記録は survival-v2 として
+ * 比較を分けるが、公開ランキングまで空の別世代へ切り替えない。
+ */
+const RANKING_RULESET = "survival-v1" as const;
 
 export interface RankingEntry {
   id: string;
@@ -31,18 +36,22 @@ export type SubmitScoreResult =
   | { ok: false; reason: string };
 
 /**
- * v2を理解しない旧APIへ新ルールの記録を送らないための能力確認。
- * デプロイのロールバック直後に新しいJSがブラウザへ残るケースでも、旧APIの
- * v1ランキングへ混入させない。失敗時はランキング送信だけを静かに諦める。
+ * 現行APIはrulesetを明示する。旧APIは識別子を返さないが、保存先そのものが
+ * v1ランキングなので互換とみなす。これにより旧正常版へロールバックしても、
+ * キャッシュ済みの新クライアントでランキング表示・送信が止まらない。
  */
+function isCompatibleRankingRuleset(value: unknown): boolean {
+  return value === undefined || value === RANKING_RULESET;
+}
+
 async function supportsCurrentRuleset(difficulty: SurvivalDifficulty): Promise<boolean> {
   const res = await fetch(
-    `/api/scores?difficulty=${encodeURIComponent(difficulty)}&limit=1&ruleset=${encodeURIComponent(SURVIVAL_RULESET)}`,
+    `/api/scores?difficulty=${encodeURIComponent(difficulty)}&limit=1&ruleset=${encodeURIComponent(RANKING_RULESET)}`,
     { cache: "no-store" },
   );
   if (!res.ok) return false;
   const data = (await res.json()) as { ruleset?: unknown };
-  return data.ruleset === SURVIVAL_RULESET;
+  return isCompatibleRankingRuleset(data.ruleset);
 }
 
 /** サバイバル結果をランキングへ送信する。失敗してもゲーム進行には影響させない */
@@ -59,7 +68,7 @@ export async function submitScore(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         playerId: loadPlayerId(),
-        ruleset: SURVIVAL_RULESET,
+        ruleset: RANKING_RULESET,
         nickname,
         score: summary.score,
         difficulty: summary.difficulty,
@@ -72,7 +81,7 @@ export async function submitScore(
       return { ok: false, reason: res.status === 429 ? "rate_limited" : "rejected" };
     }
     const data = (await res.json()) as { updated?: unknown; ruleset?: unknown };
-    if (data.ruleset !== SURVIVAL_RULESET) {
+    if (!isCompatibleRankingRuleset(data.ruleset)) {
       return { ok: false, reason: "ruleset_unsupported" };
     }
     return { ok: true, updated: data.updated === true };
@@ -86,11 +95,11 @@ export async function fetchTopScores(
   limit = 100,
 ): Promise<RankingEntry[]> {
   const res = await fetch(
-    `/api/scores?difficulty=${encodeURIComponent(difficulty)}&limit=${limit}&ruleset=${encodeURIComponent(SURVIVAL_RULESET)}`,
+    `/api/scores?difficulty=${encodeURIComponent(difficulty)}&limit=${limit}&ruleset=${encodeURIComponent(RANKING_RULESET)}`,
   );
   if (!res.ok) throw new Error(`ランキング取得に失敗しました(${res.status})`);
   const data = (await res.json()) as { entries: RankingEntry[]; ruleset?: unknown };
-  if (data.ruleset !== SURVIVAL_RULESET) throw new Error("ランキングのルール世代が一致しません");
+  if (!isCompatibleRankingRuleset(data.ruleset)) throw new Error("ランキングのルール世代が一致しません");
   return data.entries ?? [];
 }
 
@@ -101,7 +110,7 @@ export async function fetchRanking(
 ): Promise<RankingResponse> {
   const playerId = loadPlayerId();
   const res = await fetch(
-    `/api/scores?difficulty=${encodeURIComponent(difficulty)}&limit=${limit}&ruleset=${encodeURIComponent(SURVIVAL_RULESET)}&playerId=${encodeURIComponent(playerId)}`,
+    `/api/scores?difficulty=${encodeURIComponent(difficulty)}&limit=${limit}&ruleset=${encodeURIComponent(RANKING_RULESET)}&playerId=${encodeURIComponent(playerId)}`,
   );
   if (!res.ok) throw new Error(`ランキング取得に失敗しました(${res.status})`);
   const data = (await res.json()) as {
@@ -109,6 +118,6 @@ export async function fetchRanking(
     viewer?: RankingViewer | null;
     ruleset?: unknown;
   };
-  if (data.ruleset !== SURVIVAL_RULESET) throw new Error("ランキングのルール世代が一致しません");
+  if (!isCompatibleRankingRuleset(data.ruleset)) throw new Error("ランキングのルール世代が一致しません");
   return { entries: data.entries ?? [], viewer: data.viewer ?? null };
 }

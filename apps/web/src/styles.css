@@ -1000,6 +1000,10 @@ textarea:focus-visible,
 }
 
 .board-canvas {
+  /* Renderer初期化前の最初のレイアウト計測でも、完成後と同じ領域を予約する。 */
+  display: block;
+  width: 696px;
+  height: 836px;
   border-radius: 14px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.55);
   border: 1px solid rgba(255, 255, 255, 0.09);
@@ -1067,11 +1071,13 @@ textarea:focus-visible,
 
 .hud-typing {
   min-height: 118px;
+  overflow: hidden;
 }
 
 .typing-target {
   font-size: calc(24px * var(--font-scale));
   font-weight: bold;
+  line-height: 1.2;
   margin: 4px 0 8px;
 }
 
@@ -1084,6 +1090,7 @@ textarea:focus-visible,
 .typing-romaji {
   font-family: Consolas, monospace;
   font-size: calc(21px * var(--font-scale));
+  line-height: 1.2;
   letter-spacing: 1px;
   word-break: break-all;
 }
@@ -1197,13 +1204,15 @@ textarea:focus-visible,
 
 .fever-badge {
   display: grid;
+  align-content: center;
   gap: 3px;
   text-align: center;
   font-weight: 900;
   font-size: calc(14px * var(--font-scale));
   color: #ffd75e;
   text-shadow: 0 0 14px rgba(255, 176, 84, 0.7);
-  min-height: 21px;
+  height: 58px;
+  overflow: hidden;
 }
 
 .fever-inactive {
@@ -1450,6 +1459,7 @@ textarea:focus-visible,
   color: #c9d8ff;
   font-size: 11px;
   line-height: 1.2;
+  min-height: 39px;
 }
 
 .chain-vision-hint small {
@@ -1472,7 +1482,10 @@ textarea:focus-visible,
 }
 
 .game-event-cue {
-  min-height: 18px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
   padding: 3px 8px;
   border: 1px solid rgba(255, 215, 94, 0.32);
   border-radius: 7px;
@@ -1591,6 +1604,9 @@ textarea:focus-visible,
 }
 
 .cpu-canvas {
+  display: block;
+  width: 220px;
+  height: 256px;
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: #101321;
@@ -2758,11 +2774,11 @@ textarea:focus-visible,
 }
 
 .ad-slot-left {
-  left: 20px;
+  left: max(20px, calc((100% - 1120px) / 2 - 180px));
 }
 
 .ad-slot-right {
-  right: 20px;
+  right: max(20px, calc((100% - 1120px) / 2 - 180px));
 }
 
 .ad-slot-label {

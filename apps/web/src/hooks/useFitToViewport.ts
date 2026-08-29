@@ -9,7 +9,17 @@ const MIN_SCALE = 0.55;
  * 合わせは、上方向へのはみ出しがドキュメント座標マイナスとなりスクロール
  * しても永久に見えなくなるため)。
  */
-export function useFitToViewport<T extends HTMLElement>(): {
+interface FitToViewportOptions {
+  /**
+   * コンテンツ自身の高さ変化でも縮尺を更新するか。ゲーム画面ではHUDの数値や
+   * 演出表示で全体が脈打たないようfalseにし、実ビューポート変更だけを追う。
+   */
+  observeContent?: boolean;
+}
+
+export function useFitToViewport<T extends HTMLElement>(
+  { observeContent = true }: FitToViewportOptions = {},
+): {
   ref: React.RefObject<T>;
   style: CSSProperties;
 } {
@@ -45,24 +55,26 @@ export function useFitToViewport<T extends HTMLElement>(): {
       );
     };
 
-    // 監視対象は2つ必要: el 自体(コンテンツの高さが動的に変わる場合、
-    // 例えば対戦中バッジの表示切替)と documentElement(ビューポート自体の
-    // サイズ変化。ブックマークバーの表示/非表示切替はコンテンツを一切
-    // 変えないため、el だけを監視していると検知できない)。
-    // さらに、resize イベントも ResizeObserver も発火しない環境が
-    // 稀にあるため、軽量なポーリングを保険として併用する。
-    const ro = new ResizeObserver(recompute);
-    ro.observe(el);
-    ro.observe(document.documentElement);
+    // 通常画面では内容とdocumentElementも監視する。プレイ中だけはHUDの表示内容が
+    // 変わるたびに盤面まで拡大縮小されないよう、実際のビューポート変更だけを追う。
+    const ro = observeContent ? new ResizeObserver(recompute) : null;
+    ro?.observe(el);
+    ro?.observe(document.documentElement);
     window.addEventListener("resize", recompute);
-    const intervalId = window.setInterval(recompute, 500);
+    window.visualViewport?.addEventListener("resize", recompute);
+    const intervalId = observeContent ? window.setInterval(recompute, 500) : null;
     recompute();
+    // Canvasの論理サイズ設定や最初のsnapshot公開はuseEffectで行われるため、
+    // 内容監視を止める画面でも次フレームに一度だけ完成後の寸法を取り直す。
+    const initialFrameId = window.requestAnimationFrame(recompute);
     return () => {
-      ro.disconnect();
+      ro?.disconnect();
       window.removeEventListener("resize", recompute);
-      window.clearInterval(intervalId);
+      window.visualViewport?.removeEventListener("resize", recompute);
+      if (intervalId !== null) window.clearInterval(intervalId);
+      window.cancelAnimationFrame(initialFrameId);
     };
-  }, []);
+  }, [observeContent]);
 
   return { ref, style };
 }

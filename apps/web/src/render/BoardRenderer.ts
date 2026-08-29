@@ -190,11 +190,8 @@ export class BoardRenderer {
   private particles: Particle[] = [];
   private popups: Popup[] = [];
   private rings: Ring[] = [];
-  private shakeAmp = 0;
   private flashAlpha = 0;
   private flashColor = "#ffffff";
-  /** 連鎖エスカレーション用ズームパンチ(D-050)。0=通常, 値が大きいほど一瞬拡大する */
-  private punchAmp = 0;
   private pulseMs = 0;
   private firstDraw = true;
   private textCache = new Map<string, TextLayout>();
@@ -227,9 +224,7 @@ export class BoardRenderer {
     this.particles = [];
     this.popups = [];
     this.rings = [];
-    this.shakeAmp = 0;
     this.flashAlpha = 0;
-    this.punchAmp = 0;
   }
 
   private cellX(col: number): number {
@@ -314,23 +309,14 @@ export class BoardRenderer {
           });
         }
 
-        // フラッシュ・シェイク・ズームパンチ(連鎖エスカレーション演出, D-050)
-        // 連鎖が深いほど段階的に派手にし、大連鎖は「ドカーン」と感じる強さにする
+        // 盤面自体は固定し、フラッシュ・リング・粒子・文字でヒット感を出す。
+        // カメラ移動とズームは文字入力中の視覚ノイズになるため使用しない(D-105)。
         if (!this.reducedMotion) {
           if (event.cause === "burst") this.flash("#ffffff", 0.55);
           else if (event.cause === "bomb") this.flash("#ffb054", 0.3);
           else if (event.cause === "prism") this.flash("#bfa5ff", 0.32);
           else if (event.chain >= 2) this.flash("#ffffff", Math.min(0.55, 0.1 + event.chain * 0.05));
 
-          const baseShake =
-            event.cause === "burst" ? 16 : Math.min(2.5 + event.blocks.length * 0.5, 8);
-          const chainShake = event.chain > 0 ? event.chain * 1.8 : 0;
-          this.shakeAmp = Math.max(this.shakeAmp, baseShake + chainShake);
-
-          if (event.chain >= 2 || event.cause === "burst") {
-            const punch = event.cause === "burst" ? 0.24 : Math.min(0.05 * event.chain, 0.34);
-            this.punchAmp = Math.max(this.punchAmp, punch);
-          }
         }
         break;
       }
@@ -349,10 +335,7 @@ export class BoardRenderer {
         }
         break;
       case "burstFired":
-        if (!this.reducedMotion) {
-          this.flash("#ffffff", 0.6);
-          this.shakeAmp = Math.max(this.shakeAmp, 18);
-        }
+        if (!this.reducedMotion) this.flash("#ffffff", 0.6);
         if (this.opts.drawText) {
           this.popups.push({
             text: "TYPE BURST!!",
@@ -367,7 +350,6 @@ export class BoardRenderer {
         }
         break;
       case "garbageLanded":
-        if (!this.reducedMotion) this.shakeAmp = Math.max(this.shakeAmp, 6);
         if (this.opts.drawText) {
           this.popups.push({
             text: `妨害 +${event.count}`,
@@ -551,43 +533,7 @@ export class BoardRenderer {
     if (this.reducedMotion) {
       this.particles = [];
       this.rings = [];
-      this.shakeAmp = 0;
-      this.punchAmp = 0;
       this.flashAlpha = 0;
-    }
-
-    const demoBounds = this.opts.popupBounds === true;
-    if (this.shakeAmp > 0.3) {
-      // コンパクトなヒーロー/アトラクトCanvasでは18pxの画面揺れだけで
-      // 安全域を越えるため、パーティクル等は残して全体平行移動だけ止める。
-      if (!demoBounds && !this.reducedMotion) {
-        ctx.translate(
-          (Math.random() * 2 - 1) * this.shakeAmp,
-          (Math.random() * 2 - 1) * this.shakeAmp,
-        );
-      }
-      this.shakeAmp *= Math.exp(-dtMs / 100);
-    } else {
-      this.shakeAmp = 0;
-    }
-
-    // ズームパンチ(D-050): 連鎖ヒットで一瞬拡大して素早く戻る。大連鎖スローモー中は
-    // さらに一段ズームインしたまま維持し、「魅せる」間を強調する(D-051)
-    // ヒーロー/アトラクト盤面はキャンバス自体が表示領域いっぱいのため、全体を
-    // 拡大するパンチ演出を適用すると ALL CLEAR / TYPE BURST が端で切れる。
-    // それらのモードではフラッシュ・リング・パーティクルを残し、ポップアップを
-    // 安全に見せるため外側のズームだけを無効化する(本番盤面は従来どおり)。
-    const bigChainZoom = snapshot.bigChainImpact && !this.reducedMotion && !demoBounds ? 0.07 : 0;
-    const zoomScale = this.reducedMotion || demoBounds ? 1 : 1 + this.punchAmp + bigChainZoom;
-    if (zoomScale > 1.001) {
-      ctx.translate(this.w / 2, this.h / 2);
-      ctx.scale(zoomScale, zoomScale);
-      ctx.translate(-this.w / 2, -this.h / 2);
-    }
-    if (this.punchAmp > 0.002) {
-      this.punchAmp *= Math.exp(-dtMs / 90);
-    } else {
-      this.punchAmp = 0;
     }
 
     this.drawBackground(snapshot);
@@ -602,7 +548,7 @@ export class BoardRenderer {
     if (this.opts.demoCue && this.firstDraw) this.drawDemoCue();
     this.updateAndDrawParticles(dtMs);
     this.updateAndDrawRings(dtMs);
-    this.updateAndDrawPopups(dtMs, zoomScale);
+    this.updateAndDrawPopups(dtMs);
     this.drawDangerVignette(snapshot);
     this.drawBigChainVignette(snapshot);
     this.drawFeverOverlay(snapshot);
@@ -1159,7 +1105,7 @@ export class BoardRenderer {
     this.rings = next;
   }
 
-  private updateAndDrawPopups(dtMs: number, outerScale = 1): void {
+  private updateAndDrawPopups(dtMs: number): void {
     const ctx = this.ctx;
     const next: Popup[] = [];
     for (const popup of this.popups) {
@@ -1174,15 +1120,13 @@ export class BoardRenderer {
           ? 0.6 + (t / 0.15) * 0.55
           : 1.15 - t * 0.15;
 
-      // Main gameplay keeps the historical popup rendering exactly as-is. The attract and
-      // hero canvases are tightly sized (304/392 logical px), so their signature labels need
-      // a little breathing room for both the stroke and the outer canvas transform.
+      // Attract/Heroの小さなCanvasでは、大きな演出文字が枠から切れないよう制限する。
       let scale = animationScale;
       let popupX = popup.x;
       let popupY = this.reducedMotion ? popup.y : popup.y - t * 30;
       if (this.opts.popupBounds) {
         const margin = Math.max(12, this.opts.pad + 4);
-        const availableWidth = popupSafeWidth(this.w, outerScale, margin);
+        const availableWidth = popupSafeWidth(this.w, 1, margin);
         ctx.font = `900 ${popup.size}px "Arial Black", sans-serif`;
         const measuredWidth = ctx.measureText(popup.text).width;
         // Leave a few logical pixels for the stroke and shadow. The resulting scale includes

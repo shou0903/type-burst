@@ -113,7 +113,13 @@ export function GameScreen({
   );
   const focusAchievedRef = useRef(false);
   const cueTimerRef = useRef<number | null>(null);
-  const { ref, style } = useFitToViewport<HTMLDivElement>();
+  // HUD内の数値・通知・候補表示では縮尺を変えず、ウィンドウサイズが変わった時だけ
+  // 盤面を合わせ直す。プレイ中の微細な拡大縮小を入力ノイズにしないため。
+  const { ref, style } = useFitToViewport<HTMLDivElement>({
+    // チュートリアルは初回snapshotで説明バナーが追加されるため、そこだけ完成後の
+    // 高さを追う。通常プレイはHUD変化で縮尺を動かさない。
+    observeContent: mode.type === "tutorial" && snapshot === null,
+  });
 
   const announceCue = (message: string): void => {
     setEventCue(message);
@@ -280,7 +286,9 @@ export function GameScreen({
   const player = snapshot?.player ?? null;
   const gaugePercent = Math.round((player?.gauge ?? 0) * 100);
   const burstCharge = Math.max(0, Math.min(150, player?.burstCharge ?? 0));
-  const overdrive = mode.type === "survival" && player?.burstOverchargeEnabled === true;
+  // GameControllerの通常サバイバル契約では常に有効。snapshotを待たず最初の描画から
+  // 最大レイアウトを予約し、開始直後のBURST欄の伸長を防ぐ。
+  const overdrive = mode.type === "survival";
   const burstTier = player?.burstTier ?? "charging";
   const burstTierLabel =
     burstTier === "max" ? "MAX BURST" : burstTier === "power" ? "POWER BURST" : "BURST";
@@ -293,6 +301,7 @@ export function GameScreen({
   const feverWarning = Boolean(player?.feverActive && feverSeconds <= 3);
   const showFeverPrimer = mode.type === "survival";
   const candidateCount = player?.candidateBlockIds.length ?? 0;
+  const showChainVision = Boolean(player && player.chainPreviews.length > 0);
 
   return (
     <div ref={ref} style={style} className="screen game">
@@ -448,7 +457,10 @@ export function GameScreen({
             </section>
           )}
 
-          <div className="hud-block hud-typing">
+          <div
+            className="hud-block hud-typing"
+            style={{ height: `${Math.round(190 + Math.max(0, fontScale - 1) * 250)}px` }}
+          >
             <div className="hud-label">INPUT</div>
             {player?.targetDisplayText ? (
               <>
@@ -476,8 +488,12 @@ export function GameScreen({
             )}
           </div>
 
-          {mode.type === "survival" && player && player.chainPreviews.length > 0 && (
-            <div className="chain-vision-hint" aria-label="連鎖候補の表示">
+          {mode.type === "survival" && (
+            <div
+              className={`chain-vision-hint badge-reserved${showChainVision ? "" : " badge-hidden"}`}
+              aria-hidden={!showChainVision}
+              aria-label={showChainVision ? "連鎖候補の表示" : undefined}
+            >
               <span className="chain-vision-mark" aria-hidden="true">›</span>
               <span>連鎖候補を表示中</span>
               <small>数字が大きいほど連鎖予測が長い</small>

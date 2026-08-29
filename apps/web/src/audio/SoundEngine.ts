@@ -1,3 +1,5 @@
+import type { BurstTier } from "@type-burst/game-core";
+
 /**
  * Web Audio API による効果音シンセ。外部音源ファイルを使わない。
  * AudioContext はユーザー操作後に初期化する(ブラウザの自動再生制限対応)。
@@ -152,11 +154,39 @@ export class SoundEngine {
     this.tone(1319, 200, { type: "triangle", gain: 0.12, delayMs: 180 });
   }
 
-  /** TYPE BURST 発動 */
-  burst(): void {
-    this.noise(500, 0.34);
-    this.tone(90, 600, { type: "sawtooth", gain: 0.26, endFreq: 32 });
-    this.tone(1760, 350, { type: "sine", gain: 0.1, endFreq: 440, delayMs: 60 });
+  /**
+   * オーバードライブの段階到達音。READYは従来のburstReady()が担当するため、
+   * POWER/MAXだけ追加の音を鳴らして、同じ瞬間に二重で鳴らさない。
+   */
+  burstTier(tier: BurstTier): void {
+    if (tier === "power") {
+      this.tone(988, 110, { type: "triangle", gain: 0.1 });
+      this.tone(1480, 150, { type: "triangle", gain: 0.1, delayMs: 70 });
+    } else if (tier === "max") {
+      this.tone(784, 100, { type: "triangle", gain: 0.1 });
+      this.tone(1175, 110, { type: "triangle", gain: 0.11, delayMs: 65 });
+      this.tone(1568, 190, { type: "sine", gain: 0.12, delayMs: 130 });
+    }
+  }
+
+  /** TYPE BURST 発動。段階が上がるほど低音と上昇音を少し強める。 */
+  burst(tier: BurstTier = "ready"): void {
+    const intensity = tier === "max" ? 1.18 : tier === "power" ? 1.08 : 1;
+    this.noise(500, 0.34 * intensity);
+    this.tone(90, 600, { type: "sawtooth", gain: 0.26 * intensity, endFreq: 32 });
+    this.tone(
+      tier === "max" ? 2093 : tier === "power" ? 1960 : 1760,
+      350,
+      { type: "sine", gain: 0.1 * intensity, endFreq: 440, delayMs: 60 },
+    );
+  }
+
+  /** 危険状態からの大連鎖脱出。短い上昇音で「自分の判断で救った」ことを伝える。 */
+  clutchClear(depth: number): void {
+    const base = Math.min(9, Math.max(0, depth - 5));
+    this.tone(620 + base * 24, 110, { type: "triangle", gain: 0.1 });
+    this.tone(930 + base * 30, 150, { type: "triangle", gain: 0.1, delayMs: 75 });
+    this.tone(1395 + base * 42, 220, { type: "sine", gain: 0.11, delayMs: 145 });
   }
 
   garbageSend(): void {

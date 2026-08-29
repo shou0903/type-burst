@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { loadTutorialCompleted, markTutorialCompleted, replaceResults } from "./storage";
+import {
+  bestScore,
+  loadTutorialCompleted,
+  markTutorialCompleted,
+  replaceResults,
+  type StoredResult,
+} from "./storage";
 
 const storage = new Map<string, string>();
 
@@ -25,11 +31,20 @@ describe("引き継ぎリザルトの復元", () => {
 
   it("難易度がなかった旧形式の記録を通常難易度として維持する", () => {
     const results = replaceResults([legacyResult]);
-    expect(results).toEqual([{ ...legacyResult, difficulty: "normal" }]);
+    expect(results).toEqual([{ ...legacyResult, difficulty: "normal", ruleset: "survival-v1" }]);
   });
 
   it("壊れた記録は復元しない", () => {
     expect(replaceResults([{ ...legacyResult, score: "not-a-number" }])).toEqual([]);
+  });
+
+  it("旧ルールと現行ルールのベストスコアを混ぜない", () => {
+    const results: StoredResult[] = [
+      { ...legacyResult, difficulty: "normal", score: 99_999, ruleset: "survival-v1" },
+      { ...legacyResult, difficulty: "normal", score: 12_000, ruleset: "survival-v2" },
+    ];
+    expect(bestScore(results, "normal")).toBe(12_000);
+    expect(bestScore(results, "normal", "survival-v1")).toBe(99_999);
   });
 });
 

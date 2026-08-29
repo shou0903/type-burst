@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { titleProgressForScore } from "@type-burst/progression";
 import {
   buildPlayerSnapshot,
@@ -12,7 +12,10 @@ import {
   type PlayerSnapshot,
 } from "../playerData";
 
-type PendingRestore = { code: string; snapshot: PlayerSnapshot };
+type PendingRestore = { code: string; snapshot: PlayerSnapshot; current: PlayerSnapshot };
+
+const MODAL_FOCUSABLE_SELECTOR =
+  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 export function DataTransferSection(): JSX.Element {
   const [code, setCode] = useState<string | null>(null);
@@ -22,7 +25,8 @@ export function DataTransferSection(): JSX.Element {
   const [message, setMessage] = useState<string | null>(null);
   const [lastSyncAt, setLastSyncAt] = useState<number | null>(() => loadLastSnapshotUploadAt());
   const modalTitleRef = useRef<HTMLHeadingElement>(null);
-  const current = useMemo(() => buildPlayerSnapshot(), []);
+  const modalRef = useRef<HTMLElement>(null);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     const handleSync = (): void => setLastSyncAt(loadLastSnapshotUploadAt());
@@ -30,16 +34,57 @@ export function DataTransferSection(): JSX.Element {
     return () => window.removeEventListener("typeburst:snapshot-uploaded", handleSync);
   }, []);
 
+  // モーダルを閉じたら、開く直前に操作していたコントロールへ戻す。
+  // 復元失敗時にも設定画面の現在地を失わせない。
+  useEffect(() => {
+    if (!pending) {
+      const previous = returnFocusRef.current;
+      returnFocusRef.current = null;
+      if (previous && document.contains(previous)) {
+        window.requestAnimationFrame(() => previous.focus());
+      }
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => modalTitleRef.current?.focus());
+    return () => window.cancelAnimationFrame(frame);
+  }, [pending]);
+
+  // Tabキーをモーダル内に閉じ込め、背面の設定画面へフォーカスが抜けないようにする。
   useEffect(() => {
     if (!pending) return;
     const handleKeyDown = (event: KeyboardEvent): void => {
-      if (event.key === "Escape" && busy !== "restore") {
+      if (event.key === "Escape") {
+        if (busy === "restore") return;
         event.preventDefault();
         setPending(null);
+        return;
+      }
+      if (event.key !== "Tab") return;
+
+      const modal = modalRef.current;
+      if (!modal) return;
+      const focusable = Array.from(
+        modal.querySelectorAll<HTMLElement>(MODAL_FOCUSABLE_SELECTOR),
+      ).filter((element) => element.getClientRects().length > 0);
+      if (focusable.length === 0) {
+        event.preventDefault();
+        modalTitleRef.current?.focus();
+        return;
+      }
+
+      const first = focusable[0]!;
+      const last = focusable[focusable.length - 1]!;
+      const active = document.activeElement;
+      if (event.shiftKey && (active === first || !modal.contains(active))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (active === last || !modal.contains(active))) {
+        event.preventDefault();
+        first.focus();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
-    window.requestAnimationFrame(() => modalTitleRef.current?.focus());
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [pending, busy]);
 
@@ -66,11 +111,14 @@ export function DataTransferSection(): JSX.Element {
   };
 
   const inspect = async (): Promise<void> => {
+    const activeBeforeLookup =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setBusy("lookup");
     setMessage(null);
     try {
       const preview = await previewRestore(input);
-      setPending({ code: input, snapshot: preview.snapshot });
+      returnFocusRef.current = activeBeforeLookup;
+      setPending({ code: input, snapshot: preview.snapshot, current: buildPlayerSnapshot() });
     } catch {
       // 不正形式・存在しないコード・期限切れは同じ文言にする。
       setMessage("コードを確認できませんでした。入力内容を確認して、時間をおいて再度お試しください。");
@@ -159,6 +207,12 @@ export function DataTransferSection(): JSX.Element {
             autoCapitalize="characters"
             autoCorrect="off"
             spellCheck={false}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.nativeEvent.isComposing) {
+                event.preventDefault();
+                void inspect();
+              }
+            }}
           />
           <button type="button" className="data-transfer-secondary" onClick={inspect} disabled={busy !== null || input.trim().length === 0}>
             {busy === "lookup" ? "確認中…" : "コードを確認して復元"}
@@ -176,14 +230,21 @@ export function DataTransferSection(): JSX.Element {
 
       {pending && (
         <div className="transfer-modal-backdrop" role="presentation">
-          <section className="transfer-modal" role="dialog" aria-modal="true" aria-labelledby="transfer-compare-title">
+          <section
+            ref={modalRef}
+            className="transfer-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="transfer-compare-title"
+            aria-describedby="transfer-restore-warning"
+          >
             <p className="data-transfer-kicker">RESTORE CHECK</p>
             <h2 id="transfer-compare-title" ref={modalTitleRef} tabIndex={-1}>この記録で上書きしますか？</h2>
-            <p>
+            <p id="transfer-restore-warning">
               自動マージは行いません。<strong>この端末の現在の記録は失われます。</strong>
             </p>
             <div className="transfer-compare">
-              <SnapshotSummary label="この端末の記録" snapshot={current} />
+              <SnapshotSummary label="この端末の記録" snapshot={pending.current} />
               <SnapshotSummary label="コード側の記録" snapshot={pending.snapshot} accent />
             </div>
             <div className="transfer-modal-actions">

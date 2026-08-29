@@ -196,6 +196,17 @@ body {
   cursor: not-allowed;
 }
 
+/* キーボード操作でも現在地を見失わない共通フォーカスリング。 */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid #ffdf70;
+  outline-offset: 3px;
+}
+
 .mode-row {
   display: flex;
   align-items: stretch;
@@ -1028,6 +1039,32 @@ body {
   color: #ffd75e;
 }
 
+.personal-best-goal {
+  display: grid;
+  gap: 4px;
+  margin-top: 4px;
+  color: #aeb7d6;
+  font-size: 10px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.personal-best-track {
+  display: block;
+  height: 4px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+.personal-best-track > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #6fc0ff, #ffd75e);
+  transition: width 0.18s linear;
+}
+
 .hud-typing {
   min-height: 118px;
 }
@@ -1159,18 +1196,116 @@ body {
 }
 
 .fever-badge {
+  display: grid;
+  gap: 3px;
   text-align: center;
   font-weight: 900;
-  font-size: calc(15px * var(--font-scale));
+  font-size: calc(14px * var(--font-scale));
   color: #ffd75e;
   text-shadow: 0 0 14px rgba(255, 176, 84, 0.7);
+  min-height: 21px;
+}
+
+.fever-inactive {
+  color: #a6aec9;
+  font-size: calc(12px * var(--font-scale));
+  text-shadow: none;
+}
+
+.fever-active {
   animation: blink 0.7s steps(2) infinite;
+}
+
+.fever-warning {
+  color: #ff8a70;
+  text-shadow: 0 0 16px rgba(255, 90, 70, 0.8);
+}
+
+.fever-countdown {
+  font-family: "Arial Black", sans-serif;
+  letter-spacing: 0.05em;
+}
+
+.fever-track {
+  display: block;
+  height: 5px;
+  margin: 0 auto;
+  width: min(230px, 90%);
+  border-radius: 5px;
+  background: rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+
+.fever-track > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ff8a70, #ffd75e);
+  transition: width 0.12s linear;
 }
 
 .key-help {
   font-size: 11px;
-  color: #7d84a3;
+  color: #9ba5c5;
   text-align: center;
+}
+
+.focus-hud {
+  display: grid;
+  gap: 5px;
+  padding: 9px 11px;
+  border: 1px solid rgba(111, 192, 255, 0.34);
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(31, 109, 194, 0.16), rgba(95, 232, 182, 0.06));
+}
+
+.focus-hud-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: #9ecfff;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+}
+
+.focus-hud-head strong {
+  color: #eef7ff;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+.focus-hud p {
+  margin: 0;
+  color: #e7ebf7;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.focus-hud-track {
+  height: 4px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: rgba(0, 0, 0, 0.42);
+}
+
+.focus-hud-track > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #6fc0ff, #5fe8b6);
+  transition: width 0.16s ease;
+}
+
+.focus-hud-achieved {
+  border-color: rgba(95, 232, 182, 0.7);
+  box-shadow: 0 0 18px rgba(95, 232, 182, 0.18);
+}
+
+.focus-hud-achieved .focus-hud-head,
+.focus-hud-achieved .focus-hud-head strong {
+  color: #8ef5c9;
 }
 
 .rank-badge {
@@ -1218,6 +1353,178 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.burst-overdrive {
+  padding-bottom: 8px;
+}
+
+.burst-tier-label {
+  color: #ffb054;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.burst-tier-power,
+.burst-tier-max {
+  border-color: rgba(255, 176, 84, 0.78);
+  box-shadow: 0 0 18px rgba(255, 176, 84, 0.28);
+}
+
+.burst-tier-max {
+  border-color: rgba(255, 215, 94, 0.95);
+  box-shadow: 0 0 22px rgba(255, 215, 94, 0.42);
+}
+
+.overdrive-track {
+  position: relative;
+  height: 16px;
+  margin-top: 5px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.overdrive-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #7d4f1e 0%, #ffb054 68%, #ffd75e 100%);
+  box-shadow: 0 0 14px rgba(255, 176, 84, 0.55);
+  transition: width 0.12s linear;
+}
+
+.overdrive-marker {
+  position: absolute;
+  top: 0;
+  width: 2px;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.72);
+  pointer-events: none;
+}
+
+.overdrive-marker-ready {
+  left: 66.666%;
+}
+
+.overdrive-marker-power {
+  left: 83.333%;
+  background: #ffd75e;
+}
+
+.overdrive-marker-max {
+  right: 0;
+  background: #fff7cf;
+}
+
+.overdrive-scale {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  margin-top: 3px;
+  color: #7d84a3;
+  font-size: 9px;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
+.overdrive-scale span:not(:first-child) {
+  text-align: right;
+}
+
+.burst-overdrive-hint {
+  display: block;
+  margin-top: 5px;
+  text-align: center;
+  animation: none;
+}
+
+.chain-vision-hint {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: 6px;
+  row-gap: 1px;
+  padding: 5px 10px;
+  border: 1px solid rgba(159, 191, 255, 0.24);
+  border-radius: 8px;
+  background: rgba(111, 148, 255, 0.06);
+  color: #c9d8ff;
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.chain-vision-hint small {
+  grid-column: 2;
+  color: #7d84a3;
+  font-size: 9px;
+}
+
+.chain-vision-mark {
+  grid-row: 1 / span 2;
+  display: inline-grid;
+  place-items: center;
+  width: 17px;
+  height: 17px;
+  border: 1px solid #9fbfff;
+  border-radius: 50%;
+  color: #dbe6ff;
+  font-family: "Arial Black", sans-serif;
+  font-size: 13px;
+}
+
+.game-event-cue {
+  min-height: 18px;
+  padding: 3px 8px;
+  border: 1px solid rgba(255, 215, 94, 0.32);
+  border-radius: 7px;
+  background: rgba(255, 215, 94, 0.07);
+  color: #ffe8a1;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.25;
+  transition: opacity 0.16s ease;
+}
+
+.game-event-cue-empty {
+  border-color: transparent;
+  background: transparent;
+  opacity: 0;
+}
+
+/* ゲーム中もOS/アプリ設定の「演出を控えめにする」を尊重する。情報の色・
+   文字・ゲージは残し、点滅と幅トランジションだけを止める。 */
+@media (prefers-reduced-motion: reduce) {
+  .game .fever-active,
+  .game .burst-hint,
+  .game .incoming-badge,
+  .game .danger-badge {
+    animation: none !important;
+  }
+
+  .game .personal-best-track > span,
+  .game .fever-track > span,
+  .game .overdrive-fill,
+  .game .focus-hud-track > span,
+  .game .rise-fill,
+  .game .game-event-cue {
+    transition: none !important;
+  }
+}
+
+:root.reduced-motion .game .fever-active,
+:root.reduced-motion .game .burst-hint,
+:root.reduced-motion .game .incoming-badge,
+:root.reduced-motion .game .danger-badge {
+  animation: none !important;
+}
+
+:root.reduced-motion .game .personal-best-track > span,
+:root.reduced-motion .game .fever-track > span,
+:root.reduced-motion .game .overdrive-fill,
+:root.reduced-motion .game .focus-hud-track > span,
+:root.reduced-motion .game .rise-fill,
+:root.reduced-motion .game .game-event-cue {
+  transition: none !important;
 }
 
 .burst-hint {
@@ -1371,14 +1678,98 @@ body {
 }
 
 .btn-quit {
-  margin-top: auto;
   font-size: 12px;
-  color: #7d84a3;
+  color: #9ba5c5;
   background: none;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
   padding: 6px;
   cursor: pointer;
+}
+
+.btn-pause {
+  margin-top: auto;
+  padding: 7px 10px;
+  border: 1px solid rgba(111, 192, 255, 0.32);
+  border-radius: 8px;
+  color: #cfe8ff;
+  background: rgba(111, 192, 255, 0.08);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.btn-pause kbd,
+.game-overlay-panel kbd,
+.tutorial-next kbd {
+  margin-left: 6px;
+  padding: 2px 6px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 5px;
+  font: inherit;
+  font-size: 10px;
+}
+
+.game-overlay-backdrop {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(5, 7, 14, 0.82);
+  backdrop-filter: blur(8px);
+}
+
+.game-overlay-panel {
+  width: min(460px, 100%);
+  display: grid;
+  gap: 14px;
+  padding: 28px;
+  border: 1px solid rgba(111, 192, 255, 0.38);
+  border-radius: 18px;
+  background: linear-gradient(160deg, #1b2239, #101421);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.58);
+  text-align: center;
+}
+
+.game-overlay-panel h2,
+.game-overlay-panel p {
+  margin: 0;
+}
+
+.game-overlay-panel > p:not(.game-overlay-kicker) {
+  color: #b8c1db;
+  line-height: 1.7;
+}
+
+.game-overlay-kicker {
+  color: #6fc0ff;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.2em;
+}
+
+.game-quit-panel {
+  border-color: rgba(255, 138, 112, 0.45);
+}
+
+.game-quit-panel .game-overlay-kicker {
+  color: #ff9f88;
+}
+
+.game-overlay-actions {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr;
+  gap: 10px;
+}
+
+.game-overlay-actions .btn-primary,
+.game-overlay-actions .btn-secondary {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 15px;
 }
 
 .ime-banner {
@@ -1750,6 +2141,147 @@ body {
   font-size: 13px;
 }
 
+.run-highlight {
+  width: min(780px, 100%);
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px 14px;
+  padding: 9px 14px;
+  border: 1px solid rgba(255, 215, 94, 0.28);
+  border-radius: 12px;
+  background: rgba(255, 215, 94, 0.07);
+}
+
+.run-highlight-kicker {
+  color: #9da5c3;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.17em;
+}
+
+.run-highlight strong {
+  color: #fff1a7;
+  font-size: calc(16px * var(--font-scale));
+  letter-spacing: 0.04em;
+}
+
+.run-highlight > span:last-child {
+  color: #c3c9e2;
+  font-size: 11px;
+  text-align: right;
+}
+
+.run-highlight-clutch {
+  border-color: rgba(255, 138, 112, 0.58);
+  background: rgba(255, 90, 70, 0.1);
+}
+
+.run-highlight-clutch strong {
+  color: #ffb29e;
+}
+
+.run-highlight-burst {
+  border-color: rgba(255, 176, 84, 0.62);
+  background: rgba(255, 176, 84, 0.1);
+}
+
+.run-highlight-chain {
+  border-color: rgba(142, 245, 201, 0.46);
+  background: rgba(142, 245, 201, 0.08);
+}
+
+.run-highlight-chain strong,
+.run-highlight-perfect strong {
+  color: #8ef5c9;
+}
+
+.run-highlight-perfect {
+  border-color: rgba(111, 192, 255, 0.46);
+  background: rgba(111, 192, 255, 0.08);
+}
+
+.result-focus {
+  width: min(680px, 100%);
+  display: grid;
+  gap: 7px;
+  padding: 10px 14px;
+  border: 1px solid rgba(111, 192, 255, 0.32);
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(31, 109, 194, 0.11), rgba(255, 255, 255, 0.025));
+}
+
+.result-focus-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.result-focus-head > div {
+  display: grid;
+  gap: 2px;
+}
+
+.result-focus-kicker {
+  color: #6fc0ff;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+}
+
+.result-focus-head strong {
+  font-size: 14px;
+}
+
+.result-focus-status {
+  flex: none;
+  padding: 4px 9px;
+  border-radius: 99px;
+  color: #aeb7d6;
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.result-focus > p {
+  margin: 0;
+  color: #aeb7d6;
+  font-size: 11px;
+}
+
+.result-focus-progress {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  font-size: 10px;
+}
+
+.result-focus-progress > span {
+  height: 5px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: rgba(0, 0, 0, 0.38);
+}
+
+.result-focus-progress > span > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #6fc0ff, #5fe8b6);
+}
+
+.result-focus-achieved {
+  border-color: rgba(95, 232, 182, 0.65);
+  background: linear-gradient(135deg, rgba(31, 158, 116, 0.16), rgba(95, 232, 182, 0.05));
+}
+
+.result-focus-achieved .result-focus-status,
+.result-focus-achieved .result-focus-kicker {
+  color: #8ef5c9;
+}
+
 .survival-result .result-hint {
   width: min(680px, 100%);
   margin: 0;
@@ -1774,7 +2306,7 @@ body {
 .result-actions {
   width: min(680px, 100%);
   display: grid;
-  grid-template-columns: 1.25fr 1fr 0.72fr;
+  grid-template-columns: 1.2fr 1fr 1fr 0.72fr;
   gap: 8px;
 }
 
@@ -2108,7 +2640,18 @@ body {
 }
 
 .ranking-submit-status.error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
   color: #ff8a70;
+  text-align: center;
+}
+
+.ranking-submit-status.error .btn-ranking-submit {
+  padding: 5px 10px;
+  font-size: 11px;
 }
 
 .ranking-submit-unavailable {
@@ -2138,7 +2681,14 @@ body {
 }
 
 .ranking-error {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
   color: #ff8a70;
+}
+
+.ranking-error p {
+  margin: 0;
 }
 
 .ranking-table-wrap {
@@ -2708,6 +3258,20 @@ body {
     flex-wrap: wrap;
   }
 
+  .run-highlight {
+    grid-template-columns: 1fr auto;
+    gap: 4px 10px;
+  }
+
+  .run-highlight-kicker {
+    grid-column: 1 / -1;
+  }
+
+  .run-highlight > span:last-child {
+    grid-column: 1 / -1;
+    text-align: left;
+  }
+
   .result-actions {
     grid-template-columns: 1fr 1fr;
   }
@@ -3227,7 +3791,7 @@ body {
   --line-hi: rgba(255, 255, 255, 0.24);
   --text: #eef1fb;
   --dim: #949dba;
-  --faint: #5f6784;
+  --faint: #818aa8;
 
   position: relative;
   gap: 18px;
@@ -3878,6 +4442,99 @@ body {
 .lp-tier-hint strong {
   color: var(--light-lit);
   font-variant-numeric: tabular-nums;
+}
+
+/* ---------- FOCUS: 1プレイに一つだけ狙いを持たせる ---------- */
+
+.lp-focus {
+  width: 100%;
+  max-width: 440px;
+  display: grid;
+  gap: 10px;
+  padding: 13px;
+  border: 1px solid rgba(111, 192, 255, 0.28);
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(95, 232, 182, 0.1), transparent 44%),
+    rgba(31, 109, 194, 0.07);
+}
+
+.lp-focus-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.lp-focus-head h2 {
+  margin: 2px 0 0;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.lp-focus-kicker {
+  color: var(--water-lit);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+}
+
+.lp-focus-note {
+  color: var(--dim);
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.lp-focus-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.lp-focus-option {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 3px;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  color: var(--dim);
+  background: rgba(0, 0, 0, 0.22);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.08s ease, border-color 0.12s ease, background 0.12s ease;
+}
+
+.lp-focus-option:hover {
+  transform: translateY(-2px);
+  border-color: rgba(111, 192, 255, 0.5);
+}
+
+.lp-focus-option.is-selected {
+  border-color: rgba(95, 232, 182, 0.72);
+  color: var(--text);
+  background: rgba(95, 232, 182, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(95, 232, 182, 0.12);
+}
+
+.lp-focus-option-label {
+  color: var(--wind-lit);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+}
+
+.lp-focus-option strong {
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.lp-focus-option small {
+  color: var(--dim);
+  font-size: 9px;
+  line-height: 1.45;
 }
 
 .lp-first-play {
@@ -5174,6 +5831,18 @@ body {
   color: var(--faint);
 }
 
+.lp-deck-error {
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  color: #ffb29e;
+}
+
+.lp-deck-retry {
+  color: var(--water-lit);
+  font-weight: 800;
+}
+
 .lp-deck-foot {
   margin-top: auto;
   padding-top: 3px;
@@ -5383,7 +6052,7 @@ body {
   --line-hi: rgba(255, 255, 255, 0.24);
   --text: #eef1fb;
   --dim: #949dba;
-  --faint: #5f6784;
+  --faint: #818aa8;
 
   gap: 16px;
   padding: 22px 20px 44px;
@@ -5560,6 +6229,20 @@ body {
 .rk-plinth-empty {
   background: none;
   border: none;
+}
+
+.rk-status-error {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+}
+
+.rk-status-error p {
+  margin: 0;
+}
+
+.rk-retry {
+  width: auto;
 }
 
 /* 1位を一段高くして、視線を中央へ集める */
@@ -5860,7 +6543,7 @@ body {
   --line-hi: rgba(255, 255, 255, 0.24);
   --text: #eef1fb;
   --dim: #949dba;
-  --faint: #5f6784;
+  --faint: #818aa8;
 
   gap: 16px;
   padding: 22px 20px 48px;
@@ -6088,6 +6771,19 @@ body {
   color: var(--faint);
   font-size: 11px;
   line-height: 1.6;
+}
+
+.an-empty-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+.an-empty-actions .btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
 }
 
 /* ---------- 成長グラフ ---------- */

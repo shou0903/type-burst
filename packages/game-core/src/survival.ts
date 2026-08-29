@@ -16,6 +16,12 @@ export interface SurvivalGameOptions {
   tierRatio?: GameConfig["tierRatio"];
   /** 満杯盤面から開始し、全消しのたびに満杯盤面を即補充する2分間スコアアタック */
   fullBoardScoreAttack?: boolean;
+  /** 盤面から連鎖候補を表示する読み取り専用予測 */
+  enableChainVision?: boolean;
+  /** 100到達後もゲージを150まで溜めるBURST OVERDRIVE */
+  enableBurstOvercharge?: boolean;
+  /** 危険状態からの大連鎖脱出をCLUTCH CLEARとして記録する */
+  enableClutchClear?: boolean;
 }
 
 /**
@@ -84,8 +90,15 @@ export class SurvivalGame {
             includeRefillSpecials: true,
             pauseRise: true,
             dangerEnabled: false,
+            enableChainVision: options.enableChainVision === true,
+            enableBurstOvercharge: options.enableBurstOvercharge === true,
+            enableClutchClear: options.enableClutchClear === true,
           }
-        : {},
+        : {
+            enableChainVision: options.enableChainVision === true,
+            enableBurstOvercharge: options.enableBurstOvercharge === true,
+            enableClutchClear: options.enableClutchClear === true,
+          },
     );
   }
 

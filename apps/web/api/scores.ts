@@ -19,6 +19,7 @@ import Redis from "ioredis";
  */
 
 const LEADERBOARD_KEY_PREFIX = "leaderboard:survival:alltime";
+const DEFAULT_RULESET: SurvivalRuleset = "survival-v1";
 const MAX_RETAINED_ENTRIES = 500;
 const TOP_LIMIT_DEFAULT = 100;
 const TOP_LIMIT_MAX = 100;
@@ -31,9 +32,16 @@ const PLAYER_PATTERN = /^[A-Za-z0-9-]{8,80}$/;
 const PLAYER_MEMBER_PREFIX = "player:";
 
 type SurvivalDifficulty = "easy" | "normal" | "hard" | "god";
+type SurvivalRuleset = "survival-v1" | "survival-v2";
 
-function leaderboardKey(difficulty: SurvivalDifficulty): string {
-  return `${LEADERBOARD_KEY_PREFIX}:${difficulty}`;
+/**
+ * v1 のキーは既存データをそのまま読めるよう絶対に変更しない。
+ * v2 はルール世代をキーに含め、ランキングと詳細ハッシュを完全分離する。
+ */
+export function leaderboardKey(ruleset: SurvivalRuleset, difficulty: SurvivalDifficulty): string {
+  return ruleset === "survival-v1"
+    ? `${LEADERBOARD_KEY_PREFIX}:${difficulty}`
+    : `${LEADERBOARD_KEY_PREFIX}:${ruleset}:${difficulty}`;
 }
 
 /**
@@ -48,19 +56,29 @@ function isPlayerMember(member: string): boolean {
   return member.startsWith(PLAYER_MEMBER_PREFIX);
 }
 
-function playerEntryKey(difficulty: SurvivalDifficulty, playerId: string): string {
-  return `score:survival:${difficulty}:player:${playerId}`;
+export function playerEntryKey(
+  ruleset: SurvivalRuleset,
+  difficulty: SurvivalDifficulty,
+  playerId: string,
+): string {
+  return ruleset === "survival-v1"
+    ? `score:survival:${difficulty}:player:${playerId}`
+    : `score:survival:${ruleset}:${difficulty}:player:${playerId}`;
 }
 
 /**
  * 既存のランダムID記録は読み続ける。プレイヤーID導入前の履歴には本人を安全に
  * 特定する情報が無いため、ニックネームでの推測統合は行わない。
  */
-function entryKeyForMember(difficulty: SurvivalDifficulty, member: string): string {
+export function entryKeyForMember(
+  ruleset: SurvivalRuleset,
+  difficulty: SurvivalDifficulty,
+  member: string,
+): string {
   if (isPlayerMember(member)) {
-    return playerEntryKey(difficulty, member.slice(PLAYER_MEMBER_PREFIX.length));
+    return playerEntryKey(ruleset, difficulty, member.slice(PLAYER_MEMBER_PREFIX.length));
   }
-  return `score:${member}`;
+  return ruleset === "survival-v1" ? `score:${member}` : `score:survival:${ruleset}:${member}`;
 }
 
 interface ScoreEntry {
@@ -76,6 +94,16 @@ interface ScoreEntry {
 
 function isSurvivalDifficulty(value: unknown): value is SurvivalDifficulty {
   return value === "easy" || value === "normal" || value === "hard" || value === "god";
+}
+
+export function isSurvivalRuleset(value: unknown): value is SurvivalRuleset {
+  return value === "survival-v1" || value === "survival-v2";
+}
+
+/** 欠落した ruleset は旧クライアントとして v1 に割り当てる。不正値は拒否する。 */
+export function parseSurvivalRuleset(value: unknown): SurvivalRuleset | null {
+  if (value === undefined) return DEFAULT_RULESET;
+  return isSurvivalRuleset(value) ? value : null;
 }
 
 // サーバーレス関数のウォームインスタンス間で接続を使い回す(毎回接続を張り直さない)
@@ -108,10 +136,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
 }
 
 async function handleGet(req: VercelRequest, res: VercelResponse): Promise<void> {
-  const redis = getRedis();
+  const ruleset = parseSurvivalRuleset(req.query.ruleset);
+  if (!ruleset) {
+    res.status(400).json({ error: "Invalid ruleset" });
+    return;
+  }
   const difficulty: SurvivalDifficulty = isSurvivalDifficulty(req.query.difficulty)
     ? req.query.difficulty
     : "normal";
+  const redis = getRedis();
   const requested = Number(req.query.limit);
   const limit = Math.min(
     TOP_LIMIT_MAX,
@@ -119,11 +152,11 @@ async function handleGet(req: VercelRequest, res: VercelResponse): Promise<void>
   );
   const viewerId = sanitizePlayerId(req.query.playerId);
 
-  const key = leaderboardKey(difficulty);
+  const key = leaderboardKey(ruleset, difficulty);
   const ids = await redis.zrevrange(key, 0, limit - 1);
 
   const pipeline = redis.pipeline();
-  for (const member of ids) pipeline.hgetall(entryKeyForMember(difficulty, member));
+  for (const member of ids) pipeline.hgetall(entryKeyForMember(ruleset, difficulty, member));
   const results = await pipeline.exec();
 
   const entries: ScoreEntry[] = [];
@@ -178,10 +211,18 @@ async function handleGet(req: VercelRequest, res: VercelResponse): Promise<void>
     "Cache-Control",
     viewerId ? "private, no-store" : "s-maxage=30, stale-while-revalidate=60",
   );
-  res.status(200).json({ entries, viewer });
+  // クライアントはこの印を確認してからv2スコアを送る。旧APIへロールバックした
+  // 直後にキャッシュ済みの新クライアントが残っても、v2記録をv1へ誤送信しない。
+  res.status(200).json({ entries, viewer, ruleset });
 }
 
 async function handlePost(req: VercelRequest, res: VercelResponse): Promise<void> {
+  const body = (req.body ?? {}) as Record<string, unknown>;
+  const ruleset = parseSurvivalRuleset(body.ruleset);
+  if (!ruleset) {
+    res.status(400).json({ error: "Invalid ruleset" });
+    return;
+  }
   const redis = getRedis();
   const ip = getClientIp(req);
   const rateLimitKey = `ratelimit:scores:${ip}`;
@@ -192,7 +233,6 @@ async function handlePost(req: VercelRequest, res: VercelResponse): Promise<void
   }
   await redis.set(rateLimitKey, "1", "EX", RATE_LIMIT_WINDOW_SEC);
 
-  const body = (req.body ?? {}) as Record<string, unknown>;
   const playerId = sanitizePlayerId(body.playerId);
   const nickname = sanitizeNickname(body.nickname);
   const score = Number(body.score);
@@ -233,12 +273,18 @@ async function handlePost(req: VercelRequest, res: VercelResponse): Promise<void
     submittedAt: new Date().toISOString(),
   };
 
-  const key = leaderboardKey(difficulty);
+  const key = leaderboardKey(ruleset, difficulty);
   const member = playerMember(playerId);
-  const updated = await upsertBestScore(redis, key, playerEntryKey(difficulty, playerId), member, entry);
-  await pruneOldEntries(redis, key, difficulty);
+  const updated = await upsertBestScore(
+    redis,
+    key,
+    playerEntryKey(ruleset, difficulty, playerId),
+    member,
+    entry,
+  );
+  await pruneOldEntries(redis, key, ruleset, difficulty);
 
-  res.status(200).json({ ok: true, updated });
+  res.status(200).json({ ok: true, updated, ruleset });
 }
 
 /**
@@ -291,6 +337,7 @@ async function upsertBestScore(
 async function pruneOldEntries(
   redis: Redis,
   key: string,
+  ruleset: SurvivalRuleset,
   difficulty: SurvivalDifficulty,
 ): Promise<void> {
   const total = await redis.zcard(key);
@@ -300,7 +347,7 @@ async function pruneOldEntries(
   if (toRemove.length === 0) return;
   const pipeline = redis.pipeline();
   pipeline.zrem(key, ...toRemove);
-  for (const member of toRemove) pipeline.del(entryKeyForMember(difficulty, member));
+  for (const member of toRemove) pipeline.del(entryKeyForMember(ruleset, difficulty, member));
   await pipeline.exec();
 }
 

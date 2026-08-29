@@ -14,6 +14,8 @@ import {
   type Attribute,
   type Block,
   type BlockView,
+  type BurstTier,
+  type ChainPreview,
   type ClearCause,
   type ClearedBlockInfo,
   type FingerStat,
@@ -40,6 +42,8 @@ interface ResolvingState {
   coloredCleared: number;
   garbageDestroyed: number;
   maxGroupSize: number;
+  /** この連鎖が始まった瞬間の危険状態。CLUTCH CLEAR判定用 */
+  startedInDanger: boolean;
 }
 
 interface IncomingGarbage {
@@ -48,6 +52,12 @@ interface IncomingGarbage {
 }
 
 export interface PlayerCoreOptions {
+  /** 盤面から連鎖候補を読み取り専用で予測する */
+  enableChainVision?: boolean;
+  /** 100到達後もゲージを150まで溜め、BURSTのtierを強化する */
+  enableBurstOvercharge?: boolean;
+  /** 危険状態からの大連鎖脱出をCLUTCH CLEARとして記録する */
+  enableClutchClear?: boolean;
   /** 初期盤面の行数。未指定ならconfig.initialRows */
   initialRows?: number;
   /** 初期盤面へボムとプリズムを1個ずつ確定配置する */
@@ -130,6 +140,12 @@ export class PlayerCore {
   private readonly refillRowsOnAllClear: number | null;
   private readonly includeRefillSpecials: boolean;
   private readonly dangerEnabled: boolean;
+  private readonly enableChainVision: boolean;
+  private readonly enableBurstOvercharge: boolean;
+  private readonly enableClutchClear: boolean;
+
+  /** 盤面が変わるまで再利用するChain Visionの計算結果 */
+  private chainPreviewCache: { previews: ChainPreview[] } | null = null;
 
   private blocks: Block[] = [];
   private nextBlockId = 1;
@@ -157,6 +173,8 @@ export class PlayerCore {
   private gauge = 0;
   private burstCount = 0;
   private garbageSentTotal = 0;
+  private clutchClearCount = 0;
+  private maxBurstTier: BurstTier = "charging";
   private incoming: IncomingGarbage[] = [];
   private danger = false;
   /** フィーバータイム残り時間(ms)。0ならフィーバーではない(D-052) */
@@ -190,6 +208,9 @@ export class PlayerCore {
         : null;
     this.includeRefillSpecials = options.includeRefillSpecials === true;
     this.dangerEnabled = options.dangerEnabled !== false;
+    this.enableChainVision = options.enableChainVision === true;
+    this.enableBurstOvercharge = options.enableBurstOvercharge === true;
+    this.enableClutchClear = options.enableClutchClear === true;
     this.pauseRise = options.pauseRise === true;
     this.riseTimerMs = rise.startIntervalMs;
     const initialRows =
@@ -211,6 +232,12 @@ export class PlayerCore {
    * スコア・ゲージ・連鎖記録はステップ切り替え時にリセットされ、本番のランキングには一切関与しない。
    */
   loadTutorialBoard(spec: readonly TutorialBlockSpec[], gauge = 0): void {
+    // ステップ間でプレイ状態を持ち越さない。チュートリアルの盤面差し替えは
+    // 表示だけでなく、分析・スコア・必殺技・危険状態を含む1セッションを再初期化する。
+    this.nextBlockId = 1;
+    this.elapsedMs = 0;
+    this.riseTimerMs = this.rise.startIntervalMs;
+    this.riseWarningIssued = false;
     this.blocks = spec.map((s) => ({
       id: this.nextBlockId++,
       kind: s.kind ?? "normal",
@@ -225,11 +252,31 @@ export class PlayerCore {
     this.candidateIds = null;
     this.lockedId = null;
     this.resolving = null;
+    this.phraseAttemptMissed = false;
+    this.correctKeys = 0;
+    this.wrongKeys = 0;
+    this.keyLog = [];
+    this.phraseCount = 0;
+    this.perfectPhraseCount = 0;
+    this.maxChain = 0;
+    this.score = 0;
+    this.burstCount = 0;
+    this.garbageSentTotal = 0;
+    this.incoming = [];
+    this.clutchClearCount = 0;
+    this.maxBurstTier = "charging";
     this.toppedOut = false;
+    this.frozen = false;
     this.perfectStreak = 0;
-    this.gauge = Math.max(0, Math.min(this.config.special.gaugeMax, gauge));
+    this.gauge = this.clampGauge(gauge);
     // チュートリアルのステップ切り替えでフィーバーが持ち越されないようにする
     this.feverMsLeft = 0;
+    this.danger = this.dangerEnabled && highestRow(this.blocks) >= this.config.dangerRow;
+    this.firstKeyCache.clear();
+    this.recentPhraseIds.length = 0;
+    this.chainPreviewCache = null;
+    // 前ステップ由来のイベントも新しいステップへ持ち越さない。
+    this.events = [];
   }
 
   // ------------------------------------------------------------------
@@ -320,7 +367,11 @@ export class PlayerCore {
     const result = automaton.feed(key);
     if (!result.accepted) {
       this.wrongKeys += 1;
-      this.phraseAttemptMissed = true;
+      // 正しい先頭キーをまだ押していない誤入力は、単語への試行ではない。
+      // アイドル中の誤キーを次に完成する単語の PERFECT 判定へ持ち越さない。
+      if (this.candidateIds !== null || this.lockedId !== null) {
+        this.phraseAttemptMissed = true;
+      }
       this.logKey(key, false);
       this.emit({ type: "keyRejected" });
       return;
@@ -355,7 +406,11 @@ export class PlayerCore {
 
     if (accepted.length === 0) {
       this.wrongKeys += 1;
-      this.phraseAttemptMissed = true;
+      // 候補がない状態での誤入力はアイドル誤キー。PERFECT を壊すのは、
+      // いったん有効な単語入力を始めた後の誤キーだけに限定する。
+      if (this.candidateIds !== null || this.lockedId !== null) {
+        this.phraseAttemptMissed = true;
+      }
       this.logKey(key, false);
       this.emit({ type: "keyRejected" });
       return;
@@ -398,6 +453,9 @@ export class PlayerCore {
   private resetSelection(): void {
     this.candidateIds = null;
     this.lockedId = null;
+    // 行上昇・妨害着弾・明示キャンセルなどで入力中の単語が中断された場合、
+    // その単語のミス状態は次の単語へ持ち越さない。
+    this.phraseAttemptMissed = false;
     for (const block of this.blocks) {
       this.automatons.get(block.id)?.reset();
     }
@@ -424,27 +482,84 @@ export class PlayerCore {
     return this.gauge >= this.config.special.gaugeMax;
   }
 
+  /** 現在のゲージ量から必殺技のtierを決める(設定に関係なく下位tierは互換維持)。 */
+  private getCurrentBurstTier(): BurstTier {
+    if (this.gauge < this.config.special.gaugeMax) return "charging";
+    if (!this.enableBurstOvercharge) return "ready";
+    if (this.gauge >= this.config.special.burstMaxGauge) return "max";
+    if (this.gauge >= this.config.special.burstPowerGauge) return "power";
+    return "ready";
+  }
+
+  private burstTierRank(tier: BurstTier): number {
+    return tier === "charging" ? 0 : tier === "ready" ? 1 : tier === "power" ? 2 : 3;
+  }
+
+  private maxGauge(): number {
+    return this.enableBurstOvercharge
+      ? Math.max(this.config.special.gaugeMax, this.config.special.burstMaxGauge)
+      : this.config.special.gaugeMax;
+  }
+
+  private clampGauge(value: number): number {
+    if (!Number.isFinite(value)) return 0;
+    return Math.max(0, Math.min(this.maxGauge(), value));
+  }
+
+  private emitBurstTierChange(previous: BurstTier): void {
+    const next = this.getCurrentBurstTier();
+    if (next !== previous) {
+      this.emit({ type: "burstTierChanged", tier: next, charge: this.gauge });
+    }
+  }
+
+  private updateMaxBurstTier(tier: BurstTier): void {
+    if (this.burstTierRank(tier) > this.burstTierRank(this.maxBurstTier)) {
+      this.maxBurstTier = tier;
+    }
+  }
+
   triggerBurst(): boolean {
     if (this.frozen || this.toppedOut || this.resolving !== null || !this.burstReady) {
       return false;
     }
-    const targets = this.blocks.filter((b) => b.row < this.config.special.burstRows);
+    const tier = this.getCurrentBurstTier();
+    this.updateMaxBurstTier(tier);
+    const rows = this.burstRowsForTier(tier);
+    const targets = this.blocks.filter((b) => b.row < rows);
     if (targets.length === 0) return false;
+    const scoreGained = this.applyFeverMultiplier(this.config.special.burstBaseScore);
+    const previousTier = tier;
     this.gauge = 0;
     this.burstCount += 1;
-    this.score += this.applyFeverMultiplier(this.config.special.burstBaseScore);
-    this.emit({ type: "burstFired" });
+    this.score += scoreGained;
+    this.emit({ type: "burstFired", tier, rows, scoreGained });
+    this.emitBurstTierChange(previousTier);
     this.startResolving(targets, 1, "burst", targets.length);
     return true;
   }
 
+  private burstRowsForTier(tier: BurstTier): number {
+    const configured =
+      tier === "max"
+        ? this.config.special.burstMaxRows
+        : tier === "power"
+          ? this.config.special.burstPowerRows
+          : this.config.special.burstRows;
+    return Math.max(0, Math.min(this.config.visibleRows, configured));
+  }
+
   private addGauge(amount: number): void {
     if (amount <= 0) return;
+    const previousTier = this.getCurrentBurstTier();
     const wasReady = this.burstReady;
-    this.gauge = Math.min(this.config.special.gaugeMax, this.gauge + amount);
+    this.gauge = this.clampGauge(this.gauge + amount);
+    const nextTier = this.getCurrentBurstTier();
+    this.updateMaxBurstTier(nextTier);
     if (!wasReady && this.burstReady) {
       this.emit({ type: "burstReady" });
     }
+    this.emitBurstTierChange(previousTier);
   }
 
   // ------------------------------------------------------------------
@@ -563,6 +678,7 @@ export class PlayerCore {
       coloredCleared: 0,
       garbageDestroyed: 0,
       maxGroupSize: groupSize,
+      startedInDanger: this.danger,
     };
     this.candidateIds = null;
     this.lockedId = null;
@@ -595,6 +711,7 @@ export class PlayerCore {
       this.blocks = this.blocks.filter((b) => !clearingIds.has(b.id));
       for (const id of clearingIds) this.automatons.delete(id);
       applyGravity(this.blocks, columns);
+      this.invalidateChainPreviews();
       resolving.stage = "falling";
       resolving.stageMsLeft = this.config.chain.fallMs;
       return;
@@ -611,6 +728,7 @@ export class PlayerCore {
       resolving.largestGroupSize = Math.max(...groups.map((g) => g.length));
       resolving.maxGroupSize = Math.max(resolving.maxGroupSize, resolving.largestGroupSize);
       resolving.cause = "auto";
+      this.invalidateChainPreviews();
 
       if (newDepth >= this.config.chain.bigChainDepth) {
         // 大連鎖スローモー(D-051): 「魅せる」ために一瞬の間(拡張ヒットストップ)を挟んでから
@@ -639,6 +757,7 @@ export class PlayerCore {
 
     // 連鎖終了 → 攻撃力を計算
     const depth = resolving.chainDepth;
+    const startedInDanger = resolving.startedInDanger === true;
     let chainScore = 0;
     if (depth > 0) {
       chainScore = this.applyFeverMultiplier(depth * depth * this.config.score.chainSquareWeight);
@@ -685,7 +804,18 @@ export class PlayerCore {
         this.riseTimerMs = Math.min(this.riseTimerMs, 600);
       }
     }
+    // 盤面変化後の危険状態を確定してからCLUTCH CLEARを判定する。これにより、
+    // dangerChangedとclutchClearの順序が毎回同じになり、1つの解決につき一度だけ発火する。
     this.updateDanger();
+    if (
+      this.enableClutchClear &&
+      startedInDanger &&
+      depth >= this.config.chain.clutchClearMinDepth &&
+      !this.danger
+    ) {
+      this.clutchClearCount += 1;
+      this.emit({ type: "clutchClear", depth });
+    }
   }
 
   private trackClearTotals(resolving: ResolvingState, blocks: readonly Block[]): void {
@@ -785,6 +915,7 @@ export class PlayerCore {
     if (landed > 0) {
       this.emit({ type: "garbageLanded", count: landed });
       this.resetSelection();
+      this.invalidateChainPreviews();
       this.updateDanger();
     }
   }
@@ -848,6 +979,10 @@ export class PlayerCore {
       rowAttrs.push(attr);
       this.pushBlock("normal", attr, this.pickPhrase(), row, col);
     }
+    this.invalidateChainPreviews();
+    // 盤面が変化すると、入力中の候補は新しい盤面に対して無効になる。
+    // 中断後の次の単語は新しい試行として PERFECT 判定する。
+    this.resetSelection();
     this.emit({ type: "rowDropped" });
     this.updateDanger();
   }
@@ -933,6 +1068,7 @@ export class PlayerCore {
         this.blocks.push(block);
       }
     }
+    this.invalidateChainPreviews();
   }
 
   private pickPhrase(forceTier?: PhraseTier): JapanesePhrase {
@@ -1024,6 +1160,142 @@ export class PlayerCore {
   }
 
   // ------------------------------------------------------------------
+  // CHAIN VISION(読み取り専用の盤面予測)
+  // ------------------------------------------------------------------
+
+  private invalidateChainPreviews(): void {
+    this.chainPreviewCache = null;
+  }
+
+  /** Chain Visionの結果を返す。呼び出しは乱数・スコア・ゲージを一切変更しない。 */
+  getChainPreviews(): ChainPreview[] {
+    if (!this.enableChainVision) return [];
+    // 盤面の変更箇所では invalidateChainPreviews() を必ず呼ぶため、キャッシュヒット時に
+    // 60ブロック分の署名作成やsortを繰り返さない。返却値はコピーして外部からキャッシュを
+    // 書き換えられないようにする。
+    if (this.chainPreviewCache !== null) {
+      return this.chainPreviewCache.previews.map((preview) => ({ ...preview }));
+    }
+
+    const rows = this.config.visibleRows + 2;
+    const previews: ChainPreview[] = [];
+    for (const block of this.blocks) {
+      if (block.kind === "garbage") continue;
+      const preview = this.predictChain(block, rows);
+      // Chain Visionは「次に作れる連鎖」を示すための機能なので、単独消去
+      // (predictedDepth=0)は候補に含めない。特殊ブロックは既存ルール上
+      // 1段目の消去として扱われるため、通常どおり候補に残る。
+      if (preview.predictedDepth >= 1) previews.push(preview);
+    }
+
+    const kindPriority: Record<ChainPreview["kind"], number> = {
+      normal: 0,
+      bomb: 1,
+      prism: 2,
+    };
+    previews.sort(
+      (a, b) =>
+        b.predictedDepth - a.predictedDepth ||
+        b.predictedClearedCount - a.predictedClearedCount ||
+        b.directGroupSize - a.directGroupSize ||
+        kindPriority[b.kind] - kindPriority[a.kind] ||
+        a.row - b.row ||
+        a.col - b.col ||
+        a.blockId - b.blockId,
+    );
+
+    const top = previews.slice(0, 3);
+    this.chainPreviewCache = { previews: top };
+    return top.map((preview) => ({ ...preview }));
+  }
+
+  private predictChain(origin: Block, rows: number): ChainPreview {
+    const columns = this.config.columns;
+    let blocks = this.blocks.map((block) => ({ ...block }));
+    const trigger = blocks.find((block) => block.id === origin.id)!;
+    let direct: Block[];
+    let predictedDepth: number;
+
+    if (trigger.kind === "bomb") {
+      direct = blocks.filter(
+        (block) =>
+          Math.abs(block.row - trigger.row) <= 1 && Math.abs(block.col - trigger.col) <= 1,
+      );
+      predictedDepth = 1;
+    } else if (trigger.kind === "prism") {
+      const counts = new Map<Attribute, number>();
+      for (const block of blocks) {
+        if (block.attribute !== null) {
+          counts.set(block.attribute, (counts.get(block.attribute) ?? 0) + 1);
+        }
+      }
+      let best: Attribute | null = null;
+      let bestCount = 0;
+      for (const attribute of ATTRIBUTES) {
+        const count = counts.get(attribute) ?? 0;
+        if (count > bestCount) {
+          best = attribute;
+          bestCount = count;
+        }
+      }
+      direct = blocks.filter(
+        (block) => block.id === trigger.id || (best !== null && block.attribute === best),
+      );
+      predictedDepth = 1;
+    } else {
+      const group = findGroup(blocks, trigger, columns, rows);
+      direct = group.length >= this.config.chain.directClearMin ? group : [trigger];
+      predictedDepth = group.length >= this.config.chain.directClearMin ? 1 : 0;
+    }
+
+    const directWithGarbage =
+      trigger.kind === "normal"
+        ? [...direct, ...findAdjacentGarbage(blocks, direct, columns, rows)]
+        : direct;
+    const directGroupSize = direct.length;
+    const firstClearing = this.uniqueBlocks(directWithGarbage);
+    let predictedClearedCount = firstClearing.length;
+    blocks = blocks.filter((block) => !firstClearing.some((cleared) => cleared.id === block.id));
+    applyGravity(blocks, columns);
+
+    while (predictedDepth < this.config.chain.maxSteps) {
+      const groups = findAutoGroups(blocks, this.config.chain.autoClearMin, columns, rows);
+      if (groups.length === 0) break;
+      const auto = this.uniqueBlocks([
+        ...groups.flat(),
+        ...findAdjacentGarbage(blocks, groups.flat(), columns, rows),
+      ]);
+      if (auto.length === 0) break;
+      predictedDepth += 1;
+      predictedClearedCount += auto.length;
+      blocks = blocks.filter((block) => !auto.some((cleared) => cleared.id === block.id));
+      applyGravity(blocks, columns);
+    }
+
+    return {
+      blockId: origin.id,
+      kind: origin.kind as Exclude<Block["kind"], "garbage">,
+      attribute: origin.attribute,
+      row: origin.row,
+      col: origin.col,
+      predictedDepth,
+      directGroupSize,
+      predictedClearedCount,
+    };
+  }
+
+  private uniqueBlocks(blocks: readonly Block[]): Block[] {
+    const seen = new Set<number>();
+    const unique: Block[] = [];
+    for (const block of blocks) {
+      if (seen.has(block.id)) continue;
+      seen.add(block.id);
+      unique.push(block);
+    }
+    return unique;
+  }
+
+  // ------------------------------------------------------------------
   // 状態出力
   // ------------------------------------------------------------------
 
@@ -1100,7 +1372,8 @@ export class PlayerCore {
       ),
       riseWarningActive: this.riseWarningIssued,
       riseMsLeft: Math.max(0, this.riseTimerMs),
-      gauge: this.gauge / this.config.special.gaugeMax,
+      // 既存UI向けのgaugeは従来どおり0〜1に固定し、生値はburstChargeで公開する。
+      gauge: Math.min(1, this.gauge / this.config.special.gaugeMax),
       burstReady: this.burstReady,
       perfectStreak: this.perfectStreak,
       incomingGarbage: this.pendingIncoming,
@@ -1111,6 +1384,13 @@ export class PlayerCore {
         this.resolving.chainDepth >= this.config.chain.bigChainDepth,
       feverActive: this.feverActive,
       feverMsLeft: this.feverMsLeft,
+      feverDurationMs: this.config.fever.durationMs,
+      chainPreviews: this.getChainPreviews(),
+      burstOverchargeEnabled: this.enableBurstOvercharge,
+      burstCharge: this.gauge,
+      burstTier: this.getCurrentBurstTier(),
+      feverTriggerChainDepth: this.config.fever.triggerChainDepth,
+      feverScoreMultiplier: this.config.fever.scoreMultiplier,
     };
   }
 
@@ -1130,6 +1410,8 @@ export class PlayerCore {
       incorrectKeyCount: this.wrongKeys,
       garbageSent: this.garbageSentTotal,
       burstCount: this.burstCount,
+      clutchClearCount: this.clutchClearCount,
+      maxBurstTier: this.maxBurstTier,
       analysis: this.computeAnalysis(),
     };
   }
@@ -1255,7 +1537,9 @@ export class PlayerCore {
 
   /** CPU ドライバ用の読み取り専用ビュー */
   getBlocksReadonly(): readonly Block[] {
-    return this.blocks;
+    // 配列だけでなく要素も複製し、呼び出し側の誤変更で盤面やChain Visionの
+    // キャッシュ整合性を壊せないようにする。
+    return this.blocks.map((block) => ({ ...block }));
   }
 
   get isResolving(): boolean {

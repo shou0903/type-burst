@@ -1,5 +1,10 @@
 import type { SurvivalDifficulty } from "@type-burst/game-core";
-import type { StoredResult } from "./storage";
+import {
+  getStoredResultRuleset,
+  SURVIVAL_RULESET,
+  type StoredResult,
+  type SurvivalRuleset,
+} from "./storage";
 
 /** JST は夏時間のない固定オフセットなので、週境界を UTC の数値で安全に扱える。 */
 export const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
@@ -20,7 +25,7 @@ export interface WeeklyAggregate {
 }
 
 export interface WeeklyGrowthSummary {
-  /** 最新の有効なサバイバル記録から選んだ難易度。記録がない場合は null。 */
+  /** 指定ルール世代で最新の有効なサバイバル記録から選んだ難易度。 */
   difficulty: SurvivalDifficulty | null;
   currentWeek: WeeklyAggregate;
   previousWeek: WeeklyAggregate;
@@ -55,13 +60,14 @@ export function jstWeekStart(value: Date | string | number): Date | null {
 }
 
 /**
- * 端末に保存された結果から、最新のサバイバル難易度を基準に週次サマリーを作る。
- * 配列の順番は信用せず playedAt の時刻で最新を選ぶ。旧データの mode 未設定は
- * サバイバルとして扱い、デイリー記録だけは常に除外する。
+ * 端末に保存された結果から、指定ルール世代の最新サバイバル難易度を基準に
+ * 週次サマリーを作る。配列の順番は信用せず playedAt の時刻で最新を選ぶ。
+ * 旧データの mode 未設定は v1 として扱うため、既定の v2 集計には混在しない。
  */
 export function buildWeeklyGrowth(
   results: readonly StoredResult[],
   now: Date | string | number = new Date(),
+  ruleset: SurvivalRuleset = SURVIVAL_RULESET,
 ): WeeklyGrowthSummary {
   const currentStart = jstWeekStart(now) ?? jstWeekStart(new Date())!;
   const currentStartMs = currentStart.getTime();
@@ -70,7 +76,7 @@ export function buildWeeklyGrowth(
   const previousWeek = emptyAggregate(previousStartMs);
 
   const validSurvival = results.flatMap((result) => {
-    if (result.mode === "daily" || result.ruleset === "daily-v2") return [];
+    if (getStoredResultRuleset(result) !== ruleset) return [];
     const playedAt = toValidTime(result.playedAt);
     return playedAt === null ? [] : [{ result, playedAt }];
   });

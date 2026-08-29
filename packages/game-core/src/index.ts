@@ -24,6 +24,8 @@ export type {
   BlockKind,
   BlockView,
   BlockViewState,
+  BurstTier,
+  ChainPreview,
   ClearCause,
   ClearedBlockInfo,
   CpuDifficulty,

@@ -9,6 +9,8 @@ import { RankingScreen } from "./screens/RankingScreen";
 import { AnalysisScreen } from "./screens/AnalysisScreen";
 import {
   appendResult,
+  bestScore,
+  getStoredResultRuleset,
   loadDuelRecord,
   loadProgress,
   loadResults,
@@ -17,6 +19,7 @@ import {
   markTutorialCompleted,
   recordDuel,
   saveSettings,
+  SURVIVAL_RULESET,
   type DuelRecord,
   type Settings,
   type StoredResult,
@@ -37,6 +40,7 @@ import {
   trackTutorialCompleted,
 } from "./seoAttribution";
 import { hasRecordedPlay } from "./onboarding";
+import { DEFAULT_FOCUS_GOAL, type FocusGoalId } from "./focusContract";
 
 type ResultScreenState = {
   name: "result";
@@ -67,6 +71,9 @@ export function App(): JSX.Element {
   const [progress, setProgress] = useState<LifetimeProgress>(() => loadProgress());
   const [dailyProgress, setDailyProgress] = useState<DailyProgress>(() => loadDailyProgress());
   const [tutorialCompleted, setTutorialCompleted] = useState<boolean>(() => loadTutorialCompleted());
+  // FOCUS は通常サバイバルの1プレイにだけ添付する。mode本体の既存契約を
+  // 変えず、余分な値として保持するため daily/duel/tutorial へ漏れない。
+  const [selectedFocusGoal, setSelectedFocusGoal] = useState<FocusGoalId>(DEFAULT_FOCUS_GOAL);
   const [screen, setScreen] = useState<Screen>({ name: "landing" });
   // tutorial完了直後に同じGameScreenを再利用しないためのマウント世代。
   const [gameSession, setGameSession] = useState(0);
@@ -103,7 +110,7 @@ export function App(): JSX.Element {
     trackLandingView();
   }, [progress.totalGames, screen.name, tutorialCompleted]);
 
-  const startGame = (mode: GameMode): void => {
+  const startGame = (mode: GameMode, focusGoal?: FocusGoalId): void => {
     sound.unlock();
     const firstPlay = !hasPlayed;
     trackAttributedGameStart(mode.type, firstPlay);
@@ -114,8 +121,20 @@ export function App(): JSX.Element {
             ranked: isDailyRankedAttempt(loadDailyProgress(), mode.challengeId),
           }
         : mode;
+    const modeWithFocus =
+      resolvedMode.type === "survival"
+        ? {
+            ...resolvedMode,
+            // GameModeを後方互換のまま保つため optional carrier として渡す。
+            // GameScreen/GameController側ではこの値を通常サバイバルのFOCUSへ接続する。
+            focusGoal: focusGoal ?? selectedFocusGoal,
+          }
+        : resolvedMode;
+    if (modeWithFocus.type === "survival") {
+      setSelectedFocusGoal(modeWithFocus.focusGoal);
+    }
     setGameSession((current) => current + 1);
-    setScreen({ name: "game", mode: resolvedMode });
+    setScreen({ name: "game", mode: modeWithFocus });
   };
 
   const completeTutorial = (): void => {
@@ -174,6 +193,7 @@ export function App(): JSX.Element {
           firstRun={firstRun}
           onUpdateSettings={updateSettings}
           onStart={startGame}
+          onStartWithFocus={(mode, focusGoal) => startGame(mode, focusGoal)}
           onShowRanking={() => {
             setScreen({ name: "ranking" });
           }}
@@ -181,7 +201,11 @@ export function App(): JSX.Element {
             setScreen({
               name: "analysis",
               analysis: null,
-              recentHistory: loadResults().filter((entry) => entry.mode !== "daily"),
+              // ルール更新直後の伸びを旧サバイバルと比較すると、上達ではなく
+              // ルール差をグラフ化してしまう。成長記録も現行v2だけに揃える。
+              recentHistory: loadResults().filter(
+                (entry) => getStoredResultRuleset(entry) === SURVIVAL_RULESET,
+              ),
               back: { name: "landing" },
             })
           }
@@ -196,6 +220,11 @@ export function App(): JSX.Element {
           reducedMotion={settings.reducedMotion}
           highContrast={settings.highContrast}
           fontScale={settings.fontScale}
+          survivalBestScore={
+            screen.mode.type === "survival"
+              ? bestScore(currentResults, screen.mode.difficulty)
+              : 0
+          }
           tutorialCompletionStartsGame={firstRun}
           onTutorialComplete={completeTutorial}
           onFinish={finishGame}
@@ -232,6 +261,7 @@ export function App(): JSX.Element {
           recentHistory={screen.recentHistory}
           progress={progress}
           onBack={() => setScreen(screen.back)}
+          onStart={() => startGame({ type: "survival", difficulty: "easy" })}
         />
       );
     case "ranking":

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { TutorialGame } from "@type-burst/game-core";
+import { DEFAULT_CONFIG, TutorialGame } from "@type-burst/game-core";
 import type { GameEvent } from "@type-burst/game-core";
 import { GARBAGE_PHRASES, PHRASES } from "@type-burst/phrase-content";
 import { TypingAutomaton } from "@type-burst/typing-engine";
@@ -35,6 +35,45 @@ describe("チュートリアル(D-035)", () => {
     expect(snap.stepIndex).toBe(0);
     expect(snap.requiresInteraction).toBe(true);
     expect(snap.stepComplete).toBe(false);
+  });
+
+  it("loadTutorialBoardは前ステップのスコア・分析・経過時間・必殺技状態を持ち越さない", () => {
+    const game = newTutorial();
+    const core = game.getCore();
+    const target = game.getSnapshot().player.blocks[0]!;
+    const romaji = new TypingAutomaton(
+      PHRASES.find((phrase) => phrase.displayText === target.displayText)!.readingKana,
+    ).getCanonicalRomaji();
+    for (const key of romaji) core.feedKey(key);
+    core.advance(2_000);
+    expect(core.getSummary().correctKeyCount).toBeGreaterThan(0);
+    expect(core.getSummary().score).toBeGreaterThan(0);
+
+    core.loadTutorialBoard(
+      [
+        {
+          row: 0,
+          col: 0,
+          attribute: "fire",
+          phraseId: "reset-test",
+          displayText: "入力",
+          readingKana: "にゅうりょく",
+        },
+      ],
+      0,
+    );
+    const summary = core.getSummary();
+    const snapshot = core.getSnapshot();
+    expect(summary.score).toBe(0);
+    expect(summary.correctKeyCount).toBe(0);
+    expect(summary.incorrectKeyCount).toBe(0);
+    expect(summary.phraseCount).toBe(0);
+    expect(summary.maxChain).toBe(0);
+    expect(summary.burstCount).toBe(0);
+    expect(snapshot.burstCharge).toBe(0);
+    expect(snapshot.feverMsLeft).toBe(0);
+    expect(snapshot.typedRomaji).toBe("");
+    expect(snapshot.riseMsLeft).toBe(DEFAULT_CONFIG.survivalRise.startIntervalMs);
   });
 
   it("未達成のステップではnextStepを呼んでも進まない", () => {

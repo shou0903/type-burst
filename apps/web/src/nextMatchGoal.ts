@@ -1,10 +1,18 @@
 import type { SurvivalDifficulty } from "@type-burst/game-core";
-import type { StoredResult } from "./storage";
+import {
+  getStoredResultRuleset,
+  SURVIVAL_RULESET,
+  type ResultRuleset,
+  type StoredResult,
+} from "./storage";
 
 export type MatchGoalKind = "accuracy" | "chain" | "score";
 
 /** 次の目標を作るのに必要な、サバイバル結果の共通部分。 */
-export type GoalSource = Pick<StoredResult, "score" | "maxChain" | "accuracy" | "difficulty">;
+export type GoalSource = Pick<StoredResult, "score" | "maxChain" | "accuracy" | "difficulty"> & {
+  /** 現在結果は省略時に現行サバイバル(v2)として扱う。 */
+  ruleset?: ResultRuleset;
+};
 
 export interface MatchGoal {
   kind: MatchGoalKind;
@@ -68,7 +76,7 @@ export function deriveMatchGoal(source: GoalSource): MatchGoal {
 }
 
 /**
- * 現在の結果と、それ以前の履歴から次回目標を作る。
+ * 現在の結果と、同じ難易度・ルール世代の履歴から次回目標を作る。
  * previousHistory は現在結果を含めず、新しい順で渡す。現在結果かどうかを
  * スコア等の値一致で推測しないため、同じ成績が続いても直前目標を失わない。
  */
@@ -77,11 +85,11 @@ export function buildNextMatchGoal(
   previousHistory: readonly StoredResult[] = [],
 ): NextMatchGoal {
   const difficulty = normalizeDifficulty(current.difficulty);
+  const ruleset = current.ruleset === "survival-v1" ? "survival-v1" : SURVIVAL_RULESET;
   const goal = deriveMatchGoal(current);
   const previous = previousHistory.find(
     (entry) =>
-      entry.mode !== "daily" &&
-      entry.ruleset !== "daily-v2" &&
+      getStoredResultRuleset(entry) === ruleset &&
       normalizeDifficulty(entry.difficulty) === difficulty,
   );
   const previousGoal = previous ? deriveMatchGoal(previous) : null;

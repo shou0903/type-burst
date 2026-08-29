@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { StoredResult } from "./storage";
 import { buildWeeklyGrowth, jstWeekStart } from "./weeklyGrowth";
+import { SURVIVAL_RULESET } from "./storage";
 
 const NOW = "2026-08-26T15:00:00.000Z"; // JST 8/27(木)。今週の境界は月曜 8/24 00:00 JST。
 const CURRENT = "2026-08-23T15:00:00.000Z";
@@ -16,6 +17,7 @@ function result(overrides: Partial<StoredResult> = {}): StoredResult {
     survivedMs: 60_000,
     playedAt: "2026-08-24T00:00:00.000Z",
     difficulty: "normal",
+    ruleset: SURVIVAL_RULESET,
     ...overrides,
   };
 }
@@ -53,13 +55,14 @@ describe("buildWeeklyGrowth", () => {
   it("treats legacy mode-less records as survival and isolates difficulty", () => {
     const summary = buildWeeklyGrowth(
       [
-        result({ mode: undefined, difficulty: "easy", playedAt: "2026-08-24T01:00:00.000Z", score: 300 }),
+        result({ mode: undefined, ruleset: undefined, difficulty: "easy", playedAt: "2026-08-24T01:00:00.000Z", score: 300 }),
         result({ mode: "daily", difficulty: "easy", playedAt: "2026-08-24T02:00:00.000Z", score: 9_000 }),
         result({ mode: undefined, ruleset: "daily-v2", difficulty: "god", playedAt: "2026-08-24T04:00:00.000Z", score: 12_000 }),
-        result({ mode: undefined, difficulty: "easy", playedAt: PREVIOUS, score: 200 }),
-        result({ mode: undefined, difficulty: "god", playedAt: "2026-08-24T03:00:00.000Z", score: 800 }),
+        result({ mode: undefined, ruleset: undefined, difficulty: "easy", playedAt: PREVIOUS, score: 200 }),
+        result({ mode: undefined, ruleset: undefined, difficulty: "god", playedAt: "2026-08-24T03:00:00.000Z", score: 800 }),
       ],
       NOW,
+      "survival-v1",
     );
 
     expect(summary.difficulty).toBe("god");

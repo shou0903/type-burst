@@ -251,6 +251,22 @@ function isValidResults(value: unknown): boolean {
   if (!Array.isArray(value) || value.length > 60) return false;
   return value.every((result) => {
     if (!isRecord(result)) return false;
+    const mode = result.mode;
+    const ruleset = result.ruleset;
+    const validMode = mode === undefined || mode === "survival" || mode === "daily";
+    const validRuleset =
+      ruleset === undefined ||
+      ruleset === "survival-v1" ||
+      ruleset === "survival-v2" ||
+      ruleset === "daily-v2";
+    // Keep old mode-less records valid while rejecting contradictory or
+    // unknown combinations at the server trust boundary.
+    const compatibleRuleset =
+      mode === "daily"
+        ? ruleset === undefined || ruleset === "daily-v2"
+        : mode === "survival"
+          ? ruleset === undefined || ruleset === "survival-v1" || ruleset === "survival-v2"
+          : true;
     return [
       result.score,
       result.maxChain,
@@ -260,6 +276,9 @@ function isValidResults(value: unknown): boolean {
       result.survivedMs,
     ].every(isFiniteNonNegative) &&
       Number(result.accuracy) <= 1 &&
+      validMode &&
+      validRuleset &&
+      compatibleRuleset &&
       typeof result.playedAt === "string" &&
       (result.difficulty === undefined || ["easy", "normal", "hard", "god"].includes(String(result.difficulty)));
   });

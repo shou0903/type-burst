@@ -3,7 +3,14 @@ import type { SurvivalSummary, TypingAnalysis } from "@type-burst/game-core";
 import { titleProgressForScore, type LifetimeProgress } from "@type-burst/progression";
 import type { GameMode, GameResult } from "../game/GameController";
 import { useFitToViewport } from "../hooks/useFitToViewport";
-import { loadNickname, saveNickname, type DuelRecord, type StoredResult } from "../storage";
+import {
+  getStoredResultRuleset,
+  loadNickname,
+  saveNickname,
+  SURVIVAL_RULESET,
+  type DuelRecord,
+  type StoredResult,
+} from "../storage";
 import { submitScore } from "../ranking";
 import {
   DAILY_RANKED_ATTEMPTS,
@@ -29,6 +36,12 @@ import {
   buildNextMatchGoal,
   type NextMatchGoal,
 } from "../nextMatchGoal";
+import {
+  focusGoalDefinition,
+  focusProgressFromResult,
+  focusProgressText,
+  type FocusProgress,
+} from "../focusContract";
 
 interface Props {
   result: GameResult;
@@ -136,7 +149,10 @@ export function ResultScreen({
   if (result.mode === "survival") {
     const summary = result.summary;
     const sameDifficultyHistory = history.filter(
-      (r) => r.mode !== "daily" && (r.difficulty ?? "normal") === summary.difficulty,
+      (r) =>
+        r.mode !== "daily" &&
+        getStoredResultRuleset(r) === SURVIVAL_RULESET &&
+        (r.difficulty ?? "normal") === summary.difficulty,
     );
     const previous = sameDifficultyHistory[1];
     const previousBest = sameDifficultyHistory
@@ -145,6 +161,10 @@ export function ResultScreen({
     const isBest = summary.score > previousBest && summary.score > 0;
     const delta = previous ? summary.score - previous.score : null;
     const nextMatchGoal = buildNextMatchGoal(summary, sameDifficultyHistory.slice(1));
+    const highlight = survivalRunHighlight(summary);
+    // GameScreenが通常サバイバルの終了時だけ付ける任意のFOCUS結果。
+    // 古い結果や daily/duel には値がないため、従来レイアウトをそのまま保つ。
+    const focusProgress = focusProgressFromResult(result);
 
     const rank = rankOf(summary.score);
 
@@ -229,6 +249,14 @@ export function ResultScreen({
           <span>文章完成 <strong>{summary.phraseCount}</strong></span>
           <span>BURST <strong>{summary.burstCount}</strong></span>
         </div>
+
+        <section className={`run-highlight run-highlight-${highlight.tone}`} aria-label="今回のハイライト">
+          <div className="run-highlight-kicker">RUN HIGHLIGHT</div>
+          <strong>{highlight.title}</strong>
+          <span>{highlight.detail}</span>
+        </section>
+
+        {focusProgress && <FocusResultCard progress={focusProgress} />}
 
         <NextMatchGoalCard summary={nextMatchGoal} />
 
@@ -431,6 +459,7 @@ function DailyRankingBox({
   const [nickname, setNickname] = useState(savedNickname ?? "");
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [ranking, setRanking] = useState<DailyLeaderboardResponse | null>(null);
+  const [retryNonce, setRetryNonce] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -457,7 +486,7 @@ function DailyRankingBox({
     return () => {
       active = false;
     };
-  }, [challengeId, ranked, savedNickname, summary, onViewer]);
+  }, [challengeId, ranked, retryNonce, savedNickname, summary, onViewer]);
 
   const submit = (): void => {
     const trimmed = nickname.trim();
@@ -492,9 +521,19 @@ function DailyRankingBox({
       )}
       {status === "loading" && <p className="ranking-status">ランキングへ反映中…</p>}
       {status === "error" && (
-        <p className="ranking-status ranking-error">
-          ランキングを取得できませんでした。記録は端末に保存されています。
-        </p>
+        <div className="ranking-status ranking-error" role="alert">
+          <p>ランキングを取得できませんでした。記録は端末に保存されています。</p>
+          <button
+            type="button"
+            className="btn-ranking-submit"
+            onClick={() => {
+              setStatus("loading");
+              setRetryNonce((value) => value + 1);
+            }}
+          >
+            もう一度読み込む
+          </button>
+        </div>
       )}
       {ranking?.viewer && (
         <div className="daily-viewer-rank">
@@ -557,20 +596,24 @@ function RankingSubmitBox({ summary }: { summary: SurvivalSummary }): JSX.Elemen
   const [editing, setEditing] = useState(false);
   const [rankingUpdated, setRankingUpdated] = useState<boolean | null>(null);
 
+  const submitSavedNickname = (name: string): void => {
+    setStatus("submitting");
+    submitScore(name, summary)
+      .then((result) => {
+        if (result.ok) {
+          markRankingSubmitted(summary);
+          setRankingUpdated(result.updated);
+        }
+        setStatus(result.ok ? "done" : "error");
+      })
+      .catch(() => setStatus("error"));
+  };
+
   useEffect(() => {
     // APIは0点を妥当なランキング記録として受け付けない。送信欄も自動送信も出さない。
     if (summary.score <= 0 || wasRankingSubmitted(summary)) return;
     if (savedNickname) {
-      setStatus("submitting");
-      submitScore(savedNickname, summary)
-        .then((result) => {
-          if (result.ok) {
-            markRankingSubmitted(summary);
-            setRankingUpdated(result.updated);
-          }
-          setStatus(result.ok ? "done" : "error");
-        })
-        .catch(() => setStatus("error"));
+      submitSavedNickname(savedNickname);
     }
     // 初回マウント時のみ送信する(summaryは1回分の結果のため依存配列は空でよい)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -637,8 +680,15 @@ function RankingSubmitBox({ summary }: { summary: SurvivalSummary }): JSX.Elemen
           </span>
         )}
         {status === "error" && (
-          <span className="ranking-submit-status error">
-            ランキングへの送信に失敗しました(スコアは手元に保存済みです)
+          <span className="ranking-submit-status error" role="alert">
+            <span>ランキングへの送信に失敗しました(スコアは手元に保存済みです)</span>
+            <button
+              type="button"
+              className="btn-ranking-submit"
+              onClick={() => submitSavedNickname(savedNickname)}
+            >
+              もう一度送信
+            </button>
           </span>
         )}
         <button className="btn-nickname-edit" onClick={() => setEditing(true)}>
@@ -775,6 +825,87 @@ function rankOf(score: number): string {
   if (score >= 12000) return "B";
   if (score >= 6000) return "C";
   return "D";
+}
+
+interface SurvivalRunHighlight {
+  tone: "clutch" | "burst" | "chain" | "perfect" | "steady";
+  title: string;
+  detail: string;
+}
+
+/**
+ * 1プレイにつき1つだけ「今回の見どころ」を選ぶ。複数のバッジを並べず、
+ * 結果を見た瞬間に次の挑戦理由が残るよう、優先順位を固定している。
+ */
+function survivalRunHighlight(summary: SurvivalSummary): SurvivalRunHighlight {
+  const clutchCount = summary.clutchClearCount ?? 0;
+  if (clutchCount > 0) {
+    return {
+      tone: "clutch",
+      title: "CLUTCH CLEAR",
+      detail: `${clutchCount}回、危険状態から連鎖で脱出しました`,
+    };
+  }
+  if (summary.maxBurstTier === "max") {
+    return {
+      tone: "burst",
+      title: "MAX BURST",
+      detail: "ゲージを限界まで溜め、MAXティアに到達しました",
+    };
+  }
+  if (summary.maxBurstTier === "power") {
+    return {
+      tone: "burst",
+      title: "POWER BURST",
+      detail: "ゲージをPOWERティアまで溜めました",
+    };
+  }
+  if (summary.maxChain >= 5) {
+    return {
+      tone: "chain",
+      title: `${summary.maxChain} CHAIN`,
+      detail: "盤面のつながりを読み切り、大連鎖を決めました",
+    };
+  }
+  if (summary.perfectPhraseCount >= 5) {
+    return {
+      tone: "perfect",
+      title: "PERFECT RUN",
+      detail: `${summary.perfectPhraseCount}回のPERFECTで正確に打ち抜きました`,
+    };
+  }
+  return {
+    tone: "steady",
+    title: "RUN COMPLETE",
+    detail: "次は連鎖候補をひとつ多くつないでみよう",
+  };
+}
+
+function FocusResultCard({ progress }: { progress: FocusProgress }): JSX.Element {
+  const goal = focusGoalDefinition(progress.goal);
+  return (
+    <section
+      className={`result-focus${progress.achieved ? " result-focus-achieved" : ""}`}
+      aria-label="今回の目標"
+    >
+      <div className="result-focus-head">
+        <div>
+          <span className="result-focus-kicker">FOCUS / 今回の目標</span>
+          <strong>{goal.title}</strong>
+        </div>
+        <span className="result-focus-status">
+          {progress.achieved ? "✓ 達成" : "未達成"}
+        </span>
+      </div>
+      <p>{goal.description}</p>
+      <div className="result-focus-progress" aria-label={`進捗 ${focusProgressText(progress)}`}>
+        <span aria-hidden="true">
+          <span style={{ width: `${Math.round(progress.ratio * 100)}%` }} />
+        </span>
+        <strong>{focusProgressText(progress)}</strong>
+      </div>
+    </section>
+  );
 }
 
 function NextMatchGoalCard({ summary }: { summary: NextMatchGoal }): JSX.Element {

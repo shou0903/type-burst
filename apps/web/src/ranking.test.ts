@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { SurvivalSummary } from "@type-burst/game-core";
-import { submitScore } from "./ranking";
+import { fetchRanking, fetchTopScores, submitScore } from "./ranking";
 
 const storage = new Map<string, string>();
 
@@ -52,25 +52,75 @@ describe("通常ランキングの自己ベスト送信", () => {
   });
 
   it("匿名プレイヤーIDを送るが、サーバーの更新結果だけを受け取る", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ ok: true, updated: true }), { status: 200 }),
-    );
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ entries: [], viewer: null, ruleset: "survival-v2" }), { status: 200 }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ ok: true, updated: true, ruleset: "survival-v2" }), { status: 200 }),
+      );
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(submitScore("バースト王", summary)).resolves.toEqual({ ok: true, updated: true });
 
-    const [, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const [, options] = fetchMock.mock.calls[1] as [string, RequestInit];
     const body = JSON.parse(String(options.body)) as Record<string, unknown>;
-    expect(body).toMatchObject({ nickname: "バースト王", score: 12_340, difficulty: "normal" });
+    expect(body).toMatchObject({
+      nickname: "バースト王",
+      score: 12_340,
+      difficulty: "normal",
+      ruleset: "survival-v2",
+    });
     expect(body.playerId).toMatch(/^[A-Za-z0-9-]{8,80}$/);
   });
 
   it("自己ベスト未更新をそのまま画面へ返す", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true, updated: false }), { status: 200 })),
+      vi
+        .fn()
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ entries: [], viewer: null, ruleset: "survival-v2" }), { status: 200 }),
+        )
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ ok: true, updated: false, ruleset: "survival-v2" }), { status: 200 }),
+        ),
     );
 
     await expect(submitScore("バースト王", summary)).resolves.toEqual({ ok: true, updated: false });
+  });
+
+  it("現行ルールのランキングを取得する", async () => {
+    const fetchMock = vi.fn().mockImplementation(
+      () => new Response(JSON.stringify({ entries: [], viewer: null, ruleset: "survival-v2" }), { status: 200 }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(fetchTopScores("normal", 3)).resolves.toEqual([]);
+    await expect(fetchRanking("normal", 3)).resolves.toEqual({ entries: [], viewer: null });
+
+    expect(fetchMock.mock.calls[0]?.[0]).toBe(
+      "/api/scores?difficulty=normal&limit=3&ruleset=survival-v2",
+    );
+    expect(fetchMock.mock.calls[1]?.[0]).toMatch(
+      /\/api\/scores\?difficulty=normal&limit=3&ruleset=survival-v2&playerId=/,
+    );
+  });
+
+  it("旧APIへロールバック中はv2スコアを送信しない", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ entries: [], viewer: null }), { status: 200 }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(submitScore("バースト王", summary)).resolves.toEqual({
+      ok: false,
+      reason: "ruleset_unsupported",
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0]?.[0]).toBe(
+      "/api/scores?difficulty=normal&limit=1&ruleset=survival-v2",
+    );
   });
 });

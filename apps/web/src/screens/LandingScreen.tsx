@@ -2,7 +2,15 @@ import { useEffect, useMemo, useState } from "react";
 import type { CpuDifficulty, SurvivalDifficulty } from "@type-burst/game-core";
 import { titleProgressForScore, type LifetimeProgress } from "@type-burst/progression";
 import type { GameMode } from "../game/GameController";
-import { bestScore, loadDuelRecord, type FontScale, type Settings, type StoredResult } from "../storage";
+import {
+  bestScore,
+  getStoredResultRuleset,
+  loadDuelRecord,
+  SURVIVAL_RULESET,
+  type FontScale,
+  type Settings,
+  type StoredResult,
+} from "../storage";
 import {
   dailyChallengeId,
   isDailyRankedAttempt,
@@ -20,6 +28,11 @@ import {
   regularModeUrl,
   type DailyEntryIntent,
 } from "../landingIntent";
+import {
+  DEFAULT_FOCUS_GOAL,
+  FOCUS_GOALS,
+  type FocusGoalId,
+} from "../focusContract";
 
 const FONT_SCALE_LABELS: Array<{ value: FontScale; label: string }> = [
   { value: 1, label: "標準" },
@@ -35,6 +48,8 @@ interface Props {
   firstRun: boolean;
   onUpdateSettings: (patch: Partial<Settings>) => void;
   onStart: (mode: GameMode) => void;
+  /** 通常サバイバル開始時だけ、今回の目標をゲームへ渡す。 */
+  onStartWithFocus?: (mode: GameMode, goal: FocusGoalId) => void;
   onShowRanking: () => void;
   onShowGrowth: () => void;
 }
@@ -88,6 +103,7 @@ export function LandingScreen({
   firstRun,
   onUpdateSettings,
   onStart,
+  onStartWithFocus,
   onShowRanking,
   onShowGrowth,
 }: Props): JSX.Element {
@@ -104,7 +120,13 @@ export function LandingScreen({
   );
   const [howtoOpen, setHowtoOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const survivalResults = useMemo(() => results.filter((entry) => entry.mode !== "daily"), [results]);
+  // デフォルトを一つ選んだ状態にして、キーボードのEnterでも迷わず始められる。
+  // 3択は開始前に常に見えており、選び直した内容だけを通常サバイバルへ渡す。
+  const [focusGoal, setFocusGoal] = useState<FocusGoalId>(DEFAULT_FOCUS_GOAL);
+  const survivalResults = useMemo(
+    () => results.filter((entry) => getStoredResultRuleset(entry) === SURVIVAL_RULESET),
+    [results],
+  );
   const best = bestScore(survivalResults, survivalDifficulty);
   const record = loadDuelRecord();
   const titleProgress = useMemo(() => titleProgressForScore(progress.totalScore), [progress.totalScore]);
@@ -127,6 +149,15 @@ export function LandingScreen({
     });
   };
 
+  const startSelectedSurvival = (): void => {
+    const mode: GameMode = { type: "survival", difficulty: survivalDifficulty };
+    if (onStartWithFocus) {
+      onStartWithFocus(mode, focusGoal);
+    } else {
+      onStart(mode);
+    }
+  };
+
   useEffect(() => {
     const handler = (e: KeyboardEvent): void => {
       // ボタン・チェックボックス等にフォーカスがある場合は、ネイティブの
@@ -145,18 +176,16 @@ export function LandingScreen({
         e.preventDefault();
         if (dailyEntry !== null) {
           startDailyEntry();
+        } else if (onboardingActive) {
+          onStart({ type: "tutorial" });
         } else {
-          onStart(
-            onboardingActive
-              ? { type: "tutorial" }
-              : { type: "survival", difficulty: survivalDifficulty },
-          );
+          startSelectedSurvival();
         }
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [dailyEntry, dailyProgress, onboardingActive, onStart, survivalDifficulty]);
+  }, [dailyEntry, dailyProgress, focusGoal, onStart, onStartWithFocus, onboardingActive, survivalDifficulty]);
 
   useEffect(() => {
     if (guideDifficulty === null && dailyEntry === null) return;
@@ -289,11 +318,11 @@ export function LandingScreen({
                 startDailyEntry();
                 return;
               }
-              onStart(
-                onboardingActive
-                  ? { type: "tutorial" }
-                  : { type: "survival", difficulty: survivalDifficulty },
-              );
+              if (onboardingActive) {
+                onStart({ type: "tutorial" });
+                return;
+              }
+              startSelectedSurvival();
             }}
           >
             <span className="lp-play-face">
@@ -356,6 +385,31 @@ export function LandingScreen({
                   </>
                 )}
               </p>
+
+              <section className="lp-focus" aria-labelledby="lp-focus-title">
+                <div className="lp-focus-head">
+                  <div>
+                    <span className="lp-focus-kicker">FOCUS / 今回の目標</span>
+                    <h2 id="lp-focus-title">一つだけ目標を選んで挑戦</h2>
+                  </div>
+                  <span className="lp-focus-note">通常サバイバル限定・罰則なし</span>
+                </div>
+                <div className="lp-focus-options" role="group" aria-label="今回の目標">
+                  {FOCUS_GOALS.map((goal) => (
+                    <button
+                      key={goal.id}
+                      type="button"
+                      className={`lp-focus-option${focusGoal === goal.id ? " is-selected" : ""}`}
+                      aria-pressed={focusGoal === goal.id}
+                      onClick={() => setFocusGoal(goal.id)}
+                    >
+                      <span className="lp-focus-option-label">{goal.label}</span>
+                      <strong>{goal.title}</strong>
+                      <small>{goal.description}</small>
+                    </button>
+                  ))}
+                </div>
+              </section>
             </>
           )}
 
@@ -369,7 +423,13 @@ export function LandingScreen({
               <button
                 className="lp-first-play-escape"
                 type="button"
-                onClick={() => onStart({ type: "survival", difficulty: "easy" })}
+                onClick={() => {
+                  if (onStartWithFocus) {
+                    onStartWithFocus({ type: "survival", difficulty: "easy" }, focusGoal);
+                  } else {
+                    onStart({ type: "survival", difficulty: "easy" });
+                  }
+                }}
               >
                 説明を飛ばして初級へ
               </button>

@@ -19,6 +19,8 @@ interface Props {
   recentHistory: StoredResult[];
   progress: LifetimeProgress;
   onBack: () => void;
+  /** 未プレイの成長記録から、そのまま初級を始めるための導線(任意)。 */
+  onStart?: () => void;
 }
 
 /** 成長グラフに表示する最大プレイ数(古すぎる記録まで詰め込むと見づらいため) */
@@ -76,7 +78,7 @@ const MIN_SEGMENT_KEYSTROKES = 10;
  * という順で組み直した。プレイ単位の詳細分析はその下に置く。
  * 集計ロジック・文言生成は一切変更していない(見せ方だけの変更)。
  */
-export function AnalysisScreen({ analysis, recentHistory, progress, onBack }: Props): JSX.Element {
+export function AnalysisScreen({ analysis, recentHistory, progress, onBack, onStart }: Props): JSX.Element {
   useEffect(() => {
     const handler = (e: KeyboardEvent): void => {
       if (e.key === "Escape") onBack();
@@ -219,11 +221,26 @@ export function AnalysisScreen({ analysis, recentHistory, progress, onBack }: Pr
             {trendInsight && <p className="an-insight">{trendInsight}</p>}
           </>
         ) : (
-          <p className="an-empty">
-            {played
-              ? "あと1回プレイすると、スコア・KPM・正確率の推移がここに描かれます。"
-              : "プレイすると、ここに上達の記録が積み上がっていきます。"}
-          </p>
+          <div className="an-empty">
+            <p>
+              {played
+                ? "あと1回プレイすると、スコア・KPM・正確率の推移がここに描かれます。"
+                : "プレイすると、ここに上達の記録が積み上がっていきます。"}
+            </p>
+            {!played && (
+              <div className="an-empty-actions">
+                {onStart ? (
+                  <button type="button" className="btn-secondary" onClick={onStart}>
+                    初級を始める
+                  </button>
+                ) : (
+                  <a className="btn-secondary" href="/">
+                    タイトルへ戻る
+                  </a>
+                )}
+              </div>
+            )}
+          </div>
         )}
       </section>
 

@@ -6,6 +6,7 @@ import {
   isMatchGoalAchieved,
   type GoalSource,
 } from "./nextMatchGoal";
+import { SURVIVAL_RULESET } from "./storage";
 
 function source(overrides: Partial<GoalSource> = {}): GoalSource {
   return {
@@ -24,6 +25,7 @@ function result(overrides: Partial<StoredResult> = {}): StoredResult {
     kpm: 180,
     survivedMs: 60_000,
     playedAt: "2026-08-27T00:00:00.000Z",
+    ruleset: SURVIVAL_RULESET,
     ...overrides,
   };
 }
@@ -102,5 +104,11 @@ describe("buildNextMatchGoal", () => {
     const current = source({ accuracy: 0.94, maxChain: 3, score: 200 });
     const daily = result({ mode: undefined, ruleset: "daily-v2", accuracy: 0.9 });
     expect(buildNextMatchGoal(current, [daily]).previous).toBeNull();
+  });
+
+  it("does not compare a legacy survival-v1 result with a current survival-v2 result", () => {
+    const current = source({ accuracy: 0.94, maxChain: 3, score: 200 });
+    const legacy = result({ ruleset: "survival-v1", accuracy: 0.9, score: 9_999 });
+    expect(buildNextMatchGoal(current, [legacy]).previous).toBeNull();
   });
 });

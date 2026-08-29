@@ -260,7 +260,7 @@ export class BoardRenderer {
         cx /= event.blocks.length;
         cy /= event.blocks.length;
 
-        if (event.cause === "bomb" || event.cause === "burst") {
+        if (!this.reducedMotion && (event.cause === "bomb" || event.cause === "burst")) {
           this.rings.push({
             x: cx,
             y: cy,
@@ -272,7 +272,7 @@ export class BoardRenderer {
             width: event.cause === "burst" ? 10 : 6,
           });
         }
-        if (event.cause === "prism") {
+        if (!this.reducedMotion && event.cause === "prism") {
           for (let i = 0; i < PRISM_COLORS.length; i++) {
             this.rings.push({
               x: cx,
@@ -508,6 +508,10 @@ export class BoardRenderer {
     attribute: Attribute | null,
     kind: BlockView["kind"],
   ): void {
+    // prefers-reduced-motion / 設定で動きを抑える場合、爆発の粒子は生成しない。
+    // 連鎖やスコアの情報はポップアップ・HUDで残し、ランダムな視覚運動だけを省く。
+    if (this.reducedMotion) return;
+
     let colors: string[];
     if (kind === "bomb") colors = ["#ffb054", "#ff8a70", "#ffffff"];
     else if (kind === "prism") colors = PRISM_COLORS;
@@ -515,7 +519,7 @@ export class BoardRenderer {
     else colors = [GARBAGE_STYLE.bright, "#ffffff"];
 
     const scale = this.opts.drawText ? 1 : 0.45;
-    const count = Math.round((this.reducedMotion ? 5 : 18) * scale);
+    const count = Math.round(18 * scale);
     for (let i = 0; i < count; i++) {
       const angle = Math.random() * Math.PI * 2;
       const speed = (70 + Math.random() * 280) * scale;
@@ -542,11 +546,21 @@ export class BoardRenderer {
     ctx.save();
     ctx.clearRect(0, 0, this.w, this.h);
 
+    // 設定をプレイ中に切り替えた場合も、直前に発生した運動演出を残さない。
+    // ポップアップは静的な情報として描き続けるため、ここでは消さない。
+    if (this.reducedMotion) {
+      this.particles = [];
+      this.rings = [];
+      this.shakeAmp = 0;
+      this.punchAmp = 0;
+      this.flashAlpha = 0;
+    }
+
     const demoBounds = this.opts.popupBounds === true;
     if (this.shakeAmp > 0.3) {
       // コンパクトなヒーロー/アトラクトCanvasでは18pxの画面揺れだけで
       // 安全域を越えるため、パーティクル等は残して全体平行移動だけ止める。
-      if (!demoBounds) {
+      if (!demoBounds && !this.reducedMotion) {
         ctx.translate(
           (Math.random() * 2 - 1) * this.shakeAmp,
           (Math.random() * 2 - 1) * this.shakeAmp,
@@ -564,7 +578,7 @@ export class BoardRenderer {
     // それらのモードではフラッシュ・リング・パーティクルを残し、ポップアップを
     // 安全に見せるため外側のズームだけを無効化する(本番盤面は従来どおり)。
     const bigChainZoom = snapshot.bigChainImpact && !this.reducedMotion && !demoBounds ? 0.07 : 0;
-    const zoomScale = demoBounds ? 1 : 1 + this.punchAmp + bigChainZoom;
+    const zoomScale = this.reducedMotion || demoBounds ? 1 : 1 + this.punchAmp + bigChainZoom;
     if (zoomScale > 1.001) {
       ctx.translate(this.w / 2, this.h / 2);
       ctx.scale(zoomScale, zoomScale);
@@ -578,6 +592,12 @@ export class BoardRenderer {
 
     this.drawBackground(snapshot);
     this.drawBlocks(snapshot, dtMs);
+    // 通常サバイバルだけが snapshot.chainPreviews を持つ。盤面の文字と危険線を
+    // 覆わない端部へ小さく重ね、候補を「課題リスト」ではなく読み取り補助として
+    // 見せる。解決中は盤面が動くため一旦隠す。
+    if (meta.phase === "playing" && !snapshot.resolving && snapshot.chainPreviews.length > 0) {
+      this.drawChainVision(snapshot);
+    }
     this.drawDangerLine(snapshot);
     if (this.opts.demoCue && this.firstDraw) this.drawDemoCue();
     this.updateAndDrawParticles(dtMs);
@@ -642,7 +662,7 @@ export class BoardRenderer {
 
     // 行上昇の予告: 下端が脈打つ
     if (snapshot.riseWarningActive) {
-      const pulse = 0.35 + 0.3 * Math.sin(this.pulseMs / 90);
+      const pulse = this.reducedMotion ? 0.65 : 0.35 + 0.3 * Math.sin(this.pulseMs / 90);
       ctx.fillStyle = `rgba(255, 170, 60, ${pulse})`;
       ctx.fillRect(
         this.opts.pad,
@@ -742,7 +762,7 @@ export class BoardRenderer {
   private drawIncomingWarning(snapshot: PlayerSnapshot): void {
     if (snapshot.incomingGarbage <= 0) return;
     const ctx = this.ctx;
-    const blink = 0.65 + 0.35 * Math.sin(this.pulseMs / 110);
+    const blink = this.reducedMotion ? 1 : 0.65 + 0.35 * Math.sin(this.pulseMs / 110);
     const size = this.opts.drawText ? 17 : 11;
     ctx.save();
     ctx.globalAlpha = blink;
@@ -755,6 +775,10 @@ export class BoardRenderer {
   }
 
   private drawFlash(dtMs: number): void {
+    if (this.reducedMotion) {
+      this.flashAlpha = 0;
+      return;
+    }
     if (this.flashAlpha <= 0.01) {
       this.flashAlpha = 0;
       return;
@@ -795,6 +819,62 @@ export class BoardRenderer {
 
     for (const id of this.displayPos.keys()) {
       if (!alive.has(id)) this.displayPos.delete(id);
+    }
+  }
+
+  /**
+   * 連鎖予測を各ブロックの右下端へ表示する。文字の中央領域と入力進捗バーを
+   * 避けるため、ラベルは最下部の余白へ置き、strongest候補だけ外周を発光させる。
+   * reduced-motion時も情報は残すが、点滅・拡大は行わない。
+   */
+  private drawChainVision(snapshot: PlayerSnapshot): void {
+    const ctx = this.ctx;
+    const previews = snapshot.chainPreviews.slice(0, 3);
+    for (let index = 0; index < previews.length; index += 1) {
+      const preview = previews[index];
+      if (!preview) continue;
+      const block = snapshot.blocks.find((candidate) => candidate.id === preview.blockId);
+      if (!block) continue;
+
+      const position = this.displayPos.get(block.id) ?? {
+        x: this.cellX(block.col),
+        y: this.cellY(block.row),
+      };
+      const strong = index === 0;
+      const cellLeft = position.x + 3;
+      const cellTop = position.y + 3;
+      const cellWidth = this.opts.cellW - 6;
+      const cellHeight = this.opts.cellH - 6;
+      const labelHeight = this.opts.drawText ? 16 : 10;
+      const labelWidth = this.opts.drawText ? 31 : 19;
+      // 下端の文字・進捗バーと重ならないよう、右上の端に独立した小さなタブを置く。
+      // 既存アイコンは左上にあるため、アイコンとも重ならない。
+      const x = cellLeft + cellWidth - labelWidth - 3;
+      const y = cellTop + 4;
+      // core の predictedDepth は直消しを1連鎖として数える。ここで+1すると
+      // 表示だけが実際の予測より1段ずれるため、そのまま表示する。
+      const chainCount = Math.max(1, preview.predictedDepth);
+
+      ctx.save();
+      if (strong && !this.reducedMotion) {
+        ctx.shadowColor = "rgba(255,215,94,0.85)";
+        ctx.shadowBlur = 10;
+      }
+      ctx.fillStyle = strong ? "rgba(67,53,20,0.94)" : "rgba(12,18,38,0.88)";
+      roundRect(ctx, x, y, labelWidth, labelHeight, Math.min(5, labelHeight / 2));
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = strong ? "#ffd75e" : "rgba(159,191,255,0.85)";
+      ctx.lineWidth = strong ? 1.8 : 1;
+      roundRect(ctx, x, y, labelWidth, labelHeight, Math.min(5, labelHeight / 2));
+      ctx.stroke();
+
+      ctx.font = `900 ${this.opts.drawText ? 10 : 7}px "Arial Black", sans-serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = strong ? "#fff0a5" : "#dbe6ff";
+      ctx.fillText(`›${chainCount}`, x + labelWidth / 2, y + labelHeight / 2 + 0.5);
+      ctx.restore();
     }
   }
 
@@ -1033,6 +1113,10 @@ export class BoardRenderer {
   }
 
   private updateAndDrawParticles(dtMs: number): void {
+    if (this.reducedMotion) {
+      this.particles = [];
+      return;
+    }
     const ctx = this.ctx;
     const dt = dtMs / 1000;
     const next: Particle[] = [];
@@ -1052,6 +1136,10 @@ export class BoardRenderer {
   }
 
   private updateAndDrawRings(dtMs: number): void {
+    if (this.reducedMotion) {
+      this.rings = [];
+      return;
+    }
     const ctx = this.ctx;
     const next: Ring[] = [];
     for (const ring of this.rings) {
@@ -1078,14 +1166,20 @@ export class BoardRenderer {
       popup.age += dtMs;
       if (popup.age >= popup.life) continue;
       const t = popup.age / popup.life;
-      const animationScale = t < 0.15 ? 0.6 + (t / 0.15) * 0.55 : 1.15 - t * 0.15;
+      // reduced-motion 時はポップアップをその場に固定し、拡大・浮上・フェードを
+      // 行わない。イベントの内容自体は短時間そのまま表示して情報を残す。
+      const animationScale = this.reducedMotion
+        ? 1
+        : t < 0.15
+          ? 0.6 + (t / 0.15) * 0.55
+          : 1.15 - t * 0.15;
 
       // Main gameplay keeps the historical popup rendering exactly as-is. The attract and
       // hero canvases are tightly sized (304/392 logical px), so their signature labels need
       // a little breathing room for both the stroke and the outer canvas transform.
       let scale = animationScale;
       let popupX = popup.x;
-      let popupY = popup.y - t * 30;
+      let popupY = this.reducedMotion ? popup.y : popup.y - t * 30;
       if (this.opts.popupBounds) {
         const margin = Math.max(12, this.opts.pad + 4);
         const availableWidth = popupSafeWidth(this.w, outerScale, margin);
@@ -1111,7 +1205,7 @@ export class BoardRenderer {
         popupY = Math.min(safeBottom - halfHeight, Math.max(safeTop + halfHeight, popupY));
       }
       ctx.save();
-      ctx.globalAlpha = t > 0.7 ? 1 - (t - 0.7) / 0.3 : 1;
+      ctx.globalAlpha = this.reducedMotion ? 1 : t > 0.7 ? 1 - (t - 0.7) / 0.3 : 1;
       ctx.translate(popupX, popupY);
       ctx.scale(scale, scale);
       ctx.font = `900 ${popup.size}px "Arial Black", sans-serif`;
@@ -1123,7 +1217,7 @@ export class BoardRenderer {
         ctx.strokeText(popup.text, 0, 0);
       }
       ctx.shadowColor = popup.color;
-      ctx.shadowBlur = popup.size >= 36 ? 18 : 0;
+      ctx.shadowBlur = this.reducedMotion ? 0 : popup.size >= 36 ? 18 : 0;
       ctx.fillStyle = popup.color;
       ctx.fillText(popup.text, 0, 0);
       ctx.restore();
@@ -1139,7 +1233,7 @@ export class BoardRenderer {
       ctx.fillRect(0, 0, this.w, this.h);
       const seconds = Math.max(1, Math.ceil(meta.countdownMsLeft / 1000));
       const frac = 1 - ((meta.countdownMsLeft % 1000) || 1000) / 1000;
-      const scale = 1 + frac * 0.25;
+      const scale = this.reducedMotion ? 1 : 1 + frac * 0.25;
       ctx.save();
       ctx.translate(this.w / 2, this.h / 2);
       ctx.scale(scale, scale);
@@ -1158,7 +1252,7 @@ export class BoardRenderer {
         ctx.font = "900 72px 'Arial Black', sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.globalAlpha = 1 - meta.elapsedMs / 650;
+        ctx.globalAlpha = this.reducedMotion ? 1 : 1 - meta.elapsedMs / 650;
         ctx.fillStyle = "#8ef5c9";
         ctx.fillText("GO!", this.w / 2, this.h / 2);
         ctx.globalAlpha = 1;

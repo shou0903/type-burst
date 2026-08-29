@@ -44,6 +44,7 @@ function formatTime(ms: number): string {
 export function RankingScreen({ onBack }: Props): JSX.Element {
   const { ref, style } = useFitToViewport<HTMLDivElement>();
   const [difficulty, setDifficulty] = useState<SurvivalDifficulty>("normal");
+  const [retryNonce, setRetryNonce] = useState(0);
   const [state, setState] = useState<LoadState>({ status: "loading" });
 
   useEffect(() => {
@@ -61,7 +62,7 @@ export function RankingScreen({ onBack }: Props): JSX.Element {
     return () => {
       cancelled = true;
     };
-  }, [difficulty]);
+  }, [difficulty, retryNonce]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent): void => {
@@ -103,14 +104,25 @@ export function RankingScreen({ onBack }: Props): JSX.Element {
         ))}
       </div>
 
-      {state.status === "loading" && <p className="rk-status">読み込み中…</p>}
-      {state.status === "error" && (
-        <p className="rk-status rk-status-error">
-          ランキングを取得できませんでした。時間をおいて再度お試しください。
+      {state.status === "loading" && (
+        <p className="rk-status" role="status" aria-live="polite">
+          ランキングを読み込み中…
         </p>
       )}
+      {state.status === "error" && (
+        <div className="rk-status rk-status-error" role="alert" aria-live="polite">
+          <p>ランキングを取得できませんでした。時間をおいて再度お試しください。</p>
+          <button
+            type="button"
+            className="btn-secondary rk-retry"
+            onClick={() => setRetryNonce((value) => value + 1)}
+          >
+            もう一度読み込む
+          </button>
+        </div>
+      )}
       {state.status === "loaded" && entries.length === 0 && (
-        <p className="rk-status">まだ記録がありません。最初のランカーになろう！</p>
+        <p className="rk-status" role="status">まだ記録がありません。最初のランカーになろう！</p>
       )}
 
       {viewer && (

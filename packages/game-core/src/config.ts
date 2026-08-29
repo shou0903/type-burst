@@ -100,6 +100,8 @@ export interface GameConfig {
     bigChainHitStopStepMs: number;
     /** 拡張ヒットストップの上限(ms)。無限に伸びて間延びしないための天井 */
     bigChainHitStopMaxMs: number;
+    /** 危険状態から脱出したと判定する最低連鎖数 */
+    clutchClearMinDepth: number;
   };
   special: {
     /** 新規行の1マスごとの出現率(1行に最大1個) */
@@ -107,6 +109,14 @@ export interface GameConfig {
     prismChance: number;
     /** TYPE BURST が吹き飛ばす下からの行数 */
     burstRows: number;
+    /** オーバードライブ時のPOWER到達ゲージ */
+    burstPowerGauge: number;
+    /** オーバードライブ時のMAX到達ゲージ */
+    burstMaxGauge: number;
+    /** POWER BURSTが吹き飛ばす下からの行数 */
+    burstPowerRows: number;
+    /** MAX BURSTが吹き飛ばす下からの行数 */
+    burstMaxRows: number;
     gaugeMax: number;
     gaugePerBlock: number;
     gaugePerChainDepth: number;
@@ -212,11 +222,16 @@ export const DEFAULT_CONFIG: GameConfig = {
     bigChainHitStopMs: 260,
     bigChainHitStopStepMs: 40,
     bigChainHitStopMaxMs: 500,
+    clutchClearMinDepth: 5,
   },
   special: {
     bombChance: 0.07,
     prismChance: 0.035,
     burstRows: 3,
+    burstPowerGauge: 125,
+    burstMaxGauge: 150,
+    burstPowerRows: 4,
+    burstMaxRows: 5,
     gaugeMax: 100,
     gaugePerBlock: 3,
     gaugePerChainDepth: 7,

@@ -3,6 +3,9 @@ export type Attribute = "fire" | "water" | "wind" | "light";
 /** bomb = 3×3爆破、prism = 最多属性の全消し(特殊ブロック) */
 export type BlockKind = "normal" | "garbage" | "bomb" | "prism";
 
+/** TYPE BURST ゲージの状態。通常の100到達後だけ overdrive tier が開放される。 */
+export type BurstTier = "charging" | "ready" | "power" | "max";
+
 export const ATTRIBUTES: readonly Attribute[] = ["fire", "water", "wind", "light"];
 
 export interface Block {
@@ -50,6 +53,24 @@ export interface ClearedBlockInfo {
   kind: BlockKind;
 }
 
+/**
+ * 現在の盤面から、各ブロックを最初に消した場合の読み取り専用予測。
+ * 予測は表示補助であり、実際の盤面・乱数・スコア・ゲージを変更しない。
+ */
+export interface ChainPreview {
+  blockId: number;
+  kind: Exclude<BlockKind, "garbage">;
+  attribute: Attribute | null;
+  row: number;
+  col: number;
+  /** 直接消去を1段目とする自動連鎖の予測段数。単独消去は0から始まる。 */
+  predictedDepth: number;
+  /** そのブロックを起点にした最初の消去対象数。 */
+  directGroupSize: number;
+  /** 直接消去と予測できる自動連鎖を合わせた消去対象数。 */
+  predictedClearedCount: number;
+}
+
 /** 消去の原因(演出・音の差別化用) */
 export type ClearCause = "direct" | "auto" | "bomb" | "prism" | "burst";
 
@@ -71,7 +92,8 @@ export type GameEvent =
     }
   | { type: "chainFinished"; depth: number; attackPower: number; garbageCount: number; scoreGained: number }
   | { type: "burstReady" }
-  | { type: "burstFired" }
+  | { type: "burstTierChanged"; tier: BurstTier; charge: number }
+  | { type: "burstFired"; tier: BurstTier; rows: number; scoreGained: number }
   | { type: "garbageIncoming"; count: number }
   | { type: "garbageCancelled"; count: number }
   | { type: "garbageLanded"; count: number }
@@ -84,6 +106,7 @@ export type GameEvent =
   | { type: "dangerChanged"; danger: boolean }
   | { type: "feverStarted" }
   | { type: "feverEnded" }
+  | { type: "clutchClear"; depth: number }
   | { type: "toppedOut" }
   | { type: "survivalFinished"; summary: SurvivalSummary }
   | { type: "duelFinished"; summary: DuelSummary };
@@ -130,6 +153,19 @@ export interface PlayerSnapshot {
   feverActive: boolean;
   /** フィーバー残り時間(ms)。非発動時は0 */
   feverMsLeft: number;
+  /** フィーバーの基準継続時間(ms)。残り時間バーの分母として利用する */
+  feverDurationMs: number;
+  /** 盤面から読み取った、消去候補上位3件。無効化時は空配列 */
+  chainPreviews: ChainPreview[];
+  /** オーバードライブを利用するサバイバル設定か */
+  burstOverchargeEnabled: boolean;
+  /** 必殺技ゲージの生値。通常は0〜100、オーバードライブ時は0〜150 */
+  burstCharge: number;
+  burstTier: BurstTier;
+  /** FEVER開始に必要な連鎖数。UI表示用 */
+  feverTriggerChainDepth: number;
+  /** FEVER中のスコア倍率。UI表示用 */
+  feverScoreMultiplier: number;
 }
 
 export interface SurvivalSnapshot {
@@ -222,6 +258,10 @@ export interface PlayerSummary {
   incorrectKeyCount: number;
   garbageSent: number;
   burstCount: number;
+  /** 危険状態から5連鎖以上で脱出した回数 */
+  clutchClearCount?: number;
+  /** そのプレイ中に到達したTYPE BURSTの最高tier */
+  maxBurstTier?: BurstTier;
   analysis: TypingAnalysis;
 }
 

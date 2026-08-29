@@ -438,6 +438,120 @@ describe("候補入力中のミス", () => {
     game.feedKey("i");
     expect(game.getSnapshot().player.typedRomaji).toBe("ai");
   });
+
+  it("アイドル中の誤入力は次の単語のPERFECTを壊さない", () => {
+    const game = newGame("idle-miss-does-not-poison-perfect");
+    startPlaying(game);
+    const target: Block = {
+      id: 9_996,
+      kind: "normal",
+      attribute: "fire",
+      phraseId: "idle-miss-target",
+      displayText: "あいうえお",
+      readingKana: "あいうえお",
+      row: 0,
+      col: 0,
+    };
+    setBoard(game, [target]);
+
+    // まだ単語の入力を始めていない状態での誤キー。
+    game.feedKey("q");
+    const events = typePhrase(game, target.readingKana);
+    const completed = events.find((event) => event.type === "phraseCompleted");
+
+    expect(completed?.type).toBe("phraseCompleted");
+    if (completed?.type === "phraseCompleted") {
+      expect(completed.perfect).toBe(true);
+    }
+    expect(game.getSnapshot().player.accuracy).toBeLessThan(1);
+  });
+
+  it("ミス後に明示キャンセルすると、次の単語は新しいPERFECT試行になる", () => {
+    const game = newGame("cancel-clears-phrase-miss");
+    startPlaying(game);
+    const target: Block = {
+      id: 9_995,
+      kind: "normal",
+      attribute: "fire",
+      phraseId: "cancel-miss-target",
+      displayText: "あいうえお",
+      readingKana: "あいうえお",
+      row: 0,
+      col: 0,
+    };
+    setBoard(game, [target]);
+
+    game.feedKey("a");
+    game.feedKey("q"); // 入力開始後のミスは、この試行だけをPERFECT対象外にする
+    game.cancelSelection();
+    const events = typePhrase(game, target.readingKana);
+    const completed = events.find((event) => event.type === "phraseCompleted");
+
+    expect(completed?.type).toBe("phraseCompleted");
+    if (completed?.type === "phraseCompleted") {
+      expect(completed.perfect).toBe(true);
+    }
+  });
+
+  it("行上昇で入力が中断された後の単語へミス状態を持ち越さない", () => {
+    const game = newGame("rise-clears-phrase-miss");
+    startPlaying(game);
+    const target: Block = {
+      id: 9_994,
+      kind: "normal",
+      attribute: "fire",
+      phraseId: "rise-miss-target",
+      displayText: "あいうえお",
+      readingKana: "あいうえお",
+      row: 0,
+      col: 0,
+    };
+    setBoard(game, [target]);
+    const core = game.getCore() as unknown as { dropRow: () => void };
+
+    game.feedKey("a");
+    game.feedKey("q");
+    core.dropRow();
+    const events = typePhrase(game, target.readingKana);
+    const completed = events.find((event) => event.type === "phraseCompleted");
+
+    expect(completed?.type).toBe("phraseCompleted");
+    if (completed?.type === "phraseCompleted") {
+      expect(completed.perfect).toBe(true);
+    }
+  });
+
+  it("妨害着弾で入力が中断された後の単語へミス状態を持ち越さない", () => {
+    const game = newGame("garbage-clears-phrase-miss");
+    startPlaying(game);
+    const target: Block = {
+      id: 9_993,
+      kind: "normal",
+      attribute: "fire",
+      phraseId: "garbage-miss-target",
+      displayText: "あいうえお",
+      readingKana: "あいうえお",
+      row: 0,
+      col: 0,
+    };
+    setBoard(game, [target]);
+    const core = game.getCore();
+    core.pauseRise = true;
+
+    game.feedKey("a");
+    game.feedKey("q");
+    core.receiveGarbage(1);
+    core.advance(DEFAULT_CONFIG.garbage.dropDelayMs);
+    expect(core.getSnapshot().candidateBlockIds).toHaveLength(0);
+
+    const events = typePhrase(game, target.readingKana);
+    const completed = events.find((event) => event.type === "phraseCompleted");
+
+    expect(completed?.type).toBe("phraseCompleted");
+    if (completed?.type === "phraseCompleted") {
+      expect(completed.perfect).toBe(true);
+    }
+  });
 });
 
 describe("ALL CLEAR(v3)", () => {
@@ -722,6 +836,7 @@ describe("フィーバータイム(D-052)", () => {
     expect(finished?.type === "chainFinished" && finished.depth).toBe(6);
     expect(game.getSnapshot().player.feverActive).toBe(true);
     expect(game.getSnapshot().player.feverMsLeft).toBe(8000);
+    expect(game.getSnapshot().player.feverDurationMs).toBe(DEFAULT_CONFIG.fever.durationMs);
   });
 
   it("フィーバー中は打鍵の得点がscoreMultiplier倍になる", () => {
@@ -926,5 +1041,246 @@ describe("開始カウントダウン(D-089)", () => {
     }
     expect(events.filter((e) => e.type === "started")).toHaveLength(1);
     expect(game.getSnapshot().phase).toBe("playing");
+  });
+});
+
+describe("新しいリプレイ性コア機能", () => {
+  it("CHAIN VISIONは上位3候補を返し、読み取りだけでは状態を変えない", () => {
+    const game = new SurvivalGame(
+      "chain-vision",
+      PHRASES,
+      GARBAGE_PHRASES,
+      "normal",
+      DEFAULT_CONFIG,
+      { enableChainVision: true },
+    );
+    startPlaying(game);
+    const trigger = block(0, 0, "fire", 2);
+    setBoard(game, [
+      trigger,
+      block(0, 1, "fire", 3),
+      block(0, 2, "fire", 4),
+      block(1, 0, "water", 5),
+      block(1, 1, "water", 6),
+      block(1, 2, "water", 7),
+      block(1, 3, "water", 8),
+      block(4, 5, null, 9),
+    ]);
+
+    const before = game.getSnapshot().player;
+    const first = before.chainPreviews;
+    const second = game.getSnapshot().player.chainPreviews;
+
+    expect(first).toHaveLength(3);
+    expect(first[0]!.blockId).toBe(trigger.id);
+    expect(first[0]!.directGroupSize).toBe(3);
+    expect(first[0]!.predictedDepth).toBe(2);
+    expect(first[0]!.predictedClearedCount).toBe(7);
+    expect(second).toEqual(first);
+    expect(game.getSnapshot().player.score).toBe(before.score);
+    expect(game.getSnapshot().player.burstCharge).toBe(before.burstCharge);
+  });
+
+  it("CHAIN VISIONは無効時に空配列を返し、特殊ブロックも候補に含める", () => {
+    const disabled = newGame("chain-vision-off");
+    expect(disabled.getSnapshot().player.chainPreviews).toEqual([]);
+
+    const game = new SurvivalGame(
+      "chain-vision-specials",
+      PHRASES,
+      GARBAGE_PHRASES,
+      "normal",
+      DEFAULT_CONFIG,
+      { enableChainVision: true },
+    );
+    startPlaying(game);
+    const bomb = block(0, 0, null, 2, "bomb");
+    const prism = block(4, 5, null, 3, "prism");
+    setBoard(game, [bomb, prism, block(0, 1, "fire", 4)]);
+    const kinds = game.getSnapshot().player.chainPreviews.map((preview) => preview.kind);
+    expect(kinds).toContain("bomb");
+    expect(kinds).toContain("prism");
+    expect(kinds).not.toContain("garbage");
+  });
+
+  it("CHAIN VISIONは単独消去(0 chain)を候補にしない", () => {
+    const game = new SurvivalGame(
+      "chain-vision-single-clear",
+      PHRASES,
+      GARBAGE_PHRASES,
+      "normal",
+      DEFAULT_CONFIG,
+      { enableChainVision: true },
+    );
+    startPlaying(game);
+    setBoard(game, [
+      block(0, 0, "fire", 2),
+      block(1, 0, "water", 3),
+      block(2, 0, "wind", 4),
+      block(3, 0, "light", 5),
+    ]);
+    expect(game.getSnapshot().player.chainPreviews).toEqual([]);
+  });
+
+  it("CHAIN VISIONは同一盤面でキャッシュし、盤面変更後に再計算する", () => {
+    const game = new SurvivalGame(
+      "chain-vision-cache",
+      PHRASES,
+      GARBAGE_PHRASES,
+      "normal",
+      DEFAULT_CONFIG,
+      { enableChainVision: true },
+    );
+    startPlaying(game);
+    const core = game.getCore() as unknown as {
+      blocks: Block[];
+      dropRow: () => void;
+      chainPreviewCache: { previews: unknown[] } | null;
+    };
+    const firstSnapshot = game.getSnapshot().player;
+    const firstCache = core.chainPreviewCache;
+    expect(firstCache).not.toBeNull();
+    const repeatedSnapshot = game.getSnapshot().player;
+    expect(core.chainPreviewCache).toBe(firstCache);
+    expect(repeatedSnapshot.chainPreviews).toEqual(firstSnapshot.chainPreviews);
+    expect(repeatedSnapshot.score).toBe(firstSnapshot.score);
+    expect(repeatedSnapshot.burstCharge).toBe(firstSnapshot.burstCharge);
+
+    // 通常の盤面変更経路(dropRow)ではキャッシュが無効化され、次回取得時に再計算される。
+    core.blocks = [];
+    core.dropRow();
+    expect(core.chainPreviewCache).toBeNull();
+    game.getSnapshot();
+    expect(core.chainPreviewCache).not.toBe(firstCache);
+  });
+
+  it("BURST OVERDRIVEは100/125/150の境界でtierが変わり、MAXは5行を消す", () => {
+    const game = new SurvivalGame(
+      "burst-overdrive",
+      PHRASES,
+      GARBAGE_PHRASES,
+      "normal",
+      DEFAULT_CONFIG,
+      { enableBurstOvercharge: true },
+    );
+    startPlaying(game);
+    const core = game.getCore();
+    setGauge(core, 99);
+    expect(game.getSnapshot().player.burstTier).toBe("charging");
+    setGauge(core, 100);
+    expect(game.getSnapshot().player.burstTier).toBe("ready");
+    setGauge(core, 125);
+    expect(game.getSnapshot().player.burstTier).toBe("power");
+    setGauge(core, 150);
+    expect(game.getSnapshot().player.burstTier).toBe("max");
+    expect(game.getSnapshot().player.gauge).toBe(1);
+    expect(game.getSnapshot().player.burstCharge).toBe(150);
+
+    setBoard(game, [
+      block(0, 0, "fire", 2),
+      block(1, 0, "water", 3),
+      block(2, 0, "wind", 4),
+      block(3, 0, "light", 5),
+      block(4, 0, "fire", 6),
+    ]);
+    const events = game.triggerBurst();
+    const fired = events.find((event) => event.type === "burstFired");
+    expect(fired?.type).toBe("burstFired");
+    if (fired?.type === "burstFired") {
+      expect(fired.tier).toBe("max");
+      expect(fired.rows).toBe(5);
+      expect(fired.scoreGained).toBe(DEFAULT_CONFIG.special.burstBaseScore);
+    }
+    expect(game.getSnapshot().player.burstCharge).toBe(0);
+    expect(game.getSnapshot().player.burstTier).toBe("charging");
+  });
+
+  it("ゲージ加算時にburstReadyとtier変更イベントを発火する", () => {
+    const game = new SurvivalGame(
+      "burst-events",
+      PHRASES,
+      GARBAGE_PHRASES,
+      "normal",
+      DEFAULT_CONFIG,
+      { enableBurstOvercharge: true },
+    );
+    startPlaying(game);
+    const core = game.getCore() as unknown as {
+      addGauge: (amount: number) => void;
+      gauge: number;
+      drainEvents: () => GameEvent[];
+    };
+    core.gauge = 99;
+    core.addGauge(1);
+    const readyEvents = core.drainEvents();
+    expect(readyEvents.some((event) => event.type === "burstReady")).toBe(true);
+    expect(readyEvents.some((event) => event.type === "burstTierChanged" && event.tier === "ready")).toBe(true);
+    core.addGauge(25);
+    expect(core.drainEvents().some((event) => event.type === "burstTierChanged" && event.tier === "power")).toBe(true);
+    core.addGauge(25);
+    expect(core.drainEvents().some((event) => event.type === "burstTierChanged" && event.tier === "max")).toBe(true);
+  });
+
+  it("危険状態から5連鎖以上で脱出するとCLUTCH CLEARを一度だけ発火する", () => {
+    const game = new SurvivalGame(
+      "clutch-clear",
+      PHRASES,
+      GARBAGE_PHRASES,
+      "normal",
+      DEFAULT_CONFIG,
+      { enableClutchClear: true },
+    );
+    startPlaying(game);
+    const core = game.getCore() as unknown as {
+      blocks: Block[];
+      danger: boolean;
+      resolving: Record<string, unknown>;
+    };
+    core.blocks = [];
+    core.danger = true;
+    core.resolving = {
+      stage: "falling",
+      stageMsLeft: 0,
+      chainDepth: 5,
+      clearingBlocks: [],
+      largestGroupSize: 0,
+      cause: "auto",
+      fromBurst: false,
+      coloredCleared: 0,
+      garbageDestroyed: 0,
+      maxGroupSize: 0,
+      startedInDanger: true,
+    };
+    const events = game.advance(100);
+    expect(events.filter((event) => event.type === "clutchClear")).toHaveLength(1);
+    expect(game.getSummary().clutchClearCount).toBe(1);
+    expect(game.advance(100).some((event) => event.type === "clutchClear")).toBe(false);
+  });
+
+  it("CLUTCH CLEARを有効化していないモードでは発火しない", () => {
+    const game = newGame("clutch-disabled");
+    startPlaying(game);
+    const core = game.getCore() as unknown as {
+      blocks: Block[];
+      danger: boolean;
+      resolving: Record<string, unknown>;
+    };
+    core.blocks = [];
+    core.danger = true;
+    core.resolving = {
+      stage: "falling",
+      stageMsLeft: 0,
+      chainDepth: 5,
+      clearingBlocks: [],
+      largestGroupSize: 0,
+      cause: "auto",
+      fromBurst: false,
+      coloredCleared: 0,
+      garbageDestroyed: 0,
+      maxGroupSize: 0,
+      startedInDanger: true,
+    };
+    expect(game.advance(100).some((event) => event.type === "clutchClear")).toBe(false);
+    expect(game.getSummary().clutchClearCount).toBe(0);
   });
 });

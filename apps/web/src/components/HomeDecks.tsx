@@ -30,6 +30,7 @@ export function RankingDeck({
   const [state, setState] = useState<
     { s: "loading" } | { s: "error" } | { s: "ok"; entries: RankingEntry[] }
   >({ s: "loading" });
+  const [retryNonce, setRetryNonce] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -44,10 +45,21 @@ export function RankingDeck({
     return () => {
       cancelled = true;
     };
-  }, [difficulty]);
+  }, [difficulty, retryNonce]);
 
   return (
-    <button className="lp-deck lp-deck-rich" onClick={onOpen}>
+    <button
+      className="lp-deck lp-deck-rich"
+      type="button"
+      aria-label={state.s === "error" ? "世界ランキングの取得を再試行" : "世界ランキングを開く"}
+      onClick={() => {
+        if (state.s === "error") {
+          setRetryNonce((value) => value + 1);
+          return;
+        }
+        onOpen();
+      }}
+    >
       <span className="lp-deck-top">
         <span className="lp-deck-glyph lp-glyph-light" aria-hidden="true">
           ★
@@ -56,8 +68,17 @@ export function RankingDeck({
         <span className="lp-deck-tag">{DIFFICULTY_LABELS[difficulty]}</span>
       </span>
 
-      {state.s === "loading" && <span className="lp-deck-empty">読み込み中…</span>}
-      {state.s === "error" && <span className="lp-deck-empty">いまは取得できません</span>}
+      {state.s === "loading" && (
+        <span className="lp-deck-empty" role="status" aria-live="polite">
+          ランキングを読み込み中…
+        </span>
+      )}
+      {state.s === "error" && (
+        <span className="lp-deck-empty lp-deck-error" role="alert" aria-live="polite">
+          <span>いまはランキングを取得できません</span>
+          <span className="lp-deck-retry">再試行する →</span>
+        </span>
+      )}
       {state.s === "ok" && state.entries.length === 0 && (
         <span className="lp-deck-empty">まだ記録なし。最初のランカーへ</span>
       )}
@@ -73,7 +94,7 @@ export function RankingDeck({
         </span>
       )}
 
-      <span className="lp-deck-foot">全順位を見る →</span>
+      <span className="lp-deck-foot">{state.s === "error" ? "クリックして再試行 →" : "全順位を見る →"}</span>
     </button>
   );
 }

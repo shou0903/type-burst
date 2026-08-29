@@ -94,8 +94,15 @@ export interface StoredResult {
   difficulty: SurvivalDifficulty;
   /** 記録を作ったルール。旧データはサバイバルとして移行する。 */
   mode?: "survival" | "daily";
-  ruleset?: "survival-v1" | "daily-v2";
+  ruleset?: ResultRuleset;
 }
+
+/** サバイバルのルール世代。デイリーのルール世代とは別に扱う。 */
+export type SurvivalRuleset = "survival-v1" | "survival-v2";
+export type ResultRuleset = SurvivalRuleset | "daily-v2";
+
+/** 現在の通常サバイバルで保存・比較に使うルール世代。 */
+export const SURVIVAL_RULESET: SurvivalRuleset = "survival-v2";
 
 export type DuelRecord = Record<CpuDifficulty, { wins: number; losses: number }>;
 
@@ -194,7 +201,7 @@ export function appendResult(
     playedAt: new Date().toISOString(),
     difficulty: summary.difficulty,
     mode,
-    ruleset: mode === "daily" ? "daily-v2" : "survival-v1",
+    ruleset: mode === "daily" ? "daily-v2" : SURVIVAL_RULESET,
   });
   const trimmed = results.slice(0, MAX_STORED_RESULTS);
   try {
@@ -210,11 +217,20 @@ export function appendResult(
  * 難易度別の自己ベスト。難易度間はプレイに必要な技術が異なり比較に意味が
  * ないため、指定難易度の記録だけで集計する(D-032)。
  * difficulty未設定の旧データ(難易度導入前に保存された記録)は
- * normalとして扱い、既存ユーザーのベストスコア表示が消えないようにする。
+ * normalとして扱う。ルール世代は指定したものだけを集計し、ルール更新前後の
+ * スコアを同じ自己ベストとして比較しない。
  */
-export function bestScore(results: StoredResult[], difficulty: SurvivalDifficulty): number {
+export function bestScore(
+  results: StoredResult[],
+  difficulty: SurvivalDifficulty,
+  ruleset: SurvivalRuleset = SURVIVAL_RULESET,
+): number {
   return results
-    .filter((r) => r.mode !== "daily" && (r.difficulty ?? "normal") === difficulty)
+    .filter(
+      (r) =>
+        getStoredResultRuleset(r) === ruleset &&
+        (r.difficulty ?? "normal") === difficulty,
+    )
     .reduce((max, r) => Math.max(max, r.score), 0);
 }
 
@@ -339,6 +355,12 @@ function normalizeStoredResult(value: unknown): StoredResult[] {
   if (!value || typeof value !== "object") return [];
   const result = value as Partial<StoredResult>;
   const difficulty = result.difficulty;
+  if (
+    (result.mode !== undefined && result.mode !== "survival" && result.mode !== "daily") ||
+    (result.ruleset !== undefined && !isResultRuleset(result.ruleset)) ||
+    (result.mode === "daily" && result.ruleset !== undefined && result.ruleset !== "daily-v2") ||
+    (result.mode === "survival" && result.ruleset === "daily-v2")
+  ) return [];
   if (!(
     typeof result.score === "number" && Number.isFinite(result.score) &&
     typeof result.maxChain === "number" && Number.isFinite(result.maxChain) &&
@@ -359,14 +381,33 @@ function normalizeStoredResult(value: unknown): StoredResult[] {
     playedAt: result.playedAt,
     difficulty: difficulty ?? "normal",
   };
-  // 旧形式の保存データは余計なキーを増やさず、そのままサバイバルとして扱う。
-  // 新形式のデイリー記録だけはモード情報を保持して分析を分離する。
-  if (result.mode === "daily" || result.ruleset === "daily-v2") {
+  // ルール世代を明示的に正規化する。旧形式(ルール未設定)は v1 として
+  // 扱うが、スコア値や日時などの元データは変更しない。
+  const ruleset = getStoredResultRuleset(result);
+  normalized.ruleset = ruleset;
+  // デイリー記録だけはモード情報を保持して分析を分離する。旧形式の
+  // mode-less 記録には mode を追加せず、互換性のある形を保つ。
+  if (ruleset === "daily-v2") {
     normalized.mode = "daily";
-    normalized.ruleset = "daily-v2";
-  } else if (result.mode === "survival" || result.ruleset === "survival-v1") {
+  } else if (result.mode === "survival") {
     normalized.mode = "survival";
-    normalized.ruleset = "survival-v1";
   }
   return [normalized];
+}
+
+export function isSurvivalRuleset(value: unknown): value is SurvivalRuleset {
+  return value === "survival-v1" || value === "survival-v2";
+}
+
+function isResultRuleset(value: unknown): value is ResultRuleset {
+  return isSurvivalRuleset(value) || value === "daily-v2";
+}
+
+/** 保存済み結果のルールを一箇所で判定し、旧形式は v1 に割り当てる。 */
+export function getStoredResultRuleset(
+  result: Pick<StoredResult, "mode" | "ruleset">,
+): ResultRuleset {
+  if (result.mode === "daily" || result.ruleset === "daily-v2") return "daily-v2";
+  if (result.ruleset === "survival-v2") return "survival-v2";
+  return "survival-v1";
 }

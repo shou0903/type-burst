@@ -914,7 +914,10 @@ export class PlayerCore {
     }
     if (landed > 0) {
       this.emit({ type: "garbageLanded", count: landed });
-      this.resetSelection();
+      // ガベージの着弾は既存ブロックへ新しいブロックを積むだけで、
+      // 盤面上の既存ブロックのID・座標・入力対象は変わらない。
+      // 入力中の候補/ロック/オートマトンをリセットすると、打鍵途中の
+      // 単語が突然解除されるため、選択状態はそのまま保持する。
       this.invalidateChainPreviews();
       this.updateDanger();
     }
@@ -980,9 +983,9 @@ export class PlayerCore {
       this.pushBlock("normal", attr, this.pickPhrase(), row, col);
     }
     this.invalidateChainPreviews();
-    // 盤面が変化すると、入力中の候補は新しい盤面に対して無効になる。
-    // 中断後の次の単語は新しい試行として PERFECT 判定する。
-    this.resetSelection();
+    // 行の追加は既存ブロックを移動・削除しないため、入力中の対象を
+    // 継続する。candidateIds は追加前に作られたID集合のままなので、
+    // 新しい行のブロックが途中の候補へ紛れ込むこともない。
     this.emit({ type: "rowDropped" });
     this.updateDanger();
   }

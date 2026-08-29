@@ -70,7 +70,6 @@ export class GameController {
   private disposed = false;
   private finished = false;
   private paused = false;
-  private pauseInputLocked = false;
   private finishTimeoutId: number | null = null;
   private focusProgress: FocusProgress | null = null;
 
@@ -170,11 +169,6 @@ export class GameController {
     return this.paused;
   }
 
-  /** 終了確認など、オーバーレイ操作中にPで裏のゲームを再開させない。 */
-  setPauseInputLocked(locked: boolean): void {
-    this.pauseInputLocked = locked;
-  }
-
   private loop = (now: number): void => {
     if (this.disposed) return;
     if (this.paused) {
@@ -224,18 +218,9 @@ export class GameController {
   private handleKeyDown = (e: KeyboardEvent): void => {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
 
-    // Pはフォーム入力以外ならどこからでも安全に一時停止/再開できる。
-    // 入力欄の文字を横取りしないことを優先する。
-    if (e.key.toLowerCase() === "p" && !isTextInputTarget(e.target)) {
-      e.preventDefault();
-      if (this.pauseInputLocked) return;
-      if (this.paused) this.resume();
-      else this.pause();
-      return;
-    }
-
     if (this.paused) {
       // 停止中は文字入力・バースト・選択キャンセルをすべて無視する。
+      // 再開は画面上の一時停止ボタンからだけ行う（Pは通常入力として扱う）。
       // チュートリアルのEscだけは終了確認を開けるようにする。
       if (e.key === "Escape" && this.options.mode.type === "tutorial") {
         e.preventDefault();

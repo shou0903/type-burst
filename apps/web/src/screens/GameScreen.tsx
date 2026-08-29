@@ -147,14 +147,12 @@ export function GameScreen({
 
   const requestQuit = (): void => {
     // 確認中に盤面やタイマーが進まないよう、終了確認へ入る時点で止める。
-    controllerRef.current?.setPauseInputLocked(true);
     controllerRef.current?.pause();
     setQuitRequested(true);
   };
 
   const cancelQuit = (): void => {
     setQuitRequested(false);
-    controllerRef.current?.setPauseInputLocked(false);
     controllerRef.current?.resume();
   };
 
@@ -627,12 +625,12 @@ export function GameScreen({
 
           <div className="key-help">
             {snapshot?.mode === "tutorial"
-              ? "Enter: 次へ / Esc: 終了確認 / P: 一時停止"
-              : "Enter: バースト / P: 一時停止 / Esc・BS: 選択キャンセル"}
+              ? "Enter: 次へ / Esc: 終了確認"
+              : "Enter: バースト / Esc・BS: 選択キャンセル"}
           </div>
 
           <button className="btn-pause" type="button" aria-pressed={paused} onClick={paused ? resumeGame : () => controllerRef.current?.pause()}>
-            {paused ? "再開" : "一時停止"} <kbd>P</kbd>
+            {paused ? "再開" : "一時停止"}
           </button>
           <button className="btn-quit" type="button" onClick={requestQuit}>
             やめる
@@ -653,7 +651,7 @@ export function GameScreen({
             <p>盤面・時間・スコアは止まっています。準備ができたら続けてください。</p>
             <div className="game-overlay-actions">
               <button ref={pauseResumeRef} className="btn-primary" type="button" onClick={resumeGame}>
-                続ける <kbd>P</kbd>
+                続ける
               </button>
               <button className="btn-secondary" type="button" onClick={requestQuit}>
                 タイトルへ戻る

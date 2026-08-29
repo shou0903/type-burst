@@ -439,6 +439,76 @@ describe("候補入力中のミス", () => {
     expect(game.getSnapshot().player.typedRomaji).toBe("ai");
   });
 
+  it("行上昇後も曖昧候補と入力済みprefixを保持し、新規ブロックを候補へ追加しない", () => {
+    const game = newGame("keep-ambiguous-selection-after-rise");
+    startPlaying(game);
+    const first: Block = {
+      id: 9_991,
+      kind: "normal",
+      attribute: "fire",
+      phraseId: "rise-duplicate-reading-a",
+      displayText: "あいうえお",
+      readingKana: "あいうえお",
+      row: 0,
+      col: 0,
+    };
+    const second: Block = { ...first, id: 9_990, phraseId: "rise-duplicate-reading-b", col: 1 };
+    setBoard(game, [first, second]);
+    const core = game.getCore() as unknown as { dropRow: () => void; blocks: Block[] };
+    const romaji = new TypingAutomaton(first.readingKana).getCanonicalRomaji();
+
+    game.feedKey(romaji[0]!);
+    expect(game.getSnapshot().player.candidateBlockIds).toEqual([first.id, second.id]);
+    expect(game.getSnapshot().player.typedRomaji).toBe(romaji[0]);
+
+    core.dropRow();
+    const afterDrop = game.getSnapshot().player;
+    expect(afterDrop.candidateBlockIds).toEqual([first.id, second.id]);
+    expect(afterDrop.typedRomaji).toBe(romaji[0]);
+    expect(afterDrop.blocks.filter((item) => ![first.id, second.id].includes(item.id))).toHaveLength(6);
+
+    const events: GameEvent[] = [];
+    for (const key of romaji.slice(1)) events.push(...game.feedKey(key));
+    const completed = events.find((event) => event.type === "phraseCompleted");
+    expect(completed?.type).toBe("phraseCompleted");
+    if (completed?.type === "phraseCompleted") {
+      expect(completed.perfect).toBe(true);
+    }
+  });
+
+  it("妨害着弾後も曖昧候補と入力済みprefixを保持し、妨害を候補へ追加しない", () => {
+    const game = newGame("keep-ambiguous-selection-after-garbage");
+    startPlaying(game);
+    const first: Block = {
+      id: 9_989,
+      kind: "normal",
+      attribute: "fire",
+      phraseId: "garbage-duplicate-reading-a",
+      displayText: "あいうえお",
+      readingKana: "あいうえお",
+      row: 0,
+      col: 0,
+    };
+    const second: Block = { ...first, id: 9_988, phraseId: "garbage-duplicate-reading-b", col: 1 };
+    setBoard(game, [first, second]);
+    const core = game.getCore();
+    core.pauseRise = true;
+    const romaji = new TypingAutomaton(first.readingKana).getCanonicalRomaji();
+
+    game.feedKey(romaji[0]!);
+    core.receiveGarbage(1);
+    core.advance(DEFAULT_CONFIG.garbage.dropDelayMs);
+
+    const afterDrop = core.getSnapshot();
+    expect(afterDrop.candidateBlockIds).toEqual([first.id, second.id]);
+    expect(afterDrop.typedRomaji).toBe(romaji[0]);
+    expect(afterDrop.blocks.filter((item) => ![first.id, second.id].includes(item.id))).toHaveLength(1);
+
+    const events: GameEvent[] = [];
+    for (const key of romaji.slice(1)) events.push(...game.feedKey(key));
+    expect(events.some((event) => event.type === "phraseCompleted")).toBe(true);
+  });
+
   it("アイドル中の誤入力は次の単語のPERFECTを壊さない", () => {
     const game = newGame("idle-miss-does-not-poison-perfect");
     startPlaying(game);
@@ -493,8 +563,8 @@ describe("候補入力中のミス", () => {
     }
   });
 
-  it("行上昇で入力が中断された後の単語へミス状態を持ち越さない", () => {
-    const game = newGame("rise-clears-phrase-miss");
+  it("行上昇中もロックと入力途中を維持し、同じ試行のミスをPERFECTに反映する", () => {
+    const game = newGame("rise-keeps-phrase-attempt");
     startPlaying(game);
     const target: Block = {
       id: 9_994,
@@ -507,22 +577,35 @@ describe("候補入力中のミス", () => {
       col: 0,
     };
     setBoard(game, [target]);
-    const core = game.getCore() as unknown as { dropRow: () => void };
+    const core = game.getCore() as unknown as { dropRow: () => void; blocks: Block[] };
+    const romaji = new TypingAutomaton(target.readingKana).getCanonicalRomaji();
 
-    game.feedKey("a");
-    game.feedKey("q");
+    game.feedKey(romaji[0]!);
+    game.feedKey("q"); // 入力途中のミスは同じ試行に記録する
+    const beforeDrop = game.getSnapshot().player;
+    expect(beforeDrop.lockedBlockId).toBe(target.id);
+    expect(beforeDrop.typedRomaji).toBe(romaji[0]);
+
     core.dropRow();
-    const events = typePhrase(game, target.readingKana);
+    const afterDrop = game.getSnapshot().player;
+    expect(afterDrop.lockedBlockId).toBe(target.id);
+    expect(afterDrop.candidateBlockIds).toEqual([target.id]);
+    expect(afterDrop.typedRomaji).toBe(romaji[0]);
+    const persisted = core.blocks.find((block) => block.id === target.id);
+    expect(persisted).toMatchObject({ row: target.row, col: target.col });
+
+    const events: GameEvent[] = [];
+    for (const key of romaji.slice(1)) events.push(...game.feedKey(key));
     const completed = events.find((event) => event.type === "phraseCompleted");
 
     expect(completed?.type).toBe("phraseCompleted");
     if (completed?.type === "phraseCompleted") {
-      expect(completed.perfect).toBe(true);
+      expect(completed.perfect).toBe(false);
     }
   });
 
-  it("妨害着弾で入力が中断された後の単語へミス状態を持ち越さない", () => {
-    const game = newGame("garbage-clears-phrase-miss");
+  it("妨害着弾中も入力途中とミス状態を維持し、同じ試行のPERFECT判定に反映する", () => {
+    const game = newGame("garbage-keeps-phrase-attempt");
     startPlaying(game);
     const target: Block = {
       id: 9_993,
@@ -537,19 +620,27 @@ describe("候補入力中のミス", () => {
     setBoard(game, [target]);
     const core = game.getCore();
     core.pauseRise = true;
+    const romaji = new TypingAutomaton(target.readingKana).getCanonicalRomaji();
 
-    game.feedKey("a");
+    game.feedKey(romaji[0]!);
     game.feedKey("q");
+    const beforeDrop = core.getSnapshot();
+    expect(beforeDrop.lockedBlockId).toBe(target.id);
+    expect(beforeDrop.typedRomaji).toBe(romaji[0]);
     core.receiveGarbage(1);
     core.advance(DEFAULT_CONFIG.garbage.dropDelayMs);
-    expect(core.getSnapshot().candidateBlockIds).toHaveLength(0);
+    const afterDrop = core.getSnapshot();
+    expect(afterDrop.lockedBlockId).toBe(target.id);
+    expect(afterDrop.candidateBlockIds).toEqual([target.id]);
+    expect(afterDrop.typedRomaji).toBe(romaji[0]);
 
-    const events = typePhrase(game, target.readingKana);
+    const events: GameEvent[] = [];
+    for (const key of romaji.slice(1)) events.push(...game.feedKey(key));
     const completed = events.find((event) => event.type === "phraseCompleted");
 
     expect(completed?.type).toBe("phraseCompleted");
     if (completed?.type === "phraseCompleted") {
-      expect(completed.perfect).toBe(true);
+      expect(completed.perfect).toBe(false);
     }
   });
 });

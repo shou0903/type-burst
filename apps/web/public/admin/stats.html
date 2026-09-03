@@ -60,6 +60,147 @@
           </div>
         </div>
 
+        <section class="pd-section pd-behavior-section" aria-labelledby="pd-behavior-title">
+          <div class="pd-section-head">
+            <h2 id="pd-behavior-title"><span class="pd-section-glyph">◈</span> ユーザー行動</h2>
+            <span class="pd-behavior-badge">匿名集計</span>
+          </div>
+          <p class="pd-section-note">
+            ゲーム内の行動を、イベント数・セッション数・匿名プレイヤーID数に分けて集計しています。入力内容、スコア、ニックネーム、プレイヤーIDそのものは表示しません。
+          </p>
+
+          <div id="pd-behavior-empty" class="pd-behavior-state" role="status">
+            行動データはまだ利用できません。計測APIの集計結果が返ると、ここに表示されます。
+          </div>
+
+          <div id="pd-behavior-content" class="pd-hidden">
+            <div class="pd-behavior-kpi-grid" aria-label="本日のユーザー行動KPI">
+              <div class="pd-kpi pd-behavior-kpi" style="--pd-kpi-accent: var(--pd-normal)">
+                <div class="pd-kpi-label">本日のセッション数</div>
+                <div class="pd-kpi-value" id="pd-behavior-kpi-sessions">-</div>
+                <div class="pd-kpi-sub">訪問単位（重複除去）</div>
+              </div>
+              <div class="pd-kpi pd-behavior-kpi" style="--pd-kpi-accent: var(--pd-easy)">
+                <div class="pd-kpi-label">匿名プレイヤーID数</div>
+                <div class="pd-kpi-value" id="pd-behavior-kpi-players">-</div>
+                <div class="pd-kpi-sub">匿名ID単位（重複除去）</div>
+              </div>
+              <div class="pd-kpi pd-behavior-kpi" style="--pd-kpi-accent: var(--pd-hard)">
+                <div class="pd-kpi-label">新規匿名ID数</div>
+                <div class="pd-kpi-value" id="pd-behavior-kpi-new-players">-</div>
+                <div class="pd-kpi-sub">今日初めて確認したID</div>
+              </div>
+              <div class="pd-kpi pd-behavior-kpi" style="--pd-kpi-accent: var(--pd-accent)">
+                <div class="pd-kpi-label">ゲーム開始</div>
+                <div class="pd-kpi-value" id="pd-behavior-kpi-starts">-</div>
+                <div class="pd-kpi-sub">イベント数</div>
+              </div>
+              <div class="pd-kpi pd-behavior-kpi" style="--pd-kpi-accent: var(--pd-god)">
+                <div class="pd-kpi-label">ゲーム完了</div>
+                <div class="pd-kpi-value" id="pd-behavior-kpi-finishes">-</div>
+                <div class="pd-kpi-sub">イベント数</div>
+              </div>
+              <div class="pd-kpi pd-behavior-kpi" style="--pd-kpi-accent: var(--pd-easy)">
+                <div class="pd-kpi-label">開始 → 完了率</div>
+                <div class="pd-kpi-value" id="pd-behavior-kpi-completion">-</div>
+                <div class="pd-kpi-sub">完了イベント ÷ 開始イベント</div>
+              </div>
+            </div>
+
+            <div class="pd-behavior-grid pd-behavior-primary-grid">
+              <div class="pd-behavior-panel pd-behavior-trend-panel">
+                <div class="pd-behavior-panel-head">
+                  <div>
+                    <h3>直近30日間のトレンド</h3>
+                    <p id="pd-behavior-trend-caption">セッション・匿名ID・ゲーム開始・ゲーム完了</p>
+                  </div>
+                  <span id="pd-behavior-trend-period" class="pd-behavior-meta">-</span>
+                </div>
+                <div class="pd-behavior-trend-chart">
+                  <canvas id="pd-chart-behavior-trend" role="img" aria-label="直近30日間のユーザー行動トレンド"></canvas>
+                  <div id="pd-behavior-trend-legend" class="pd-behavior-legend" role="list" aria-label="トレンドの凡例"></div>
+                </div>
+                <p id="pd-behavior-trend-empty" class="pd-behavior-inline-empty pd-hidden">トレンドデータがありません。</p>
+              </div>
+
+              <div class="pd-behavior-panel">
+                <div class="pd-behavior-panel-head">
+                  <div>
+                    <h3>本日のファネル</h3>
+                    <p>行動イベントの段階別件数と開始からの転換率</p>
+                  </div>
+                </div>
+                <div id="pd-behavior-funnel" class="pd-behavior-funnel" role="list" aria-label="本日の行動ファネル"></div>
+                <p id="pd-behavior-funnel-empty" class="pd-behavior-inline-empty pd-hidden">ファネルデータがありません。</p>
+              </div>
+            </div>
+
+            <div class="pd-behavior-grid pd-behavior-breakdown-grid">
+              <div class="pd-behavior-panel">
+                <div class="pd-behavior-panel-head">
+                  <div>
+                    <h3>流入元</h3>
+                    <p>イベント数・セッション数・匿名ID数</p>
+                  </div>
+                </div>
+                <div id="pd-behavior-source-list" class="pd-behavior-list" role="list" aria-label="流入元別の行動集計"></div>
+                <p id="pd-behavior-source-empty" class="pd-behavior-inline-empty pd-hidden">流入元データがありません。</p>
+              </div>
+              <div class="pd-behavior-panel">
+                <div class="pd-behavior-panel-head">
+                  <div>
+                    <h3>モード別</h3>
+                    <p>イベント数・セッション数・匿名ID数</p>
+                  </div>
+                </div>
+                <div id="pd-behavior-mode-list" class="pd-behavior-list" role="list" aria-label="モード別の行動集計"></div>
+                <p id="pd-behavior-mode-empty" class="pd-behavior-inline-empty pd-hidden">モードデータがありません。</p>
+              </div>
+              <div class="pd-behavior-panel">
+                <div class="pd-behavior-panel-head">
+                  <div>
+                    <h3>難易度別</h3>
+                    <p>イベント数・セッション数・匿名ID数</p>
+                  </div>
+                </div>
+                <div id="pd-behavior-difficulty-list" class="pd-behavior-list" role="list" aria-label="難易度別の行動集計"></div>
+                <p id="pd-behavior-difficulty-empty" class="pd-behavior-inline-empty pd-hidden">難易度データがありません。</p>
+              </div>
+            </div>
+
+            <div class="pd-behavior-grid pd-behavior-secondary-grid">
+              <div class="pd-behavior-panel">
+                <div class="pd-behavior-panel-head">
+                  <div>
+                    <h3>結果画面のアクション</h3>
+                    <p>結果画面で実行された行動イベント</p>
+                  </div>
+                </div>
+                <div id="pd-behavior-result-action-list" class="pd-behavior-list pd-behavior-list-wide" role="list" aria-label="結果画面アクションの集計"></div>
+                <p id="pd-behavior-result-action-empty" class="pd-behavior-inline-empty pd-hidden">結果アクションのデータがありません。</p>
+              </div>
+
+              <div class="pd-behavior-panel pd-behavior-retention-panel">
+                <div class="pd-behavior-panel-head">
+                  <div>
+                    <h3>リピート（D1 / D7 / D30）</h3>
+                    <p>匿名プレイヤーID単位の再訪率</p>
+                  </div>
+                </div>
+                <div id="pd-behavior-retention-unavailable" class="pd-behavior-retention-state" role="status">
+                  利用不可：匿名プレイヤーIDのハッシュ秘密情報が設定されていません。
+                </div>
+                <div id="pd-behavior-retention-values" class="pd-behavior-retention-values pd-hidden" aria-label="匿名プレイヤーID単位の再訪率">
+                  <div class="pd-retention-value"><span>D1</span><strong id="pd-behavior-retention-d1">-</strong></div>
+                  <div class="pd-retention-value"><span>D7</span><strong id="pd-behavior-retention-d7">-</strong></div>
+                  <div class="pd-retention-value"><span>D30</span><strong id="pd-behavior-retention-d30">-</strong></div>
+                </div>
+                <p id="pd-behavior-retention-note" class="pd-behavior-inline-note">匿名プレイヤーID単位。個人を特定する情報は使用していません。</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section class="pd-section">
           <div class="pd-section-head">
             <h2><span class="pd-section-glyph">◆●★▲</span> サバイバル 難易度別オーバービュー</h2>

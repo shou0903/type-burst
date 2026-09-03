@@ -104,6 +104,583 @@
   }
 
   // ------------------------------------------------------------------
+  // 行動データ(バックエンドの集計レスポンス)
+  // ------------------------------------------------------------------
+
+  const BEHAVIOR_SOURCE_LABELS = {
+    direct: "直接訪問",
+    "google-organic": "Google検索",
+    "bing-organic": "Bing検索",
+    "yahoo-organic": "Yahoo!検索",
+    guide: "ガイド",
+    social: "SNS",
+    share: "共有リンク",
+    newsletter: "ニュースレター",
+    news: "ニュース掲載",
+    other: "その他",
+  };
+  const BEHAVIOR_MODE_LABELS = {
+    survival: "サバイバル",
+    daily: "デイリー",
+    duel: "CPU対戦",
+    tutorial: "チュートリアル",
+  };
+  const BEHAVIOR_DIFFICULTY_LABELS = {
+    easy: "初級",
+    normal: "中級",
+    hard: "上級",
+    god: "神級",
+  };
+  const BEHAVIOR_ACTION_LABELS = {
+    retry: "もう一戦",
+    analysis: "分析を見る",
+    title: "タイトルへ",
+    share: "共有",
+    open: "開く",
+    line: "LINEで送る",
+    copy_link: "リンクをコピー",
+    copy_text: "テキストをコピー",
+    save_image: "画像を保存",
+    submit_success: "ランキング登録成功",
+    submit_error: "ランキング登録失敗",
+    skip: "スキップ",
+    ranking: "ランキング",
+    back: "戻る",
+    copy: "コピー",
+    nav: "ナビゲーション",
+    start: "開始",
+    complete: "完了",
+    lookup: "照会",
+    issue: "発行",
+    restore: "復元",
+    delete: "削除",
+  };
+  const BEHAVIOR_FUNNEL_LABELS = {
+    content_entry: "流入・ページ到達",
+    entry: "流入・ページ到達",
+    screen_view: "画面表示",
+    game_started: "ゲーム開始",
+    game_start: "ゲーム開始",
+    game_finished: "ゲーム完了",
+    game_finish: "ゲーム完了",
+    result_action: "結果画面の行動",
+    tutorial_completed: "チュートリアル完了",
+  };
+
+  function isRecord(value) {
+    return value !== null && typeof value === "object" && !Array.isArray(value);
+  }
+
+  function numberValue(value) {
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+    if (typeof value === "string" && value.trim() !== "") {
+      const parsed = Number(value);
+      if (Number.isFinite(parsed)) return parsed;
+    }
+    if (isRecord(value)) {
+      for (const key of ["value", "count", "total", "unique", "rate", "ratio", "percentage"]) {
+        const nested = numberValue(value[key]);
+        if (nested !== null) return nested;
+      }
+    }
+    return null;
+  }
+
+  function valueFrom(source, keys) {
+    if (!isRecord(source)) return null;
+    for (const key of keys) {
+      const value = numberValue(source[key]);
+      if (value !== null) return value;
+    }
+    return null;
+  }
+
+  function firstRecord(...values) {
+    return values.find((value) => isRecord(value)) || null;
+  }
+
+  function firstArray(...values) {
+    return values.find((value) => Array.isArray(value)) || [];
+  }
+
+  /** 配列・辞書のどちらで返ってきても、表示用の行にそろえる。 */
+  function toRows(value) {
+    if (Array.isArray(value)) return value.filter((row) => isRecord(row));
+    if (!isRecord(value)) return [];
+    return Object.entries(value).map(([key, row]) => {
+      if (isRecord(row)) return { key, ...row };
+      return { key, count: row };
+    });
+  }
+
+  function rowKey(row, fallback) {
+    if (!isRecord(row)) return fallback || "-";
+    const value = row.key ?? row.name ?? row.label ?? row.value ?? row.source ?? row.mode ?? row.difficulty ?? row.action ?? row.actionName ?? row.stage;
+    return value === null || value === undefined || value === "" ? fallback || "-" : String(value);
+  }
+
+  function rowMetric(row, keys) {
+    return valueFrom(row, keys);
+  }
+
+  function formatPercent(value) {
+    const numeric = numberValue(value);
+    if (numeric === null) return "-";
+    const percent = numeric >= 0 && numeric <= 1 ? numeric * 100 : numeric;
+    return format(percent, 1) + "%";
+  }
+
+  function clampPercent(value) {
+    const numeric = numberValue(value);
+    if (numeric === null) return 0;
+    const percent = numeric >= 0 && numeric <= 1 ? numeric * 100 : numeric;
+    return Math.max(0, Math.min(100, percent));
+  }
+
+  function behaviorToday(behavior) {
+    return Object.assign(
+      {},
+      ...[
+        behavior,
+        behavior.counts,
+        behavior.metrics,
+        behavior.kpis,
+        behavior.todayStats,
+        behavior.todayKpis,
+        behavior.today && behavior.today.counts,
+        behavior.today && behavior.today.metrics,
+        behavior.today && behavior.today.eventCounts,
+        behavior.today,
+      ].filter((value) => isRecord(value)),
+    );
+  }
+
+  function behaviorMetric(behavior, today, todayKeys, rootKeys, eventKeys) {
+    return valueFrom(today, todayKeys) ?? valueFrom(today.eventCounts, eventKeys || []) ?? valueFrom(behavior, rootKeys || todayKeys);
+  }
+
+  function todayEventMetric(today, keys) {
+    return valueFrom(today, keys) ?? valueFrom(today.eventCounts, keys);
+  }
+
+  function behaviorCollections(behavior, today, aliases) {
+    const values = [];
+    for (const alias of aliases) {
+      values.push(today[alias], behavior[alias], behavior.breakdowns && behavior.breakdowns[alias], behavior.breakdown && behavior.breakdown[alias]);
+    }
+    return values.find((value) => Array.isArray(value) || isRecord(value)) || null;
+  }
+
+  function normalizeTrend(behavior) {
+    const daily = firstRecord(behavior.daily, behavior.history) || {};
+    const collection = firstArray(
+      behavior.trend30,
+      behavior.trend,
+      behavior.recentTrend,
+      behavior.dailyTrend,
+      behavior.history,
+      daily.trend30,
+      daily.trend,
+      daily.recentDays,
+    );
+    const rawCollection = collection.length > 0 ? collection : behavior.trend30 || behavior.trend || behavior.recentTrend || daily.trend30 || daily.trend || daily.recentDays;
+    const rows = Array.isArray(rawCollection) ? rawCollection : toRows(rawCollection);
+    return rows
+      .filter((row) => isRecord(row))
+      .slice(-30)
+      .map((row) => ({
+        date: String(row.date ?? row.day ?? row.at ?? ""),
+        sessions: rowMetric(row, ["sessions", "sessionCount", "uniqueSessions"]),
+        players: rowMetric(row, ["anonymousIds", "anonymousIdCount", "uniqueAnonymousIds", "players", "playerCount", "uniquePlayers"]),
+        newPlayers: rowMetric(row, ["newIds", "newAnonymousIds", "newPlayers", "newPlayerCount"]),
+        starts: rowMetric(row, ["gameStarts", "gameStartCount", "starts", "startCount"]),
+        finishes: rowMetric(row, ["gameFinishes", "gameFinishCount", "finishes", "finishCount"]),
+      }));
+  }
+
+  function behaviorLabel(kind, value) {
+    const maps = {
+      source: BEHAVIOR_SOURCE_LABELS,
+      mode: BEHAVIOR_MODE_LABELS,
+      difficulty: BEHAVIOR_DIFFICULTY_LABELS,
+      action: BEHAVIOR_ACTION_LABELS,
+      funnel: BEHAVIOR_FUNNEL_LABELS,
+    };
+    const mapped = maps[kind] && maps[kind][value];
+    return mapped || value;
+  }
+
+  function drawBehaviorTrendChart(canvas, points) {
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const rect = canvas.getBoundingClientRect();
+    const width = Math.max(1, rect.width || canvas.clientWidth || 640);
+    const height = Math.max(1, rect.height || canvas.clientHeight || 240);
+    canvas.width = Math.round(width * dpr);
+    canvas.height = Math.round(height * dpr);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return false;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, width, height);
+
+    const series = [
+      { key: "sessions", label: "セッション", color: "#6fc0ff" },
+      { key: "players", label: "匿名ID", color: "#5fe8b6" },
+      { key: "starts", label: "ゲーム開始", color: "#ffdf70" },
+      { key: "finishes", label: "ゲーム完了", color: "#ff8a70" },
+    ].filter((item) => points.some((point) => numberValue(point[item.key]) !== null));
+
+    if (points.length === 0 || series.length === 0) {
+      return false;
+    }
+
+    const padding = { top: 18, right: 14, bottom: 30, left: 42 };
+    const plotWidth = Math.max(1, width - padding.left - padding.right);
+    const plotHeight = Math.max(1, height - padding.top - padding.bottom);
+    const values = [];
+    points.forEach((point) => {
+      series.forEach((item) => {
+        const value = numberValue(point[item.key]);
+        if (value !== null) values.push(value);
+      });
+    });
+    const maxValue = Math.max(1, ...values);
+    const stepX = points.length > 1 ? plotWidth / (points.length - 1) : 0;
+    const xAt = (index) => padding.left + index * stepX;
+    const yAt = (value) => padding.top + plotHeight - (value / maxValue) * plotHeight;
+
+    ctx.strokeStyle = "rgba(255,255,255,0.08)";
+    ctx.lineWidth = 1;
+    ctx.font = "10px sans-serif";
+    ctx.fillStyle = "#8a93ad";
+    ctx.textAlign = "right";
+    for (let i = 0; i <= 3; i += 1) {
+      const ratio = i / 3;
+      const y = padding.top + ratio * plotHeight;
+      ctx.beginPath();
+      ctx.moveTo(padding.left, y);
+      ctx.lineTo(width - padding.right, y);
+      ctx.stroke();
+      ctx.fillText(format(Math.round(maxValue * (1 - ratio))), padding.left - 8, y + 3);
+    }
+
+    ctx.textAlign = "center";
+    const labelStep = Math.max(1, Math.ceil(points.length / 7));
+    points.forEach((point, index) => {
+      if (index % labelStep !== 0 && index !== points.length - 1) return;
+      const date = String(point.date || "");
+      const label = date.length >= 10 ? date.slice(5, 10) : date.slice(0, 10);
+      if (label) ctx.fillText(label, xAt(index), height - 9);
+    });
+
+    series.forEach((item) => {
+      ctx.beginPath();
+      let started = false;
+      points.forEach((point, index) => {
+        const value = numberValue(point[item.key]);
+        if (value === null) {
+          started = false;
+          return;
+        }
+        const x = xAt(index);
+        const y = yAt(value);
+        if (!started) {
+          ctx.moveTo(x, y);
+          started = true;
+        } else {
+          ctx.lineTo(x, y);
+        }
+      });
+      ctx.strokeStyle = item.color;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      points.forEach((point, index) => {
+        const value = numberValue(point[item.key]);
+        if (value === null) return;
+        ctx.beginPath();
+        ctx.arc(xAt(index), yAt(value), 2.5, 0, Math.PI * 2);
+        ctx.fillStyle = item.color;
+        ctx.fill();
+      });
+    });
+    ctx.textAlign = "left";
+    return true;
+  }
+
+  function renderBehaviorLegend(points) {
+    const legend = byId("pd-behavior-trend-legend");
+    legend.replaceChildren();
+    const series = [
+      { key: "sessions", label: "セッション", color: "#6fc0ff" },
+      { key: "players", label: "匿名ID", color: "#5fe8b6" },
+      { key: "starts", label: "ゲーム開始", color: "#ffdf70" },
+      { key: "finishes", label: "ゲーム完了", color: "#ff8a70" },
+    ];
+    series.forEach((item) => {
+      if (!points.some((point) => numberValue(point[item.key]) !== null)) return;
+      const entry = document.createElement("span");
+      entry.className = "pd-behavior-legend-item";
+      entry.setAttribute("role", "listitem");
+      const swatch = document.createElement("i");
+      swatch.className = "pd-behavior-legend-swatch";
+      swatch.style.backgroundColor = item.color;
+      swatch.setAttribute("aria-hidden", "true");
+      entry.appendChild(swatch);
+      const label = document.createElement("span");
+      label.textContent = item.label;
+      entry.appendChild(label);
+      legend.appendChild(entry);
+    });
+  }
+
+  function normalizeFunnel(behavior, today) {
+    const collection =
+      behaviorCollections(behavior, today, ["funnel", "todayFunnel", "conversionFunnel"]) ||
+      behaviorCollections(behavior, today, ["stages"]);
+    let rows = toRows(collection);
+    if (rows.length === 0) {
+      const fallback = [
+        ["content_entry", todayEventMetric(today, ["contentEntries", "entries", "entryCount", "contentEntryCount", "content_entry"])],
+        ["game_started", todayEventMetric(today, ["gameStarts", "gameStartCount", "starts", "startCount", "game_start", "game_started"])],
+        ["game_finished", todayEventMetric(today, ["gameFinishes", "gameFinishCount", "finishes", "finishCount", "game_finish", "game_finished"])],
+      ];
+      rows = fallback.filter(([, count]) => count !== null).map(([key, count]) => ({ key, count }));
+    }
+    return rows.slice(0, 12).map((row) => ({
+      key: rowKey(row),
+      events: rowMetric(row, ["events", "eventCount", "count", "total"]),
+      sessions: rowMetric(row, ["sessions", "sessionCount", "uniqueSessions"]),
+      players: rowMetric(row, ["anonymousIds", "anonymousIdCount", "uniqueAnonymousIds", "players", "playerCount", "uniquePlayers"]),
+      rate: rowMetric(row, ["rate", "conversionRate", "completionRate", "ratio"]),
+    }));
+  }
+
+  function appendMetric(label, value, suffix) {
+    const span = document.createElement("span");
+    span.className = "pd-behavior-metric";
+    const name = document.createElement("span");
+    name.textContent = label;
+    span.appendChild(name);
+    const number = document.createElement("strong");
+    number.textContent = value === null ? "-" : suffix === "%" ? formatPercent(value) : format(value) + (suffix || "");
+    span.appendChild(number);
+    return span;
+  }
+
+  function renderBehaviorFunnel(behavior, today) {
+    const list = byId("pd-behavior-funnel");
+    const empty = byId("pd-behavior-funnel-empty");
+    list.replaceChildren();
+    const rows = normalizeFunnel(behavior, today);
+    empty.classList.toggle("pd-hidden", rows.length > 0);
+    if (rows.length === 0) return;
+    const firstCount = rows.find((row) => row.events !== null)?.events;
+    rows.forEach((row) => {
+      const item = document.createElement("div");
+      item.className = "pd-funnel-row";
+      item.setAttribute("role", "listitem");
+      const top = document.createElement("div");
+      top.className = "pd-funnel-row-head";
+      const label = document.createElement("span");
+      label.textContent = behaviorLabel("funnel", row.key);
+      top.appendChild(label);
+      const count = document.createElement("strong");
+      count.textContent = row.events === null ? "-" : "イベント " + format(row.events) + "件";
+      top.appendChild(count);
+      item.appendChild(top);
+      const bar = document.createElement("div");
+      bar.className = "pd-funnel-bar";
+      const fill = document.createElement("i");
+      const rate = row.rate !== null ? clampPercent(row.rate) : firstCount && row.events !== null ? (row.events / firstCount) * 100 : 0;
+      fill.style.width = Math.max(0, Math.min(100, rate)) + "%";
+      fill.setAttribute("aria-hidden", "true");
+      bar.appendChild(fill);
+      item.appendChild(bar);
+      const metrics = document.createElement("div");
+      metrics.className = "pd-behavior-row-metrics";
+      metrics.appendChild(appendMetric("転換率", row.rate === null && firstCount && row.events !== null ? (row.events / firstCount) * 100 : row.rate, "%"));
+      if (row.sessions !== null) metrics.appendChild(appendMetric("セッション", row.sessions));
+      if (row.players !== null) metrics.appendChild(appendMetric("匿名ID", row.players));
+      item.appendChild(metrics);
+      list.appendChild(item);
+    });
+  }
+
+  function normalizeBreakdownRows(collection) {
+    return toRows(collection)
+      .slice(0, 20)
+      .map((row) => ({
+        key: rowKey(row),
+        events: rowMetric(row, ["events", "eventCount", "count", "total"]),
+        sessions: rowMetric(row, ["sessions", "sessionCount", "uniqueSessions"]),
+      players: rowMetric(row, ["anonymousIds", "anonymousIdCount", "uniqueAnonymousIds", "players", "playerCount", "uniquePlayers"]),
+        share: rowMetric(row, ["share", "rate", "ratio", "percentage"]),
+      }));
+  }
+
+  function renderBehaviorBreakdown(containerId, emptyId, collection, kind) {
+    const list = byId(containerId);
+    const empty = byId(emptyId);
+    list.replaceChildren();
+    const rows = normalizeBreakdownRows(collection);
+    empty.classList.toggle("pd-hidden", rows.length > 0);
+    if (rows.length === 0) return;
+    const maxEvents = Math.max(1, ...rows.map((row) => row.events || 0));
+    rows.forEach((row) => {
+      const item = document.createElement("div");
+      item.className = "pd-behavior-list-row";
+      item.setAttribute("role", "listitem");
+      const head = document.createElement("div");
+      head.className = "pd-behavior-list-head";
+      const label = document.createElement("span");
+      label.textContent = behaviorLabel(kind, row.key);
+      head.appendChild(label);
+      const eventTotal = document.createElement("strong");
+      eventTotal.textContent = row.events === null ? "-" : format(row.events) + "件";
+      head.appendChild(eventTotal);
+      item.appendChild(head);
+      const meter = document.createElement("div");
+      meter.className = "pd-behavior-list-meter";
+      const fill = document.createElement("i");
+      fill.style.width = Math.max(0, Math.min(100, ((row.events || 0) / maxEvents) * 100)) + "%";
+      fill.setAttribute("aria-hidden", "true");
+      meter.appendChild(fill);
+      item.appendChild(meter);
+      const metrics = document.createElement("div");
+      metrics.className = "pd-behavior-row-metrics";
+      metrics.appendChild(appendMetric("イベント", row.events));
+      metrics.appendChild(appendMetric("セッション", row.sessions));
+      metrics.appendChild(appendMetric("匿名ID", row.players));
+      if (row.share !== null) metrics.appendChild(appendMetric("構成比", row.share, "%"));
+      item.appendChild(metrics);
+      list.appendChild(item);
+    });
+  }
+
+  function renderBehaviorRetention(behavior) {
+    const unavailable = byId("pd-behavior-retention-unavailable");
+    const valuesNode = byId("pd-behavior-retention-values");
+    const note = byId("pd-behavior-retention-note");
+    const retention = firstRecord(behavior.retention, behavior.repeat, behavior.repeatRate, behavior.retentionRates) || {};
+    const rates = Array.isArray(behavior.retention) ? behavior.retention : Array.isArray(behavior.retentionRates) ? behavior.retentionRates : [];
+    const hasHashSecret = retention.hashSecretConfigured !== false && behavior.hashSecretConfigured !== false;
+    const hasAnyRate =
+      ["d1", "d7", "d30"].some((key) => valueFrom(retention, [key, key + "Rate", key + "Retention"]) !== null) ||
+      rates.some((row) => isRecord(row) && [1, 7, 30].includes(Number(row.day ?? row.days)) && numberValue(row) !== null);
+    const explicitlyUnavailable = retention.available === false || retention.enabled === false;
+    const available = hasHashSecret && !explicitlyUnavailable && (retention.available === true || retention.enabled === true || hasAnyRate);
+
+    if (!available) {
+      unavailable.textContent = hasHashSecret
+        ? "利用不可：匿名プレイヤーID単位の継続計測データがまだありません。"
+        : "利用不可：匿名プレイヤーIDのハッシュ秘密情報が設定されていません。";
+      unavailable.classList.remove("pd-hidden");
+      valuesNode.classList.add("pd-hidden");
+      note.textContent = "匿名プレイヤーID単位。個人を特定する情報は使用していません。";
+      return;
+    }
+
+    unavailable.classList.add("pd-hidden");
+    valuesNode.classList.remove("pd-hidden");
+    const rateFor = (day, aliases) =>
+      valueFrom(retention, aliases) ??
+      numberValue(rates.find((row) => isRecord(row) && Number(row.day ?? row.days) === day));
+    const d1 = rateFor(1, ["d1", "d1Rate", "d1Retention"]);
+    const d7 = rateFor(7, ["d7", "d7Rate", "d7Retention"]);
+    const d30 = rateFor(30, ["d30", "d30Rate", "d30Retention"]);
+    byId("pd-behavior-retention-d1").textContent = formatPercent(d1);
+    byId("pd-behavior-retention-d7").textContent = formatPercent(d7);
+    byId("pd-behavior-retention-d30").textContent = formatPercent(d30);
+    note.textContent = "匿名プレイヤーID単位。個人を特定する情報は使用していません。";
+  }
+
+  function renderBehavior(data) {
+    const empty = byId("pd-behavior-empty");
+    const content = byId("pd-behavior-content");
+    const behavior = isRecord(data && data.behavior) ? data.behavior : null;
+    if (!behavior || behavior.available === false) {
+      empty.textContent = "行動データはまだ利用できません。計測APIの集計結果が返ると、ここに表示されます。";
+      empty.classList.remove("pd-hidden");
+      content.classList.add("pd-hidden");
+      return;
+    }
+
+    empty.classList.add("pd-hidden");
+    content.classList.remove("pd-hidden");
+    const today = behaviorToday(behavior);
+    const sessions = behaviorMetric(behavior, today, ["sessions", "sessionCount", "uniqueSessions"], ["todaySessions", "todaySessionCount"]);
+    const players = behaviorMetric(
+      behavior,
+      today,
+      ["anonymousIds", "anonymousIdCount", "uniqueAnonymousIds", "players", "playerCount", "uniquePlayers"],
+      ["todayAnonymousIds", "todayAnonymousIdCount", "todayUniqueAnonymousIds", "todayPlayers"],
+    );
+    const newPlayers = behaviorMetric(
+      behavior,
+      today,
+      ["newIds", "newAnonymousIds", "newPlayers", "newPlayerCount"],
+      ["todayNewIds", "todayNewAnonymousIds", "todayNewPlayers"],
+    );
+    const starts = behaviorMetric(
+      behavior,
+      today,
+      ["gameStarts", "gameStartCount", "starts", "startCount"],
+      ["todayGameStarts", "todayGameStartCount", "todayStarts"],
+      ["game_start", "game_started", "gameStart"],
+    );
+    const finishes = behaviorMetric(
+      behavior,
+      today,
+      ["gameFinishes", "gameFinishCount", "finishes", "finishCount"],
+      ["todayGameFinishes", "todayGameFinishCount", "todayFinishes"],
+      ["game_finish", "game_finished", "gameFinish"],
+    );
+    const completion = valueFrom(today, ["completionRate", "completion", "finishRate"]) ?? valueFrom(behavior, ["todayCompletionRate"]);
+
+    byId("pd-behavior-kpi-sessions").textContent = sessions === null ? "-" : format(sessions);
+    byId("pd-behavior-kpi-players").textContent = players === null ? "-" : format(players);
+    byId("pd-behavior-kpi-new-players").textContent = newPlayers === null ? "-" : format(newPlayers);
+    byId("pd-behavior-kpi-starts").textContent = starts === null ? "-" : format(starts);
+    byId("pd-behavior-kpi-finishes").textContent = finishes === null ? "-" : format(finishes);
+    byId("pd-behavior-kpi-completion").textContent =
+      completion !== null ? formatPercent(completion) : starts && starts > 0 && finishes !== null ? formatPercent(finishes / starts) : "-";
+
+    const trend = normalizeTrend(behavior);
+    const trendCanvas = byId("pd-chart-behavior-trend");
+    const trendAvailable = drawBehaviorTrendChart(trendCanvas, trend);
+    byId("pd-behavior-trend-empty").classList.toggle("pd-hidden", trendAvailable);
+    byId("pd-behavior-trend-period").textContent = trend.length > 0 ? trend[0].date.slice(0, 10) + " 〜 " + trend[trend.length - 1].date.slice(0, 10) : "-";
+    renderBehaviorLegend(trend);
+
+    renderBehaviorFunnel(behavior, today);
+    renderBehaviorBreakdown(
+      "pd-behavior-source-list",
+      "pd-behavior-source-empty",
+      behaviorCollections(behavior, today, ["sources", "bySource", "sourceBreakdown", "contentSources"]),
+      "source",
+    );
+    renderBehaviorBreakdown(
+      "pd-behavior-mode-list",
+      "pd-behavior-mode-empty",
+      behaviorCollections(behavior, today, ["modes", "byMode", "modeBreakdown"]),
+      "mode",
+    );
+    renderBehaviorBreakdown(
+      "pd-behavior-difficulty-list",
+      "pd-behavior-difficulty-empty",
+      behaviorCollections(behavior, today, ["difficulties", "byDifficulty", "difficultyBreakdown"]),
+      "difficulty",
+    );
+    renderBehaviorBreakdown(
+      "pd-behavior-result-action-list",
+      "pd-behavior-result-action-empty",
+      behaviorCollections(behavior, today, ["resultActions", "resultAction", "byResultAction", "actions"]),
+      "action",
+    );
+    renderBehaviorRetention(behavior);
+  }
+
+  // ------------------------------------------------------------------
   // Canvas描画: 棒グラフ(ヒストグラム・トレンド・活動パターン共通)
   // ------------------------------------------------------------------
 
@@ -361,6 +938,7 @@
     generatedAtNode.textContent = "生成: " + formatDate(data.generatedAt);
 
     renderTopKpi(data);
+    renderBehavior(data);
     renderDifficultyOverview(data);
     renderDailySection(data);
     renderSurvivalTab(activeDifficulty);

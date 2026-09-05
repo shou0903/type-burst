@@ -48,6 +48,18 @@ Vercelはnpm workspacesモノレポの検出が優秀で、Root Directoryを`app
 未設定・接続前は `/api/scores` へのアクセスはエラーになるが、ゲーム本体(サバイバル・CPU対戦)には
 一切影響しない(ランキング画面が「取得できませんでした」と表示されるだけ)。
 
+### 行動分析と管理画面に必要な設定
+
+同じRedisを匿名の日別行動集計にも使用する。Vercelの Project Settings → Environment Variables で次を設定する。
+
+- `TELEMETRY_HASH_SECRET_V1`: 32バイト以上の十分にランダムな秘密文字列。匿名プレイヤーID単位のD1/D7/D30集計に使用する。未設定でもイベント・セッション集計は動くが、再訪率は管理画面で「利用不可」になる。
+- `ADMIN_STATS_TOKEN`: `/admin/stats.html`へ入力する管理者用トークン。パスワードと同様に扱い、公開リポジトリやブラウザのlocalStorageへ保存しない。
+- `TELEMETRY_ALLOWED_ORIGINS`: ローカルや別の正規プレビュー元から計測APIを試す場合だけ、カンマ区切りの完全なoriginを設定する。本番の`https://type-burst.com`と`https://www.type-burst.com`は組み込み済み。
+
+秘密鍵を更新する場合は、まず新しい値を`TELEMETRY_HASH_SECRET_V2`へ設定する。以後の書き込みはV2を使用し、V1は削除要求の互換性のため残す。V1の保持期間120日を過ぎた後に、V2を次のV1として計画的に切り替える。秘密鍵を失うと過去の匿名識別値を削除・照合できないため、Vercel外の安全な場所にも保管する。
+
+行動計測APIが停止・制限されてもゲームは継続する。デプロイ後は管理画面の「ユーザー行動」で当日のセッションとゲーム開始が増えること、ブラウザ設定で計測をオフにすると以後増えないことを確認する。
+
 ### 広告(Google AdSense)を有効化する手順
 
 1. https://www.google.com/adsense/ でアカウント作成・サイト審査を申請(運営者自身の対応が必要)

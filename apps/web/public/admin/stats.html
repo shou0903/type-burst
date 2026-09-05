@@ -198,6 +198,30 @@
                 <p id="pd-behavior-retention-note" class="pd-behavior-inline-note">匿名プレイヤーID単位。個人を特定する情報は使用していません。</p>
               </div>
             </div>
+
+            <div class="pd-behavior-detail-groups">
+              <div class="pd-behavior-detail-group" aria-labelledby="pd-behavior-performance-title">
+                <div class="pd-behavior-detail-group-head">
+                  <div>
+                    <h3 id="pd-behavior-performance-title">ゲーム結果・成績帯</h3>
+                    <p>入口・結果・スコア帯・速度帯・正確率帯・連鎖帯・時間帯・到達レベル帯</p>
+                  </div>
+                </div>
+                <div id="pd-behavior-performance-grid" class="pd-behavior-detail-grid"></div>
+                <p id="pd-behavior-performance-empty" class="pd-behavior-inline-empty">追加の成績内訳データはまだありません。</p>
+              </div>
+
+              <div class="pd-behavior-detail-group" aria-labelledby="pd-behavior-operations-title">
+                <div class="pd-behavior-detail-group-head">
+                  <div>
+                    <h3 id="pd-behavior-operations-title">機能・導線・失敗</h3>
+                    <p>機能利用・共有・ランキング・分析・引き継ぎ・モバイル・設定・失敗</p>
+                  </div>
+                </div>
+                <div id="pd-behavior-operations-grid" class="pd-behavior-detail-grid"></div>
+                <p id="pd-behavior-operations-empty" class="pd-behavior-inline-empty">追加の機能・導線データはまだありません。</p>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -318,12 +342,12 @@
           </div>
         </section>
 
-        <p class="pd-footnote">
-          表示しているのは各モードで<strong>送信済みのスコア</strong>の集計です。0点や未送信のプレイ、ページ閲覧数・離脱率などのトラフィック全体はここには含まれません。それらはVercelのWeb Analyticsダッシュボードで確認してください。分布・活動パターンは各リーダーボードの最大500件のサンプルから集計しています。
+        <div class="pd-footnote">
+          <p>ランキング統計は各モードで<strong>送信済みのスコア</strong>、ユーザー行動は匿名の日別集計です。イベント数・セッション数・匿名プレイヤーID数は異なる単位であり、合算して人数とは扱いません。ページ単位の閲覧傾向と表示性能はVercelのWeb Analytics / Speed Insightsも併用してください。ランキングの分布・活動パターンは各リーダーボード最大500件のサンプルです。</p>
           <div class="pd-unavailable">
-            <strong>このダッシュボードで原理的に表示できないもの：</strong>CPU対戦の勝敗・獲得称号や生涯累計プレイ統計・苦手キー分析は、いずれも端末のlocalStorageにのみ保存されており、サーバーへは一切送信されていません。これらをここに表示するには、新しい送信用エンドポイントを追加し、プライバシーポリシーの改訂も伴う別作業が必要です。
+            <strong>収集しない情報：</strong>実際の打鍵・入力文字・出題語句・ニックネーム・正確なスコアやKPM・苦手キーの内容は行動計測へ送信しません。成績は固定の範囲別、CPU対戦は勝敗の分類だけを集計します。
           </div>
-        </p>
+        </div>
       </div>
     </div>
     <script src="/admin/stats.js"></script>

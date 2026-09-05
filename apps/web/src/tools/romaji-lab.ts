@@ -1,4 +1,5 @@
 import { track } from "@vercel/analytics";
+import { isBehaviorTelemetryEnabled, trackBehaviorEvent } from "../behaviorTelemetry";
 import {
   enumerateRomajiCandidates,
   normalizeKana,
@@ -101,6 +102,7 @@ let drillCompleted = 0;
 let drillMisses = 0;
 
 function safeTrack(name: string, properties: Record<string, string | number>): void {
+  if (!isBehaviorTelemetryEnabled()) return;
   try {
     track(name, properties);
   } catch {
@@ -234,6 +236,7 @@ function renderCandidates(result: RomajiCandidateResult): void {
   practiceNode.hidden = result.candidates.length === 0;
   resetPractice();
   safeTrack("Romaji Lab Lookup", { category: categoryFor(result.normalizedReading), candidateCount: result.candidates.length });
+  trackBehaviorEvent("tool_action", { tool: "romaji", action: "lookup" });
 }
 
 function lookup(value: string): void {
@@ -271,6 +274,7 @@ function handlePracticeKey(event: KeyboardEvent): void {
     practiceStartButton.textContent = "もう一度試す";
     practiceMessageNode.textContent = `完了。${formatCandidate(practiceCandidate)} はTYPE BURSTで受理される入力です。`;
     safeTrack("Romaji Lab Practice", { category: categoryFor(latestReading), completed: 1 });
+    trackBehaviorEvent("tool_action", { tool: "romaji", action: "practice" });
   }
 }
 
@@ -298,7 +302,10 @@ function finishDrill(): void {
   drillTimeNode.textContent = "0";
   drillStartButton.textContent = "もう一度ドリル";
   drillMessageNode.textContent = `${drillCompleted}問完了。ミスしても入力途中は残るので、正確さを保ったまま続けてみましょう。`;
-  safeTrack("Romaji Lab Drill Complete", { category: selectedDrill, completed: drillCompleted, misses: drillMisses });
+  // イベント名自体が完了を示すため、件数・ミス数の生値は送らない。
+  // Vercel Analyticsのプロパティ上限と低カーディナリティを守る。
+  safeTrack("Romaji Lab Drill Complete", { category: selectedDrill });
+  trackBehaviorEvent("tool_action", { tool: "romaji", action: "drill" });
 }
 
 function updateDrillTime(): void {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   DAILY_RANKED_ATTEMPTS,
   dailyAttempts,
@@ -12,6 +12,7 @@ import {
   type DailyLeaderboardResponse,
 } from "../dailyRanking";
 import type { GameMode } from "../game/GameController";
+import { trackBehaviorEvent } from "../behaviorTelemetry";
 
 interface Props {
   progress: DailyProgress;
@@ -103,15 +104,36 @@ function DailyLeaderboardPreview({ challengeId }: { challengeId: string }): JSX.
   const [ranking, setRanking] = useState<DailyLeaderboardResponse | null>(null);
   const [status, setStatus] = useState<"loading" | "done" | "error">("loading");
   const [expanded, setExpanded] = useState(false);
+  const pendingActionRef = useRef<"open" | "retry">("open");
+  const didInitialLoadRef = useRef(false);
+  const requestIdRef = useRef(0);
 
   const load = useCallback((): void => {
+    const requestId = ++requestIdRef.current;
+    const action = pendingActionRef.current;
+    const shouldTrack = action === "retry" || !didInitialLoadRef.current;
+    if (shouldTrack) {
+      trackBehaviorEvent("ranking_action", { surface: "daily", action, status: "started" });
+      didInitialLoadRef.current = true;
+      pendingActionRef.current = "open";
+    }
     setStatus("loading");
     fetchDailyLeaderboard(challengeId)
       .then((response) => {
+        if (requestId !== requestIdRef.current) return;
         setRanking(response);
         setStatus("done");
+        if (shouldTrack) {
+          trackBehaviorEvent("ranking_action", { surface: "daily", action, status: "success" });
+        }
       })
-      .catch(() => setStatus("error"));
+      .catch(() => {
+        if (requestId !== requestIdRef.current) return;
+        setStatus("error");
+        if (shouldTrack) {
+          trackBehaviorEvent("ranking_action", { surface: "daily", action, status: "error" });
+        }
+      });
   }, [challengeId]);
 
   useEffect(() => {
@@ -134,7 +156,14 @@ function DailyLeaderboardPreview({ challengeId }: { challengeId: string }): JSX.
       {status === "error" && (
         <div className="daily-ranking-error">
           <p>ランキングを取得できませんでした。</p>
-          <button onClick={load}>再読み込み</button>
+          <button
+            onClick={() => {
+              pendingActionRef.current = "retry";
+              load();
+            }}
+          >
+            再読み込み
+          </button>
         </div>
       )}
       {status === "done" && ranking?.viewer && (

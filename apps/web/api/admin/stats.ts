@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import Redis from "ioredis";
 import { isAuthorizedAdmin } from "../_shared/adminAuth.js";
 import { histogram, summarize } from "../_shared/statsMath.js";
+import { readTelemetryStats, telemetryHashSecretConfigured } from "../_shared/telemetryStore.js";
 
 /**
  * 管理者専用プレイデータ統計(D-094, D-095で拡張)。
@@ -55,10 +56,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
 
   try {
     const redis = getRedis();
-    const [survivalResult, daily, shares] = await Promise.all([
+    const [survivalResult, daily, shares, behavior] = await Promise.all([
       buildSurvivalStats(redis),
       buildDailyStats(redis),
       buildShareStats(redis),
+      buildBehaviorStats(redis),
     ]);
     res.setHeader("Cache-Control", "private, no-store");
     res.status(200).json({
@@ -67,9 +69,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       survivalActivity: survivalResult.activity,
       daily,
       shares,
+      behavior,
     });
   } catch {
     res.status(500).json({ error: "Stats unavailable" });
+  }
+}
+
+/**
+ * First-party behavior data is aggregate-only and optional. A telemetry Redis
+ * outage must not hide the existing score dashboard, so return an explicit
+ * unavailable state instead of failing the whole admin response.
+ */
+async function buildBehaviorStats(redis: Redis): Promise<unknown> {
+  try {
+    return await readTelemetryStats(redis);
+  } catch {
+    return {
+      available: false,
+      hashSecretConfigured: telemetryHashSecretConfigured(),
+      retention: { available: false, d1: null, d7: null, d30: null },
+      trend30: [],
+      todayStats: null,
+    };
   }
 }
 

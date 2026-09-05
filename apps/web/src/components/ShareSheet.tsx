@@ -14,6 +14,7 @@ import {
   xIntentUrl,
   type ShareLink,
 } from "../share/shareApi";
+import { trackBehaviorEvent } from "../behaviorTelemetry";
 
 /**
  * 共有シート(D-091)。
@@ -27,6 +28,7 @@ import {
 
 interface Props {
   content: ShareContent;
+  mode: "survival" | "daily" | "duel";
   onClose: () => void;
 }
 
@@ -35,7 +37,7 @@ type LinkState =
   | { status: "ready"; link: ShareLink }
   | { status: "failed" };
 
-export function ShareSheet({ content, onClose }: Props): JSX.Element {
+export function ShareSheet({ content, mode, onClose }: Props): JSX.Element {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -51,12 +53,20 @@ export function ShareSheet({ content, onClose }: Props): JSX.Element {
 
     let active = true;
     createShareLink(canvas, content.ogTitle, content.ogDescription, content.targetPath)
-      .then((link) => active && setLinkState({ status: "ready", link }))
-      .catch(() => active && setLinkState({ status: "failed" }));
+      .then((link) => {
+        if (!active) return;
+        setLinkState({ status: "ready", link });
+        trackBehaviorEvent("share_action", { mode, action: "open", status: "success" });
+      })
+      .catch(() => {
+        if (!active) return;
+        setLinkState({ status: "failed" });
+        trackBehaviorEvent("share_action", { mode, action: "open", status: "error" });
+      });
     return () => {
       active = false;
     };
-  }, [content]);
+  }, [content, mode]);
 
   // 開いたら閉じるボタンへフォーカスを移し、Escで閉じられるようにする。
   // リザルト画面側のグローバルキーハンドラへ抜けないよう伝播を止める。
@@ -111,14 +121,20 @@ export function ShareSheet({ content, onClose }: Props): JSX.Element {
   const handleCopyLink = async (): Promise<void> => {
     if (await copyText(shareUrl)) {
       setCopied("link");
+      trackBehaviorEvent("share_action", { mode, action: "copy_link", status: "success" });
       window.setTimeout(() => setCopied("idle"), 2200);
+    } else {
+      trackBehaviorEvent("share_action", { mode, action: "copy_link", status: "error" });
     }
   };
 
   const handleCopyText = async (): Promise<void> => {
     if (await copyText(`${content.text}\n${shareUrl}`)) {
       setCopied("text");
+      trackBehaviorEvent("share_action", { mode, action: "copy_text", status: "success" });
       window.setTimeout(() => setCopied("idle"), 2200);
+    } else {
+      trackBehaviorEvent("share_action", { mode, action: "copy_text", status: "error" });
     }
   };
 
@@ -127,6 +143,7 @@ export function ShareSheet({ content, onClose }: Props): JSX.Element {
     if (!canvas) return;
     downloadCanvas(canvas, "type-burst-result.jpg");
     setSaved(true);
+    trackBehaviorEvent("share_action", { mode, action: "save_image", status: "success" });
     window.setTimeout(() => setSaved(false), 2200);
   };
 
@@ -175,7 +192,14 @@ export function ShareSheet({ content, onClose }: Props): JSX.Element {
             target="_blank"
             rel="noopener noreferrer"
             aria-disabled={preparing}
-            onClick={(event) => preparing && event.preventDefault()}
+            onClick={(event) => {
+              if (preparing) {
+                event.preventDefault();
+                return;
+              }
+              // Opening the external composer is observable; an actual post is not.
+              trackBehaviorEvent("share_action", { mode, action: "x", status: "started" });
+            }}
           >
             <span className="sh-btn-glyph" aria-hidden="true">𝕏</span>
             Xに投稿する
@@ -186,7 +210,13 @@ export function ShareSheet({ content, onClose }: Props): JSX.Element {
             target="_blank"
             rel="noopener noreferrer"
             aria-disabled={preparing}
-            onClick={(event) => preparing && event.preventDefault()}
+            onClick={(event) => {
+              if (preparing) {
+                event.preventDefault();
+                return;
+              }
+              trackBehaviorEvent("share_action", { mode, action: "line", status: "started" });
+            }}
           >
             LINEで送る
           </a>

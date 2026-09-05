@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import type { FingerStat, KeyStat, TypingAnalysis } from "@type-burst/game-core";
 import { titleProgressForScore, type LifetimeProgress } from "@type-burst/progression";
 import type { StoredResult } from "../storage";
@@ -7,6 +7,7 @@ import {
   type WeeklyAggregate,
   type WeeklyGrowthSummary,
 } from "../weeklyGrowth";
+import { trackBehaviorEvent } from "../behaviorTelemetry";
 
 interface Props {
   /**
@@ -79,13 +80,27 @@ const MIN_SEGMENT_KEYSTROKES = 10;
  * 集計ロジック・文言生成は一切変更していない(見せ方だけの変更)。
  */
 export function AnalysisScreen({ analysis, recentHistory, progress, onBack, onStart }: Props): JSX.Element {
+  const showingDailyHistory = recentHistory.some(
+    (entry) => entry.mode === "daily" || entry.ruleset === "daily-v2",
+  );
+  const analysisScope =
+    analysis === null ? "growth" : showingDailyHistory ? "daily" : recentHistory.length === 0 ? "duel" : "result";
+  const analysisOpenTrackedRef = useRef(false);
+
   useEffect(() => {
+    if (!analysisOpenTrackedRef.current) {
+      analysisOpenTrackedRef.current = true;
+      trackBehaviorEvent("analysis_action", { scope: analysisScope, action: "open" });
+    }
     const handler = (e: KeyboardEvent): void => {
-      if (e.key === "Escape") onBack();
+      if (e.key === "Escape") {
+        trackBehaviorEvent("analysis_action", { scope: analysisScope, action: "back" });
+        onBack();
+      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [onBack]);
+  }, [analysisScope, onBack]);
 
   const statsByKey = new Map(analysis?.keyStats.map((k) => [k.key, k]) ?? []);
   const hasPlayData = analysis !== null && analysis.totalKeystrokes > 0;
@@ -101,9 +116,6 @@ export function AnalysisScreen({ analysis, recentHistory, progress, onBack, onSt
   const focus = analysis ? buildNextFocus(analysis, weakestFinger) : null;
   const paceInsight = analysis ? buildPaceInsight(analysis) : null;
   const trendInsight = buildTrendInsight(recentHistory);
-  const showingDailyHistory = recentHistory.some(
-    (entry) => entry.mode === "daily" || entry.ruleset === "daily-v2",
-  );
   // デイリー結果から開いた分析画面にはデイリー履歴しか渡されないため、
   // ここで「サバイバル記録なし」と誤表示しない。週次サマリーはホームの
   // 成長記録またはサバイバル結果から開いた時だけ表示する。
@@ -114,6 +126,15 @@ export function AnalysisScreen({ analysis, recentHistory, progress, onBack, onSt
   const titleProgress = titleProgressForScore(progress.totalScore);
   const played = progress.totalGames > 0;
 
+  const handleBack = (): void => {
+    trackBehaviorEvent("analysis_action", { scope: analysisScope, action: "back" });
+    onBack();
+  };
+  const handleStart = (): void => {
+    trackBehaviorEvent("analysis_action", { scope: analysisScope, action: "start" });
+    onStart?.();
+  };
+
   return (
     <div className="screen analysis an">
       <header className="an-head">
@@ -121,7 +142,7 @@ export function AnalysisScreen({ analysis, recentHistory, progress, onBack, onSt
           <span className="an-kicker">{analysis ? "TYPING ANALYSIS" : "GROWTH RECORD"}</span>
           <h1 className="an-title">{analysis ? "タイピング分析" : "成長記録"}</h1>
         </div>
-        <button className="an-back" onClick={onBack}>
+        <button className="an-back" onClick={handleBack}>
           戻る <span className="an-key">Esc</span>
         </button>
       </header>
@@ -230,7 +251,7 @@ export function AnalysisScreen({ analysis, recentHistory, progress, onBack, onSt
             {!played && (
               <div className="an-empty-actions">
                 {onStart ? (
-                  <button type="button" className="btn-secondary" onClick={onStart}>
+                  <button type="button" className="btn-secondary" onClick={handleStart}>
                     初級を始める
                   </button>
                 ) : (

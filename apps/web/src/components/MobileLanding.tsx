@@ -1,6 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AttractBoard } from "./AttractBoard";
 import { MobileRankingPreview } from "./MobileRankingPreview";
+import { currentAttribution, trackBehaviorEvent, trackBehaviorEventOnce } from "../behaviorTelemetry";
+import { captureContentAttribution } from "../seoAttribution";
 
 type CopyState = "idle" | "copied" | "error";
 
@@ -46,7 +48,25 @@ export function MobileLanding(): JSX.Element {
   const reducedMotion = usePrefersReducedMotion();
   const [copyState, setCopyState] = useState<CopyState>("idle");
   const [rankingOpen, setRankingOpen] = useState(false);
+  const screenTrackedRef = useRef(false);
   const shareSupported = typeof navigator !== "undefined" && typeof navigator.share === "function";
+  const handoffAvailability: "native_share" | "copy_only" = shareSupported
+    ? "native_share"
+    : "copy_only";
+
+  useEffect(() => {
+    captureContentAttribution();
+    const attribution = currentAttribution();
+    trackBehaviorEventOnce(
+      `content-entry:${attribution.source}:${attribution.path}`,
+      "content_entry",
+      attribution,
+    );
+    if (!screenTrackedRef.current) {
+      screenTrackedRef.current = true;
+      trackBehaviorEvent("screen_view", { screen: "mobile_handoff", context: "home" });
+    }
+  }, []);
 
   useEffect(() => {
     if (copyState === "idle") return;
@@ -56,29 +76,74 @@ export function MobileLanding(): JSX.Element {
 
   const handleCopy = async (): Promise<void> => {
     const url = window.location.href;
+    trackBehaviorEvent("mobile_handoff", {
+      action: "copy",
+      availability: handoffAvailability,
+      status: "started",
+    });
     try {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(url);
         setCopyState("copied");
+        trackBehaviorEvent("mobile_handoff", {
+          action: "copy",
+          availability: handoffAvailability,
+          status: "success",
+        });
       } else if (legacyCopy(url)) {
         setCopyState("copied");
+        trackBehaviorEvent("mobile_handoff", {
+          action: "copy",
+          availability: handoffAvailability,
+          status: "success",
+        });
       } else {
         setCopyState("error");
+        trackBehaviorEvent("mobile_handoff", {
+          action: "copy",
+          availability: handoffAvailability,
+          status: "error",
+        });
       }
     } catch {
-      setCopyState(legacyCopy(url) ? "copied" : "error");
+      const copied = legacyCopy(url);
+      setCopyState(copied ? "copied" : "error");
+      trackBehaviorEvent("mobile_handoff", {
+        action: "copy",
+        availability: handoffAvailability,
+        status: copied ? "success" : "error",
+      });
     }
   };
 
   const handleShare = async (): Promise<void> => {
+    trackBehaviorEvent("mobile_handoff", {
+      action: "share",
+      availability: "native_share",
+      status: "started",
+    });
     try {
       await navigator.share({
         title: "TYPE BURST",
         text: "日本語を打ってブロックを爆破する連鎖パズル「TYPE BURST」。PCで無料・登録不要で遊べます。",
         url: window.location.href,
       });
-    } catch {
-      // ユーザーによる共有キャンセル等は無視してよい
+      trackBehaviorEvent("mobile_handoff", {
+        action: "share",
+        availability: "native_share",
+        status: "success",
+      });
+    } catch (error) {
+      // ユーザーによる共有キャンセルは失敗扱いにせず、改善指標上は別状態にする。
+      const cancelled =
+        typeof DOMException !== "undefined" &&
+        error instanceof DOMException &&
+        error.name === "AbortError";
+      trackBehaviorEvent("mobile_handoff", {
+        action: "share",
+        availability: "native_share",
+        status: cancelled ? "cancel" : "error",
+      });
     }
   };
 
@@ -102,9 +167,9 @@ export function MobileLanding(): JSX.Element {
       </div>
 
       <nav className="mobile-landing-nav" aria-label="サイト内メニュー">
-        <a href="/about.html">ゲーム紹介</a>
-        <a href="/guides">練習ガイド</a>
-        <a href="/tools">無料ツール</a>
+        <a href="/about.html" onClick={() => trackBehaviorEvent("mobile_handoff", { action: "nav", availability: handoffAvailability, status: "success" })}>ゲーム紹介</a>
+        <a href="/guides" onClick={() => trackBehaviorEvent("mobile_handoff", { action: "nav", availability: handoffAvailability, status: "success" })}>練習ガイド</a>
+        <a href="/tools" onClick={() => trackBehaviorEvent("mobile_handoff", { action: "nav", availability: handoffAvailability, status: "success" })}>無料ツール</a>
       </nav>
 
       <div className="mobile-landing-demo-wrap">
@@ -158,7 +223,15 @@ export function MobileLanding(): JSX.Element {
       <MobileRankingPreview expanded={rankingOpen} />
       <button
         className="mobile-landing-ranking-toggle"
-        onClick={() => setRankingOpen((open) => !open)}
+        onClick={() => {
+          const nextOpen = !rankingOpen;
+          trackBehaviorEvent("mobile_handoff", {
+            action: "ranking",
+            availability: handoffAvailability,
+            status: nextOpen ? "started" : "success",
+          });
+          setRankingOpen(nextOpen);
+        }}
         aria-expanded={rankingOpen}
       >
         {rankingOpen ? "上位3件だけ表示する ▲" : "世界ランキングをTOP10まで見る ▼"}

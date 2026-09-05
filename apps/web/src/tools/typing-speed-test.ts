@@ -1,6 +1,7 @@
 import { TypingAutomaton } from "@type-burst/typing-engine";
 import { SPEED_TEST_PROMPTS } from "./speedPrompts";
 import { diagnoseTypingLevel } from "./typingLevel";
+import { trackBehaviorEvent } from "../behaviorTelemetry";
 
 const byId = (id: string): HTMLElement => {
   const element = document.getElementById(id);
@@ -85,7 +86,7 @@ function clearTimer(): void {
   timer = null;
 }
 
-function finish(): void {
+function finish(action: "complete" | "exit" = "complete"): void {
   if (!running) return;
   running = false;
   clearTimer();
@@ -105,6 +106,7 @@ function finish(): void {
   result.hidden = false;
   messageNode.textContent = "測定完了。複数のローマ字入力を使った場合も、正しい打鍵として集計しています。";
   startButton.textContent = "もう一度測る";
+  trackBehaviorEvent("tool_action", { tool: "speed", action });
 }
 
 function updateTime(): void {
@@ -115,6 +117,8 @@ function updateTime(): void {
 }
 
 function start(): void {
+  if (running) trackBehaviorEvent("tool_action", { tool: "speed", action: "exit" });
+  trackBehaviorEvent("tool_action", { tool: "speed", action: "start" });
   clearTimer();
   running = true;
   promptIndex = 0;
@@ -150,7 +154,7 @@ stage.addEventListener("keydown", (event) => {
   if (!running || event.ctrlKey || event.metaKey || event.altKey) return;
   if (event.key === "Escape") {
     event.preventDefault();
-    finish();
+    finish("exit");
     return;
   }
   if (event.key.length !== 1) return;
@@ -173,6 +177,12 @@ stage.addEventListener("keydown", (event) => {
 });
 
 startButton.addEventListener("click", start);
-resetButton.addEventListener("click", reset);
-durationSelect.addEventListener("change", reset);
+resetButton.addEventListener("click", () => {
+  if (running) trackBehaviorEvent("tool_action", { tool: "speed", action: "exit" });
+  reset();
+});
+durationSelect.addEventListener("change", () => {
+  if (running) trackBehaviorEvent("tool_action", { tool: "speed", action: "exit" });
+  reset();
+});
 reset();

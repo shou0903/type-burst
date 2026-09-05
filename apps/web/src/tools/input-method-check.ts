@@ -1,4 +1,5 @@
 import { adviseInputMethod, type CurrentMethod } from "./inputMethodAdvice";
+import { trackBehaviorEvent } from "../behaviorTelemetry";
 
 /** かな入力／ローマ字入力 判定(D-092)。判定ロジックは inputMethodAdvice.ts に分離する。 */
 
@@ -43,6 +44,7 @@ function run(): void {
   linkNode.href = advice.linkHref;
   linkNode.textContent = advice.linkLabel;
   result.hidden = false;
+  trackBehaviorEvent("tool_action", { tool: "input_method", action: "run" });
 }
 
 runButton.addEventListener("click", run);

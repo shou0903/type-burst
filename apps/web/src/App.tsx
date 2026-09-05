@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { TypingAnalysis } from "@type-burst/game-core";
 import { SoundEngine } from "./audio/SoundEngine";
 import type { GameMode, GameResult } from "./game/GameController";
@@ -41,6 +41,18 @@ import {
 } from "./seoAttribution";
 import { hasRecordedPlay } from "./onboarding";
 import { DEFAULT_FOCUS_GOAL, type FocusGoalId } from "./focusContract";
+import {
+  bandAccuracy,
+  bandChain,
+  bandDuration,
+  bandKpm,
+  bandLevel,
+  bandScore,
+  currentAttribution,
+  trackBehaviorEvent,
+  trackBehaviorEventOnce,
+} from "./behaviorTelemetry";
+import type { TelemetryPropertiesMap } from "./telemetryContract";
 
 type ResultScreenState = {
   name: "result";
@@ -65,6 +77,15 @@ type Screen =
     }
   | { name: "ranking" };
 
+type GameEntryPoint =
+  | "home"
+  | "retry"
+  | "analysis"
+  | "daily"
+  | "tutorial"
+  | "onboarding"
+  | "share";
+
 export function App(): JSX.Element {
   const sound = useMemo(() => new SoundEngine(), []);
   const [settings, setSettings] = useState<Settings>(() => loadSettings());
@@ -75,6 +96,7 @@ export function App(): JSX.Element {
   // 変えず、余分な値として保持するため daily/duel/tutorial へ漏れない。
   const [selectedFocusGoal, setSelectedFocusGoal] = useState<FocusGoalId>(DEFAULT_FOCUS_GOAL);
   const [screen, setScreen] = useState<Screen>({ name: "landing" });
+  const lastTrackedScreenRef = useRef<Screen | null>(null);
   // tutorial完了直後に同じGameScreenを再利用しないためのマウント世代。
   const [gameSession, setGameSession] = useState(0);
 
@@ -98,6 +120,33 @@ export function App(): JSX.Element {
   }, [settings.fontScale, settings.highContrast, settings.reducedMotion]);
 
   const updateSettings = (patch: Partial<Settings>): void => {
+    // 設定の初期読み込みでは発火させず、画面上の明示的な変更だけを記録する。
+    // Reactのstate updater内で送信するとStrictModeで二重発火し得るため、現在値と
+    // 比較したうえでsetterの外側からベストエフォート送信する。
+    if (patch.soundOn !== undefined && patch.soundOn !== settings.soundOn) {
+      trackBehaviorEvent("settings_change", {
+        setting: "sound",
+        value: patch.soundOn ? "on" : "off",
+      });
+    }
+    if (patch.reducedMotion !== undefined && patch.reducedMotion !== settings.reducedMotion) {
+      trackBehaviorEvent("settings_change", {
+        setting: "reduced_motion",
+        value: patch.reducedMotion ? "on" : "off",
+      });
+    }
+    if (patch.highContrast !== undefined && patch.highContrast !== settings.highContrast) {
+      trackBehaviorEvent("settings_change", {
+        setting: "high_contrast",
+        value: patch.highContrast ? "on" : "off",
+      });
+    }
+    if (patch.fontScale !== undefined && patch.fontScale !== settings.fontScale) {
+      trackBehaviorEvent("settings_change", {
+        setting: "font_scale",
+        value: patch.fontScale === 1 ? "standard" : patch.fontScale === 1.15 ? "large" : "xlarge",
+      });
+    }
     setSettings((prev) => {
       const next = { ...prev, ...patch };
       saveSettings(next);
@@ -108,9 +157,59 @@ export function App(): JSX.Element {
   useEffect(() => {
     if (screen.name !== "landing") return;
     trackLandingView();
+    const attribution = currentAttribution();
+    trackBehaviorEventOnce(
+      `content-entry:${attribution.source}:${attribution.path}`,
+      "content_entry",
+      attribution,
+    );
   }, [progress.totalGames, screen.name, tutorialCompleted]);
 
-  const startGame = (mode: GameMode, focusGoal?: FocusGoalId): void => {
+  useEffect(() => {
+    // screen objectは遷移時だけ新しくなるため、同じstateをStrictModeが再実行しても
+    // 画面表示イベントは1回だけ。戻る操作で同じ画面へ戻った場合は新しいobjectなので
+    // 正しく次の表示として計測する。
+    if (lastTrackedScreenRef.current === screen) return;
+    lastTrackedScreenRef.current = screen;
+    if (screen.name === "landing") {
+      trackBehaviorEvent("screen_view", { screen: "home", context: "home" });
+    } else if (screen.name === "game") {
+      trackBehaviorEvent("screen_view", {
+        screen: "game",
+        mode: screen.mode.type,
+        context:
+          screen.mode.type === "daily"
+            ? "daily"
+            : screen.mode.type === "duel"
+              ? "duel"
+              : "direct",
+      });
+    } else if (screen.name === "result") {
+      trackBehaviorEvent("screen_view", {
+        screen: "result",
+        mode: screen.result.mode,
+        context:
+          screen.result.mode === "daily"
+            ? "daily"
+            : screen.result.mode === "duel"
+              ? "duel"
+              : "result",
+      });
+    } else if (screen.name === "analysis") {
+      trackBehaviorEvent("screen_view", {
+        screen: "analysis",
+        context: screen.analysis === null ? "growth" : "result",
+      });
+    } else {
+      trackBehaviorEvent("screen_view", { screen: "ranking", context: "direct" });
+    }
+  }, [screen]);
+
+  const startGame = (
+    mode: GameMode,
+    focusGoal?: FocusGoalId,
+    entryPoint?: GameEntryPoint,
+  ): void => {
     sound.unlock();
     const firstPlay = !hasPlayed;
     trackAttributedGameStart(mode.type, firstPlay);
@@ -133,6 +232,28 @@ export function App(): JSX.Element {
     if (modeWithFocus.type === "survival") {
       setSelectedFocusGoal(modeWithFocus.focusGoal);
     }
+    const resolvedEntryPoint =
+      entryPoint ??
+      (modeWithFocus.type === "daily"
+        ? "daily"
+        : modeWithFocus.type === "tutorial"
+          ? "tutorial"
+          : "home");
+    const gameStartProperties: TelemetryPropertiesMap["game_start"] = {
+      mode: modeWithFocus.type,
+      entryPoint: resolvedEntryPoint,
+      firstPlay,
+    };
+    if (modeWithFocus.type === "survival" || modeWithFocus.type === "duel") {
+      gameStartProperties.difficulty = modeWithFocus.difficulty;
+    }
+    if (modeWithFocus.type === "survival") {
+      gameStartProperties.focusGoal = modeWithFocus.focusGoal ?? DEFAULT_FOCUS_GOAL;
+    }
+    if (modeWithFocus.type === "daily") {
+      gameStartProperties.ranked = modeWithFocus.ranked;
+    }
+    trackBehaviorEvent("game_start", gameStartProperties);
     setGameSession((current) => current + 1);
     setScreen({ name: "game", mode: modeWithFocus });
   };
@@ -142,10 +263,14 @@ export function App(): JSX.Element {
     markTutorialCompleted();
     setTutorialCompleted(true);
     trackTutorialCompleted(firstPlay);
+    trackBehaviorEvent("tutorial_completed", {
+      firstPlay,
+      source: currentAttribution().source,
+    });
     if (firstPlay) {
       // 初回完了直後だけは迷わせず初級へ渡す。復習した既存ユーザーは
       // 期待どおりタイトルへ戻し、勝手に別モードを開始しない。
-      startGame({ type: "survival", difficulty: "easy" });
+      startGame({ type: "survival", difficulty: "easy" }, undefined, "onboarding");
     } else {
       setScreen({ name: "landing" });
     }
@@ -154,6 +279,34 @@ export function App(): JSX.Element {
   const finishGame = (result: GameResult): void => {
     const firstPlay = progress.totalGames === 0;
     trackFunnelEvent("Game Finished", { mode: result.mode, firstPlay });
+    if (result.mode === "survival" || result.mode === "daily") {
+      const summary = result.summary;
+      trackBehaviorEvent("game_finish", {
+        mode: result.mode,
+        difficulty: summary.difficulty,
+        outcome: summary.finishReason === "toppedOut" ? "topped_out" : "time_limit",
+        ...(result.mode === "daily" ? { ranked: result.ranked } : {}),
+        scoreBand: bandScore(summary.score),
+        kpmBand: bandKpm(summary.kpm),
+        accuracyBand: bandAccuracy(summary.accuracy),
+        chainBand: bandChain(summary.maxChain),
+        durationBand: bandDuration(summary.survivedMs),
+        levelBand: bandLevel(summary.level),
+        ...(result.mode === "survival" ? { focusAchieved: result.focus?.achieved ?? false } : {}),
+      });
+    } else {
+      const summary = result.summary;
+      trackBehaviorEvent("game_finish", {
+        mode: "duel",
+        difficulty: summary.difficulty,
+        outcome: summary.won ? "win" : "loss",
+        scoreBand: bandScore(summary.player.score),
+        kpmBand: bandKpm(summary.player.kpm),
+        accuracyBand: bandAccuracy(summary.player.accuracy),
+        chainBand: bandChain(summary.player.maxChain),
+        durationBand: bandDuration(summary.durationMs),
+      });
+    }
     if (result.mode === "survival") {
       const history = appendResult(result.summary);
       setScreen({ name: "result", result, history, duelRecord: null, dailyRecord: null });
@@ -192,8 +345,14 @@ export function App(): JSX.Element {
           dailyProgress={dailyProgress}
           firstRun={firstRun}
           onUpdateSettings={updateSettings}
-          onStart={startGame}
-          onStartWithFocus={(mode, focusGoal) => startGame(mode, focusGoal)}
+          onStart={(mode) =>
+            startGame(
+              mode,
+              undefined,
+              mode.type === "daily" ? "daily" : mode.type === "tutorial" ? "tutorial" : "home",
+            )
+          }
+          onStartWithFocus={(mode, focusGoal) => startGame(mode, focusGoal, "home")}
           onShowRanking={() => {
             setScreen({ name: "ranking" });
           }}
@@ -244,7 +403,7 @@ export function App(): JSX.Element {
           reducedMotion={settings.reducedMotion}
           onRetry={(mode) => {
             trackFunnelEvent("Result Action", { action: "retry", mode: mode.type });
-            startGame(mode);
+            startGame(mode, undefined, "retry");
           }}
           onBackToTitle={() => setScreen({ name: "landing" })}
           onShowAnalysis={(analysis, recentHistory) => {
@@ -261,7 +420,7 @@ export function App(): JSX.Element {
           recentHistory={screen.recentHistory}
           progress={progress}
           onBack={() => setScreen(screen.back)}
-          onStart={() => startGame({ type: "survival", difficulty: "easy" })}
+          onStart={() => startGame({ type: "survival", difficulty: "easy" }, undefined, "analysis")}
         />
       );
     case "ranking":

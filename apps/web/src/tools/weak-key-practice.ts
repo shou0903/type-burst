@@ -4,6 +4,7 @@ import {
   buildWeakKeyPromptMap,
   type WeakKeyPrompt,
 } from "./weakKeyPrompts";
+import { trackBehaviorEvent } from "../behaviorTelemetry";
 
 const byId = (id: string): HTMLElement => {
   const element = document.getElementById(id);
@@ -96,7 +97,8 @@ function updateMetrics(): void {
   liveAccuracyNode.textContent = formatAccuracy();
 }
 
-function finish(): void {
+function finish(action: "complete" | "exit" = "complete"): void {
+  if (!running) return;
   running = false;
   locked = false;
   resultWordsNode.textContent = completedWords.toLocaleString("ja-JP");
@@ -109,13 +111,14 @@ function finish(): void {
     targetHits > 0
       ? `${selectedKey.toUpperCase()}キーを${targetHits}回、正しく入力しました。`
       : `入力例の${selectedKey.toUpperCase()}を意識して、もう一度試しましょう。`;
+  trackBehaviorEvent("tool_action", { tool: "weak_key", action });
 }
 
 function advancePrompt(): void {
   completedWords += 1;
   updateMetrics();
   if (completedWords >= sessionLength) {
-    finish();
+    finish("exit");
     return;
   }
   promptIndex = (promptIndex + 1) % prompts.length;
@@ -214,11 +217,16 @@ stage.addEventListener("keydown", (event) => {
 });
 
 startButton.addEventListener("click", () => {
+  if (running) trackBehaviorEvent("tool_action", { tool: "weak_key", action: "exit" });
+  trackBehaviorEvent("tool_action", { tool: "weak_key", action: "start" });
   resetSession();
   running = true;
   startButton.textContent = "練習中";
   messageNode.textContent = `入力例で色の付いた${selectedKey.toUpperCase()}キーを意識しましょう。別の正しいローマ字表記も受け付けます。`;
   stage.focus();
 });
-resetButton.addEventListener("click", resetSession);
+resetButton.addEventListener("click", () => {
+  if (running) trackBehaviorEvent("tool_action", { tool: "weak_key", action: "exit" });
+  resetSession();
+});
 selectKey(selectedKey);

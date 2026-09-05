@@ -3,6 +3,7 @@ import { Analytics } from "@vercel/analytics/react";
 import { App } from "./App";
 import { SmallScreenGuard } from "./components/SmallScreenGuard";
 import { captureContentAttribution } from "./seoAttribution";
+import { isBehaviorTelemetryEnabled } from "./behaviorTelemetry";
 
 export function AppRoot(): JSX.Element {
   useEffect(() => {
@@ -19,8 +20,7 @@ export function AppRoot(): JSX.Element {
     <SmallScreenGuard>
       <>
         <App />
-        {/* Cookie不使用・個人を特定しない集計のみのためGoogle CMPとは無関係に常時計測(D-037) */}
-        <Analytics />
+        <Analytics beforeSend={(event) => (isBehaviorTelemetryEnabled() ? event : null)} />
       </>
     </SmallScreenGuard>
   );

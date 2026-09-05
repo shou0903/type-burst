@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Analytics } from "@vercel/analytics/react";
 import { MobileLanding } from "./MobileLanding";
+import { isBehaviorTelemetryEnabled } from "../behaviorTelemetry";
 
 const MIN_WIDTH = 1024;
 
@@ -35,10 +36,7 @@ export function SmallScreenGuard({ children }: { children: JSX.Element }): JSX.E
   return (
     <>
       <MobileLanding />
-      {/* PC側(AppRoot.tsx)と同じくCookie不使用・個人を特定しない集計のみ(D-037)。
-          モバイル流入がどれだけこのランディングに到達しているかを計測できるよう、
-          こちらの分岐でも常時計測する。 */}
-      <Analytics />
+      <Analytics beforeSend={(event) => (isBehaviorTelemetryEnabled() ? event : null)} />
     </>
   );
 }

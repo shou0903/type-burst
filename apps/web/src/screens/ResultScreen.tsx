@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { SurvivalSummary, TypingAnalysis } from "@type-burst/game-core";
 import { titleProgressForScore, type LifetimeProgress } from "@type-burst/progression";
 import type { GameMode, GameResult } from "../game/GameController";
@@ -32,6 +32,7 @@ import {
   type ShareContent,
 } from "../share/shareContent";
 import { trackFunnelEvent } from "../seoAttribution";
+import { trackBehaviorEvent } from "../behaviorTelemetry";
 import {
   buildNextMatchGoal,
   type NextMatchGoal,
@@ -100,6 +101,22 @@ export function ResultScreen({
     motionReduced,
   );
 
+  const trackResultAction = (action: "retry" | "analysis" | "title"): void => {
+    trackBehaviorEvent("result_action", { mode: result.mode, action });
+  };
+  const handleRetry = (mode: GameMode): void => {
+    trackResultAction("retry");
+    onRetry(mode);
+  };
+  const handleShowAnalysis = (analysis: TypingAnalysis, recentHistory: StoredResult[]): void => {
+    trackResultAction("analysis");
+    onShowAnalysis(analysis, recentHistory);
+  };
+  const handleBackToTitle = (): void => {
+    trackResultAction("title");
+    onBackToTitle();
+  };
+
   useEffect(() => {
     const handler = (e: KeyboardEvent): void => {
       const target = e.target;
@@ -121,15 +138,15 @@ export function ResultScreen({
       if (e.key === "Escape" && isEditing) return;
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
-        onRetry(retryMode);
+        handleRetry(retryMode);
       } else if (e.key === "Escape") {
-        onBackToTitle();
+        handleBackToTitle();
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onRetry, onBackToTitle]);
+  }, [retryMode]);
 
   if (result.mode === "daily") {
     return (
@@ -138,9 +155,9 @@ export function ResultScreen({
         progress={dailyProgress}
         record={dailyRecord}
         retryMode={retryMode}
-        onRetry={onRetry}
-        onBackToTitle={onBackToTitle}
-        onShowAnalysis={onShowAnalysis}
+        onRetry={handleRetry}
+        onBackToTitle={handleBackToTitle}
+        onShowAnalysis={handleShowAnalysis}
         history={history}
       />
     );
@@ -263,7 +280,7 @@ export function ResultScreen({
         <RankingSubmitBox summary={summary} />
 
         <div className="result-actions">
-          <button className="btn-primary" onClick={() => onRetry(retryMode)} autoFocus>
+          <button className="btn-primary" onClick={() => handleRetry(retryMode)} autoFocus>
             もう一戦 <span className="btn-sub">Enter</span>
           </button>
           <ShareAction
@@ -273,11 +290,11 @@ export function ResultScreen({
           />
           <button
             className="btn-secondary btn-analysis"
-            onClick={() => onShowAnalysis(summary.analysis, sameDifficultyHistory)}
+            onClick={() => handleShowAnalysis(summary.analysis, sameDifficultyHistory)}
           >
             タイピング分析を見る
           </button>
-          <button className="btn-secondary" onClick={onBackToTitle}>
+          <button className="btn-secondary" onClick={handleBackToTitle}>
             タイトルへ
           </button>
         </div>
@@ -323,7 +340,7 @@ export function ResultScreen({
         </div>
       </div>
 
-      <button className="btn-primary" onClick={() => onRetry(retryMode)} autoFocus>
+      <button className="btn-primary" onClick={() => handleRetry(retryMode)} autoFocus>
         再戦 <span className="btn-sub">Enter</span>
       </button>
       <ShareAction
@@ -331,10 +348,10 @@ export function ResultScreen({
         mode="duel"
         build={() => buildDuelShare(summary, loadNickname())}
       />
-      <button className="btn-secondary" onClick={() => onShowAnalysis(summary.player.analysis, [])}>
+      <button className="btn-secondary" onClick={() => handleShowAnalysis(summary.player.analysis, [])}>
         タイピング分析を見る
       </button>
-      <button className="btn-secondary" onClick={onBackToTitle}>
+      <button className="btn-secondary" onClick={handleBackToTitle}>
         タイトルへ
       </button>
     </div>
@@ -460,10 +477,34 @@ function DailyRankingBox({
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [ranking, setRanking] = useState<DailyLeaderboardResponse | null>(null);
   const [retryNonce, setRetryNonce] = useState(0);
+  const pendingRankingActionRef = useRef<"open" | "retry" | "submit">("open");
+  const lastRequestKeyRef = useRef<string | null>(null);
+  const activeRankingActionRef = useRef<"open" | "retry" | "submit">("open");
 
   useEffect(() => {
     let active = true;
-    if (ranked && savedNickname && summary.score > 0) {
+    const requestKey = `${challengeId}:${retryNonce}:${ranked ? "ranked" : "practice"}:${savedNickname ?? ""}`;
+    const isNewRequest = lastRequestKeyRef.current !== requestKey;
+    const shouldSubmit = ranked && Boolean(savedNickname) && summary.score > 0;
+    const action = isNewRequest
+      ? pendingRankingActionRef.current === "open" && shouldSubmit
+        ? "submit"
+        : pendingRankingActionRef.current
+      : activeRankingActionRef.current;
+    if (isNewRequest && action !== "submit") {
+      trackBehaviorEvent("ranking_action", {
+        surface: "daily",
+        action,
+        difficulty: summary.difficulty,
+        status: "started",
+      });
+    }
+    if (isNewRequest) {
+      lastRequestKeyRef.current = requestKey;
+      activeRankingActionRef.current = action;
+      pendingRankingActionRef.current = "open";
+    }
+    if (shouldSubmit && savedNickname) {
       setStatus("loading");
       submitDailyScore(savedNickname, challengeId, summary)
         .then((response) => {
@@ -471,17 +512,48 @@ function DailyRankingBox({
           setRanking(response);
           onViewer(response.viewer);
           setStatus("done");
+          trackBehaviorEvent("ranking_action", {
+            surface: "daily",
+            action: shouldSubmit ? "submit_success" : action === "submit" ? "open" : action,
+            difficulty: summary.difficulty,
+            status: "success",
+          });
         })
-        .catch(() => active && setStatus("error"));
+        .catch(() => {
+          if (!active) return;
+          setStatus("error");
+          trackBehaviorEvent("ranking_action", {
+            surface: "daily",
+            action: shouldSubmit ? "submit_error" : action === "submit" ? "open" : action,
+            difficulty: summary.difficulty,
+            status: "error",
+          });
+        });
     } else {
+      const fetchAction = action === "submit" ? "open" : action;
       fetchDailyLeaderboard(challengeId)
         .then((response) => {
           if (!active) return;
           setRanking(response);
           onViewer(response.viewer);
           setStatus("done");
+          trackBehaviorEvent("ranking_action", {
+            surface: "daily",
+            action: fetchAction,
+            difficulty: summary.difficulty,
+            status: "success",
+          });
         })
-        .catch(() => active && setStatus("error"));
+        .catch(() => {
+          if (!active) return;
+          setStatus("error");
+          trackBehaviorEvent("ranking_action", {
+            surface: "daily",
+            action: fetchAction,
+            difficulty: summary.difficulty,
+            status: "error",
+          });
+        });
     }
     return () => {
       active = false;
@@ -492,6 +564,7 @@ function DailyRankingBox({
     const trimmed = nickname.trim();
     if (!trimmed) return;
     saveNickname(trimmed);
+    pendingRankingActionRef.current = "submit";
     setSavedNickname(trimmed);
   };
 
@@ -528,6 +601,7 @@ function DailyRankingBox({
             className="btn-ranking-submit"
             onClick={() => {
               setStatus("loading");
+              pendingRankingActionRef.current = "retry";
               setRetryNonce((value) => value + 1);
             }}
           >
@@ -595,6 +669,7 @@ function RankingSubmitBox({ summary }: { summary: SurvivalSummary }): JSX.Elemen
   const [skipped, setSkipped] = useState(false);
   const [editing, setEditing] = useState(false);
   const [rankingUpdated, setRankingUpdated] = useState<boolean | null>(null);
+  const autoSubmitStartedRef = useRef(false);
 
   const submitSavedNickname = (name: string): void => {
     setStatus("submitting");
@@ -605,14 +680,29 @@ function RankingSubmitBox({ summary }: { summary: SurvivalSummary }): JSX.Elemen
           setRankingUpdated(result.updated);
         }
         setStatus(result.ok ? "done" : "error");
+        trackBehaviorEvent("ranking_action", {
+          surface: "world",
+          action: result.ok ? "submit_success" : "submit_error",
+          difficulty: summary.difficulty,
+          status: result.ok ? "success" : "error",
+        });
       })
-      .catch(() => setStatus("error"));
+      .catch(() => {
+        setStatus("error");
+        trackBehaviorEvent("ranking_action", {
+          surface: "world",
+          action: "submit_error",
+          difficulty: summary.difficulty,
+          status: "error",
+        });
+      });
   };
 
   useEffect(() => {
     // APIは0点を妥当なランキング記録として受け付けない。送信欄も自動送信も出さない。
     if (summary.score <= 0 || wasRankingSubmitted(summary)) return;
-    if (savedNickname) {
+    if (savedNickname && !autoSubmitStartedRef.current) {
+      autoSubmitStartedRef.current = true;
       submitSavedNickname(savedNickname);
     }
     // 初回マウント時のみ送信する(summaryは1回分の結果のため依存配列は空でよい)
@@ -685,7 +775,15 @@ function RankingSubmitBox({ summary }: { summary: SurvivalSummary }): JSX.Elemen
             <button
               type="button"
               className="btn-ranking-submit"
-              onClick={() => submitSavedNickname(savedNickname)}
+              onClick={() => {
+                trackBehaviorEvent("ranking_action", {
+                  surface: "world",
+                  action: "retry",
+                  difficulty: summary.difficulty,
+                  status: "started",
+                });
+                submitSavedNickname(savedNickname);
+              }}
             >
               もう一度送信
             </button>
@@ -711,8 +809,22 @@ function RankingSubmitBox({ summary }: { summary: SurvivalSummary }): JSX.Elemen
           setRankingUpdated(result.updated);
         }
         setStatus(result.ok ? "done" : "error");
+        trackBehaviorEvent("ranking_action", {
+          surface: "world",
+          action: result.ok ? "submit_success" : "submit_error",
+          difficulty: summary.difficulty,
+          status: result.ok ? "success" : "error",
+        });
       })
-      .catch(() => setStatus("error"));
+      .catch(() => {
+        setStatus("error");
+        trackBehaviorEvent("ranking_action", {
+          surface: "world",
+          action: "submit_error",
+          difficulty: summary.difficulty,
+          status: "error",
+        });
+      });
   };
 
   return (
@@ -739,7 +851,18 @@ function RankingSubmitBox({ summary }: { summary: SurvivalSummary }): JSX.Elemen
       {status === "error" && (
         <span className="ranking-submit-status error">送信に失敗しました。もう一度お試しください</span>
       )}
-      <button className="btn-ranking-skip" onClick={() => setSkipped(true)}>
+      <button
+        className="btn-ranking-skip"
+        onClick={() => {
+          trackBehaviorEvent("ranking_action", {
+            surface: "world",
+            action: "skip",
+            difficulty: summary.difficulty,
+            status: "success",
+          });
+          setSkipped(true);
+        }}
+      >
         今回はスキップ
       </button>
     </div>
@@ -769,13 +892,15 @@ function ShareAction({
         className="btn-share"
         onClick={() => {
           trackFunnelEvent("Share Action", { action: "open", mode });
+          trackBehaviorEvent("result_action", { mode, action: "share" });
+          trackBehaviorEvent("share_action", { mode, action: "open", status: "started" });
           setContent(build());
         }}
       >
         <span className="btn-share-glyph" aria-hidden="true">💥</span>
         結果を共有する
       </button>
-      {content && <ShareSheet content={content} onClose={() => setContent(null)} />}
+      {content && <ShareSheet content={content} mode={mode} onClose={() => setContent(null)} />}
     </>
   );
 }

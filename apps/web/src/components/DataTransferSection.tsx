@@ -11,6 +11,13 @@ import {
   restoreFromCode,
   type PlayerSnapshot,
 } from "../playerData";
+import {
+  deleteTelemetryIdentity,
+  flushBehaviorTelemetry,
+  isBehaviorTelemetryEnabled,
+  setBehaviorTelemetryEnabled,
+  trackBehaviorEvent,
+} from "../behaviorTelemetry";
 
 type PendingRestore = { code: string; snapshot: PlayerSnapshot; current: PlayerSnapshot };
 
@@ -23,10 +30,16 @@ export function DataTransferSection(): JSX.Element {
   const [pending, setPending] = useState<PendingRestore | null>(null);
   const [busy, setBusy] = useState<"issue" | "lookup" | "restore" | "delete" | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [telemetryEnabled, setTelemetryEnabled] = useState(() => isBehaviorTelemetryEnabled());
   const [lastSyncAt, setLastSyncAt] = useState<number | null>(() => loadLastSnapshotUploadAt());
   const modalTitleRef = useRef<HTMLHeadingElement>(null);
   const modalRef = useRef<HTMLElement>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
+
+  const closeRestorePreview = (): void => {
+    trackBehaviorEvent("transfer_action", { action: "restore", status: "cancel" });
+    setPending(null);
+  };
 
   useEffect(() => {
     const handleSync = (): void => setLastSyncAt(loadLastSnapshotUploadAt());
@@ -57,7 +70,7 @@ export function DataTransferSection(): JSX.Element {
       if (event.key === "Escape") {
         if (busy === "restore") return;
         event.preventDefault();
-        setPending(null);
+        closeRestorePreview();
         return;
       }
       if (event.key !== "Tab") return;
@@ -91,10 +104,13 @@ export function DataTransferSection(): JSX.Element {
   const issue = async (): Promise<void> => {
     setBusy("issue");
     setMessage(null);
+    trackBehaviorEvent("transfer_action", { action: "issue", status: "started" });
     try {
       setCode(await issueTransferCode());
+      trackBehaviorEvent("transfer_action", { action: "issue", status: "success" });
     } catch {
       setMessage("コードを発行できませんでした。通信状況を確認して、もう一度お試しください。");
+      trackBehaviorEvent("transfer_action", { action: "issue", status: "error" });
     } finally {
       setBusy(null);
     }
@@ -105,8 +121,10 @@ export function DataTransferSection(): JSX.Element {
     try {
       await navigator.clipboard.writeText(code);
       setMessage("引き継ぎコードをコピーしました。");
+      trackBehaviorEvent("transfer_action", { action: "copy", status: "success" });
     } catch {
       setMessage("コピーできませんでした。コードを選択して手動でコピーしてください。");
+      trackBehaviorEvent("transfer_action", { action: "copy", status: "error" });
     }
   };
 
@@ -115,13 +133,16 @@ export function DataTransferSection(): JSX.Element {
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setBusy("lookup");
     setMessage(null);
+    trackBehaviorEvent("transfer_action", { action: "lookup", status: "started" });
     try {
       const preview = await previewRestore(input);
       returnFocusRef.current = activeBeforeLookup;
       setPending({ code: input, snapshot: preview.snapshot, current: buildPlayerSnapshot() });
+      trackBehaviorEvent("transfer_action", { action: "lookup", status: "success" });
     } catch {
       // 不正形式・存在しないコード・期限切れは同じ文言にする。
       setMessage("コードを確認できませんでした。入力内容を確認して、時間をおいて再度お試しください。");
+      trackBehaviorEvent("transfer_action", { action: "lookup", status: "error" });
     } finally {
       setBusy(null);
     }
@@ -130,31 +151,62 @@ export function DataTransferSection(): JSX.Element {
   const restore = async (): Promise<void> => {
     if (!pending) return;
     setBusy("restore");
+    trackBehaviorEvent("transfer_action", { action: "restore", status: "started" });
     try {
       const snapshot = await restoreFromCode(pending.code);
       replaceLocalPlayerData(snapshot);
+      trackBehaviorEvent("transfer_action", { action: "restore", status: "success" });
       window.location.reload();
     } catch {
       setMessage("復元できませんでした。通信状況を確認して、もう一度お試しください。");
+      trackBehaviorEvent("transfer_action", { action: "restore", status: "error" });
       setPending(null);
       setBusy(null);
     }
   };
 
   const removeCloudData = async (): Promise<void> => {
-    if (!window.confirm("クラウドに保存した記録と引き継ぎコードを削除します。端末内の記録は残ります。続けますか？")) return;
+    if (!window.confirm("クラウドに保存した記録と引き継ぎコードを削除します。端末内の記録は残ります。続けますか？")) {
+      trackBehaviorEvent("transfer_action", { action: "delete", status: "cancel" });
+      return;
+    }
     setBusy("delete");
     setMessage(null);
-    try {
-      await deleteCloudPlayerData();
+    trackBehaviorEvent("transfer_action", { action: "delete", status: "started" });
+    // The deletion-start event must be sent before identity removal. Sending a
+    // success event afterwards would immediately recreate today's HMAC member.
+    await flushBehaviorTelemetry();
+    // 2つの保管先は独立しているため、片方の失敗で他方の削除を
+    // スキップしない。特にクラウド削除は取り消せないので、後続の
+    // 計測削除が失敗した場合も実際に起きたことを明示する。
+    const [cloudDeletion, telemetryDeletion] = await Promise.allSettled([
+      deleteCloudPlayerData(),
+      deleteTelemetryIdentity(),
+    ]);
+    const cloudDeleted = cloudDeletion.status === "fulfilled";
+    const telemetryDeleted = telemetryDeletion.status === "fulfilled";
+
+    if (cloudDeleted) {
       clearLastSnapshotUploadAt();
       setCode(null);
-      setMessage("クラウドに保存した記録と引き継ぎコードを削除しました。端末内の記録は残っています。");
-    } catch {
-      setMessage("削除できませんでした。通信状況を確認して、もう一度お試しください。");
-    } finally {
-      setBusy(null);
     }
+
+    if (cloudDeleted && telemetryDeleted) {
+      setMessage("クラウドに保存した記録と引き継ぎコードを削除しました。端末内の記録は残っています。");
+    } else if (cloudDeleted) {
+      setMessage(
+        "クラウドのプレイ記録と引き継ぎコードは削除しましたが、匿名計測データの削除確認に失敗しました。通信状況を確認して、もう一度お試しください。",
+      );
+      trackBehaviorEvent("transfer_action", { action: "delete", status: "error" });
+    } else if (telemetryDeleted) {
+      setMessage(
+        "匿名計測データは削除しましたが、クラウドのプレイ記録を削除できませんでした。通信状況を確認して、もう一度お試しください。",
+      );
+    } else {
+      setMessage("削除できませんでした。通信状況を確認して、もう一度お試しください。");
+      trackBehaviorEvent("transfer_action", { action: "delete", status: "error" });
+    }
+    setBusy(null);
   };
 
   return (
@@ -226,6 +278,21 @@ export function DataTransferSection(): JSX.Element {
         </button>
         <span>端末の設定（音量・文字サイズなど）は引き継ぎません。</span>
       </div>
+      <label className="lp-check data-transfer-telemetry-setting">
+        <input
+          type="checkbox"
+          checked={telemetryEnabled}
+          onChange={(event) => {
+            const enabled = event.target.checked;
+            setTelemetryEnabled(enabled);
+            setBehaviorTelemetryEnabled(enabled);
+          }}
+        />
+        匿名の利用状況計測に協力する
+      </label>
+      <p className="data-transfer-telemetry-note">
+        ゲーム改善のため、画面表示や機能利用を匿名で集計します。入力内容・名前・正確なスコアは送信せず、成績は大まかな範囲だけを集計します。
+      </p>
       {message && <p className="data-transfer-message" role="status">{message}</p>}
 
       {pending && (
@@ -248,7 +315,7 @@ export function DataTransferSection(): JSX.Element {
               <SnapshotSummary label="コード側の記録" snapshot={pending.snapshot} accent />
             </div>
             <div className="transfer-modal-actions">
-              <button type="button" className="data-transfer-secondary" onClick={() => setPending(null)} disabled={busy === "restore"}>キャンセル</button>
+              <button type="button" className="data-transfer-secondary" onClick={closeRestorePreview} disabled={busy === "restore"}>キャンセル</button>
               <button type="button" className="data-transfer-primary" onClick={restore} disabled={busy === "restore"}>
                 {busy === "restore" ? "復元中…" : "この記録で上書きする"}
               </button>

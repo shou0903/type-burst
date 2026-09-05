@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { SurvivalDifficulty } from "@type-burst/game-core";
 import { useFitToViewport } from "../hooks/useFitToViewport";
 import { fetchRanking, type RankingEntry, type RankingViewer } from "../ranking";
+import { trackBehaviorEvent } from "../behaviorTelemetry";
 
 const SURVIVAL_DIFFICULTY_LABELS: Record<SurvivalDifficulty, string> = {
   easy: "初級",
@@ -46,17 +47,52 @@ export function RankingScreen({ onBack }: Props): JSX.Element {
   const [difficulty, setDifficulty] = useState<SurvivalDifficulty>("normal");
   const [retryNonce, setRetryNonce] = useState(0);
   const [state, setState] = useState<LoadState>({ status: "loading" });
+  const pendingLoadActionRef = useRef<
+    "open" | "difficulty_easy" | "difficulty_normal" | "difficulty_hard" | "difficulty_god" | "retry"
+  >("open");
+  const lastRequestKeyRef = useRef<string | null>(null);
+  const activeLoadActionRef = useRef<
+    "open" | "difficulty_easy" | "difficulty_normal" | "difficulty_hard" | "difficulty_god" | "retry"
+  >("open");
 
   useEffect(() => {
     let cancelled = false;
+    const requestKey = `${difficulty}:${retryNonce}`;
+    const isNewRequest = lastRequestKeyRef.current !== requestKey;
+    const action = isNewRequest ? pendingLoadActionRef.current : activeLoadActionRef.current;
+    if (isNewRequest) {
+      trackBehaviorEvent("ranking_action", {
+        surface: "world",
+        action,
+        difficulty,
+        status: "started",
+      });
+      lastRequestKeyRef.current = requestKey;
+      activeLoadActionRef.current = action;
+      pendingLoadActionRef.current = "open";
+    }
     setState({ status: "loading" });
     fetchRanking(difficulty, 100)
       .then((response) => {
-        if (!cancelled) setState({ status: "loaded", entries: response.entries, viewer: response.viewer });
+        if (!cancelled) {
+          setState({ status: "loaded", entries: response.entries, viewer: response.viewer });
+          trackBehaviorEvent("ranking_action", {
+            surface: "world",
+            action,
+            difficulty,
+            status: "success",
+          });
+        }
       })
       .catch((e: unknown) => {
         if (!cancelled) {
           setState({ status: "error", message: e instanceof Error ? e.message : "不明なエラー" });
+          trackBehaviorEvent("ranking_action", {
+            surface: "world",
+            action,
+            difficulty,
+            status: "error",
+          });
         }
       });
     return () => {
@@ -96,7 +132,15 @@ export function RankingScreen({ onBack }: Props): JSX.Element {
             type="button"
             data-lv={i + 1}
             aria-pressed={d === difficulty}
-            onClick={() => setDifficulty(d)}
+            onClick={() => {
+              if (d === difficulty) return;
+              pendingLoadActionRef.current = `difficulty_${d}` as
+                | "difficulty_easy"
+                | "difficulty_normal"
+                | "difficulty_hard"
+                | "difficulty_god";
+              setDifficulty(d);
+            }}
           >
             <span aria-hidden="true">{DIFFICULTY_GLYPHS[d]}</span>
             {SURVIVAL_DIFFICULTY_LABELS[d]}
@@ -115,7 +159,10 @@ export function RankingScreen({ onBack }: Props): JSX.Element {
           <button
             type="button"
             className="btn-secondary rk-retry"
-            onClick={() => setRetryNonce((value) => value + 1)}
+            onClick={() => {
+              pendingLoadActionRef.current = "retry";
+              setRetryNonce((value) => value + 1);
+            }}
           >
             もう一度読み込む
           </button>

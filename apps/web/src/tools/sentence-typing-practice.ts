@@ -4,6 +4,7 @@ import {
   type SentencePracticeLevel,
   type SentencePracticePrompt,
 } from "./sentencePrompts";
+import { trackBehaviorEvent } from "../behaviorTelemetry";
 
 const byId = (id: string): HTMLElement => {
   const element = document.getElementById(id);
@@ -109,9 +110,12 @@ function finish(): void {
   elapsedNode.textContent = format(totalSeconds, 1);
   messageNode.textContent = "練習完了。同じレベルで再挑戦すると、速度と正確率を同じ条件で比べられます。";
   startButton.textContent = "同じ条件でもう一度";
+  trackBehaviorEvent("tool_action", { tool: "sentence", action: "complete" });
 }
 
 function start(): void {
+  if (running) trackBehaviorEvent("tool_action", { tool: "sentence", action: "exit" });
+  trackBehaviorEvent("tool_action", { tool: "sentence", action: "start" });
   clearTimer();
   const level = levelSelect.value as SentencePracticeLevel;
   prompts = promptsForLevel(level);
@@ -177,7 +181,11 @@ stage.addEventListener("keydown", (event) => {
 });
 
 startButton.addEventListener("click", start);
-resetButton.addEventListener("click", reset);
-levelSelect.addEventListener("change", reset);
-countSelect.addEventListener("change", reset);
+const abandonAndReset = (): void => {
+  if (running) trackBehaviorEvent("tool_action", { tool: "sentence", action: "exit" });
+  reset();
+};
+resetButton.addEventListener("click", abandonAndReset);
+levelSelect.addEventListener("change", abandonAndReset);
+countSelect.addEventListener("change", abandonAndReset);
 reset();

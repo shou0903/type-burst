@@ -9,6 +9,8 @@ import {
   focusProgressText,
   type FocusProgress,
 } from "../focusContract";
+import { bandDuration, trackBehaviorEvent } from "../behaviorTelemetry";
+import type { GameFeature, TelemetryPropertiesMap } from "../telemetryContract";
 
 interface Props {
   mode: GameMode;
@@ -113,6 +115,9 @@ export function GameScreen({
   );
   const focusAchievedRef = useRef(false);
   const cueTimerRef = useRef<number | null>(null);
+  const featureUsedRef = useRef<Set<string>>(new Set());
+  const gameExitTrackedRef = useRef(false);
+  const naturalFinishRef = useRef(false);
   // HUD内の数値・通知・候補表示では縮尺を変えず、ウィンドウサイズが変わった時だけ
   // 盤面を合わせ直す。プレイ中の微細な拡大縮小を入力ノイズにしないため。
   const { ref, style } = useFitToViewport<HTMLDivElement>({
@@ -152,6 +157,9 @@ export function GameScreen({
   };
 
   const requestQuit = (): void => {
+    // 終了演出から結果画面へ移る短い待機中に「やめる」を受けると、
+    // natural finish と confirmed quit が同時に記録され得る。自然終了を優先する。
+    if (naturalFinishRef.current) return;
     // 確認中に盤面やタイマーが進まないよう、終了確認へ入る時点で止める。
     controllerRef.current?.pause();
     setQuitRequested(true);
@@ -163,6 +171,25 @@ export function GameScreen({
   };
 
   const confirmQuit = (): void => {
+    if (naturalFinishRef.current) {
+      setQuitRequested(false);
+      return;
+    }
+    if (!gameExitTrackedRef.current) {
+      gameExitTrackedRef.current = true;
+      const current = latestSnapshotRef.current ?? snapshot;
+      const properties: TelemetryPropertiesMap["game_exit"] = {
+        mode: mode.type,
+        reason: "confirmed_quit",
+        elapsedBand: bandDuration(current?.elapsedMs ?? 0),
+      };
+      if (mode.type === "survival" || mode.type === "duel") {
+        properties.difficulty = mode.difficulty;
+      } else if (mode.type === "daily") {
+        properties.difficulty = "normal";
+      }
+      trackBehaviorEvent("game_exit", properties);
+    }
     controllerRef.current?.dispose();
     onQuit();
   };
@@ -184,6 +211,33 @@ export function GameScreen({
       fontScale,
       onSnapshot: publishSnapshot,
       onPlayerEvent: (event) => {
+        if (event.type === "survivalFinished" || event.type === "duelFinished") {
+          naturalFinishRef.current = true;
+        }
+        if (mode.type !== "tutorial") {
+          let feature: GameFeature | null = null;
+          switch (event.type) {
+            case "burstFired":
+              feature = "burst";
+              break;
+            case "blocksCleared":
+              if (event.cause === "bomb" || event.cause === "prism") feature = event.cause;
+              else if (event.chain >= 2) feature = "chain";
+              break;
+            case "feverStarted":
+              feature = "fever";
+              break;
+            case "clutchClear":
+              feature = "clutch";
+              break;
+            default:
+              break;
+          }
+          if (feature && !featureUsedRef.current.has(feature)) {
+            featureUsedRef.current.add(feature);
+            trackBehaviorEvent("feature_used", { mode: mode.type, feature });
+          }
+        }
         const message = gameEventCue(event);
         if (message) announceCue(message);
       },

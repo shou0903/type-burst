@@ -4,6 +4,7 @@ import {
   type CharPrompt,
   type PracticeMode,
 } from "./numberSymbolPrompts";
+import { trackBehaviorEvent } from "../behaviorTelemetry";
 
 /**
  * 数字・記号タイピング練習(D-092)。
@@ -109,7 +110,7 @@ function renderWeakChars(): void {
   weakNode.appendChild(list);
 }
 
-function finish(): void {
+function finish(action: "complete" | "exit" = "complete"): void {
   if (!running) return;
   running = false;
   clearTimer();
@@ -122,6 +123,7 @@ function finish(): void {
   result.hidden = false;
   messageNode.textContent = "練習終了。苦手だった文字だけをもう一度打つと、短時間でも効きます。";
   startButton.textContent = "もう一度練習する";
+  trackBehaviorEvent("tool_action", { tool: "number_symbol", action });
 }
 
 function updateTime(): void {
@@ -131,6 +133,8 @@ function updateTime(): void {
 }
 
 function start(): void {
+  if (running) trackBehaviorEvent("tool_action", { tool: "number_symbol", action: "exit" });
+  trackBehaviorEvent("tool_action", { tool: "number_symbol", action: "start" });
   clearTimer();
   running = true;
   prompts = promptsFor(modeSelect.value as PracticeMode);
@@ -172,7 +176,7 @@ stage.addEventListener("keydown", (event) => {
   if (!running || event.ctrlKey || event.metaKey || event.altKey) return;
   if (event.key === "Escape") {
     event.preventDefault();
-    finish();
+    finish("exit");
     return;
   }
   if (event.key.length !== 1) return;
@@ -196,8 +200,12 @@ stage.addEventListener("keydown", (event) => {
   renderPrompt();
 });
 
-modeSelect.addEventListener("change", reset);
-durationSelect.addEventListener("change", reset);
+const abandonAndReset = (): void => {
+  if (running) trackBehaviorEvent("tool_action", { tool: "number_symbol", action: "exit" });
+  reset();
+};
+modeSelect.addEventListener("change", abandonAndReset);
+durationSelect.addEventListener("change", abandonAndReset);
 startButton.addEventListener("click", start);
-resetButton.addEventListener("click", reset);
+resetButton.addEventListener("click", abandonAndReset);
 reset();

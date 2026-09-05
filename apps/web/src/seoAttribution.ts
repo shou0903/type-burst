@@ -1,4 +1,5 @@
 import { track } from "@vercel/analytics";
+import { isBehaviorTelemetryEnabled } from "./behaviorTelemetry";
 
 const SESSION_KEY = "typeburst.content-source.v1";
 const CONTENT_ENTRY_KEY = "typeburst.content-entry.v1";
@@ -119,6 +120,7 @@ export function trackFunnelEvent(
   name: FunnelEventName,
   properties: Record<string, FunnelValue> = {},
 ): void {
+  if (!isBehaviorTelemetryEnabled()) return;
   const safeProperties = Object.fromEntries(
     Object.entries(properties)
       .filter(([key]) => ALLOWED_EVENT_PROPERTIES.has(key))

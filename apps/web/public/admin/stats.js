@@ -150,7 +150,11 @@
     nav: "ナビゲーション",
     start: "開始",
     complete: "完了",
+    exit: "途中終了",
+    run: "実行",
     lookup: "照会",
+    practice: "候補練習完了",
+    drill: "20秒ドリル完了",
     issue: "発行",
     restore: "復元",
     delete: "削除",
@@ -165,6 +169,100 @@
     game_finish: "ゲーム完了",
     result_action: "結果画面の行動",
     tutorial_completed: "チュートリアル完了",
+  };
+  const BEHAVIOR_ENTRY_POINT_LABELS = {
+    home: "ホーム",
+    retry: "もう一戦",
+    analysis: "分析画面",
+    daily: "デイリー",
+    tutorial: "チュートリアル",
+    onboarding: "初回導線",
+    share: "共有リンク",
+  };
+  const BEHAVIOR_OUTCOME_LABELS = {
+    topout: "ゲームオーバー（積み上がり）",
+    topped_out: "ゲームオーバー（積み上がり）",
+    time_limit: "時間切れ",
+    win: "勝利",
+    loss: "敗北",
+  };
+  const BEHAVIOR_STATUS_LABELS = {
+    started: "開始",
+    success: "成功",
+    error: "失敗",
+    cancel: "キャンセル",
+  };
+  const BEHAVIOR_FEATURE_LABELS = {
+    burst: "BURST",
+    bomb: "ボム",
+    prism: "プリズム",
+    chain: "連鎖",
+    fever: "FEVER",
+    clutch: "CLUTCH CLEAR",
+  };
+  const BEHAVIOR_TOOL_LABELS = {
+    speed: "タイピング速度測定",
+    sentence: "文章タイピング練習",
+    weak_key: "苦手キー練習",
+    number_symbol: "数字・記号練習",
+    input_method: "入力方式判定",
+    workload: "作業時間換算",
+    romaji: "ローマ字入力ラボ",
+  };
+  const BEHAVIOR_SETTING_LABELS = {
+    sound: "サウンド",
+    reduced_motion: "控えめな演出",
+    high_contrast: "ハイコントラスト",
+    font_scale: "文字サイズ",
+    on: "オン",
+    off: "オフ",
+    standard: "標準",
+    large: "大きめ",
+    xlarge: "特大",
+  };
+  const BEHAVIOR_FAILURE_SURFACE_LABELS = {
+    fetch: "データ取得",
+    render: "画面表示",
+    share: "共有",
+    transfer: "引き継ぎ",
+    ranking: "ランキング",
+    analysis: "分析",
+    game: "ゲーム",
+    mobile: "モバイル導線",
+    telemetry: "計測",
+    other: "その他",
+  };
+  const BEHAVIOR_FAILURE_KIND_LABELS = {
+    network: "ネットワーク",
+    invalid_response: "不正な応答",
+    timeout: "タイムアウト",
+    unsupported: "非対応",
+    blocked: "ブロック",
+    unknown: "不明",
+  };
+  const BEHAVIOR_DETAIL_GROUPS = {
+    performance: [
+      { key: "entryPoints", aliases: ["entryPoints", "byEntryPoint", "entryPointBreakdown"], label: "入口", kind: "entryPoint" },
+      { key: "outcomes", aliases: ["outcomes", "byOutcome", "outcomeBreakdown"], label: "ゲーム結果", kind: "outcome" },
+      { key: "scoreBands", aliases: ["scoreBands", "byScoreBand", "scoreBandBreakdown"], label: "スコア帯", kind: "scoreBand" },
+      { key: "kpmBands", aliases: ["kpmBands", "byKpmBand", "kpmBandBreakdown"], label: "KPM帯", kind: "kpmBand" },
+      { key: "accuracyBands", aliases: ["accuracyBands", "byAccuracyBand", "accuracyBandBreakdown"], label: "正確率帯", kind: "accuracyBand" },
+      { key: "chainBands", aliases: ["chainBands", "byChainBand", "chainBandBreakdown"], label: "連鎖帯", kind: "chainBand" },
+      { key: "durationBands", aliases: ["durationBands", "byDurationBand", "durationBandBreakdown"], label: "プレイ時間帯", kind: "durationBand" },
+      { key: "levelBands", aliases: ["levelBands", "byLevelBand", "levelBandBreakdown"], label: "到達レベル帯", kind: "levelBand" },
+    ],
+    operations: [
+      { key: "features", aliases: ["features", "featureUsage", "byFeature"], label: "機能利用", kind: "feature" },
+      { key: "shareActions", aliases: ["shareActions", "byShareAction"], label: "共有アクション", kind: "shareAction" },
+      { key: "rankingActions", aliases: ["rankingActions", "byRankingAction"], label: "ランキングアクション", kind: "rankingAction" },
+      { key: "analysisActions", aliases: ["analysisActions", "byAnalysisAction"], label: "分析アクション", kind: "analysisAction" },
+      { key: "transferStatuses", aliases: ["transferStatuses", "byTransferStatus"], label: "引き継ぎ状態", kind: "transferStatus" },
+      { key: "mobileActions", aliases: ["mobileActions", "byMobileAction"], label: "モバイル導線", kind: "mobileAction" },
+      { key: "settingChanges", aliases: ["settingChanges", "settingsChanges", "bySettingChange"], label: "設定変更", kind: "settingChange" },
+      { key: "tools", aliases: ["tools", "toolUsage", "byTool"], label: "練習ツール利用", kind: "tool" },
+      { key: "toolActions", aliases: ["toolActions", "byToolAction"], label: "練習ツール操作", kind: "toolAction" },
+      { key: "failures", aliases: ["failures", "flowFailures", "byFailure"], label: "失敗", kind: "failure" },
+    ],
   };
 
   function isRecord(value) {
@@ -215,7 +313,7 @@
 
   function rowKey(row, fallback) {
     if (!isRecord(row)) return fallback || "-";
-    const value = row.key ?? row.name ?? row.label ?? row.value ?? row.source ?? row.mode ?? row.difficulty ?? row.action ?? row.actionName ?? row.stage;
+    const value = row.key ?? row.name ?? row.label ?? row.source ?? row.mode ?? row.difficulty ?? row.action ?? row.actionName ?? row.stage ?? row.entryPoint ?? row.outcome ?? row.feature ?? row.status ?? row.setting ?? row.band ?? row.bucket ?? row.surface ?? row.value;
     return value === null || value === undefined || value === "" ? fallback || "-" : String(value);
   }
 
@@ -305,9 +403,35 @@
       difficulty: BEHAVIOR_DIFFICULTY_LABELS,
       action: BEHAVIOR_ACTION_LABELS,
       funnel: BEHAVIOR_FUNNEL_LABELS,
+      entryPoint: BEHAVIOR_ENTRY_POINT_LABELS,
+      outcome: BEHAVIOR_OUTCOME_LABELS,
+      feature: BEHAVIOR_FEATURE_LABELS,
+      shareAction: BEHAVIOR_ACTION_LABELS,
+      rankingAction: BEHAVIOR_ACTION_LABELS,
+      analysisAction: BEHAVIOR_ACTION_LABELS,
+      mobileAction: BEHAVIOR_ACTION_LABELS,
+      transferStatus: BEHAVIOR_STATUS_LABELS,
+      settingChange: BEHAVIOR_SETTING_LABELS,
+      tool: BEHAVIOR_TOOL_LABELS,
+      toolAction: BEHAVIOR_ACTION_LABELS,
+      failureSurface: BEHAVIOR_FAILURE_SURFACE_LABELS,
+      failureKind: BEHAVIOR_FAILURE_KIND_LABELS,
     };
     const mapped = maps[kind] && maps[kind][value];
-    return mapped || value;
+    if (mapped) return mapped;
+    const band = (unit) => {
+      if (value === "unknown") return "不明";
+      if (value.indexOf("under-") === 0) return value.slice(6).replace("s", "") + unit + "未満";
+      if (value.endsWith("+")) return value.slice(0, -1).replace("s", "") + unit + "以上";
+      return value.replace(/s/g, "").replace("-", "〜") + unit;
+    };
+    if (kind === "scoreBand") return band("点");
+    if (kind === "kpmBand") return band(" KPM");
+    if (kind === "accuracyBand") return band("%");
+    if (kind === "chainBand") return band("連鎖");
+    if (kind === "durationBand") return band("秒");
+    if (kind === "levelBand") return "LEVEL " + band("");
+    return value;
   }
 
   function drawBehaviorTrendChart(canvas, points) {
@@ -510,6 +634,7 @@
     return toRows(collection)
       .slice(0, 20)
       .map((row) => ({
+        raw: row,
         key: rowKey(row),
         events: rowMetric(row, ["events", "eventCount", "count", "total"]),
         sessions: rowMetric(row, ["sessions", "sessionCount", "uniqueSessions"]),
@@ -555,6 +680,106 @@
       item.appendChild(metrics);
       list.appendChild(item);
     });
+  }
+
+  function detailRowLabel(row, kind) {
+    if (!isRecord(row)) return "-";
+    const raw = isRecord(row.raw) ? row.raw : row;
+    if (kind === "settingChange") {
+      const setting = raw.setting ?? raw.name;
+      const value = raw.value ?? raw.option;
+      if (setting && value) return behaviorLabel("settingChange", String(setting)) + "：" + behaviorLabel("settingChange", String(value));
+      if (setting) return behaviorLabel("settingChange", String(setting));
+    }
+    if (kind === "failure") {
+      const surface = raw.surface ?? raw.area;
+      const failureKind = raw.kind ?? raw.failureKind ?? raw.reason;
+      if (surface && failureKind) {
+        return behaviorLabel("failureSurface", String(surface)) + " / " + behaviorLabel("failureKind", String(failureKind));
+      }
+      if (surface) return behaviorLabel("failureSurface", String(surface));
+      if (failureKind) return behaviorLabel("failureKind", String(failureKind));
+    }
+    return behaviorLabel(kind, rowKey(row));
+  }
+
+  function renderBehaviorDetailCard(definition, collection) {
+    const card = document.createElement("div");
+    card.className = "pd-behavior-detail-card";
+    const head = document.createElement("div");
+    head.className = "pd-behavior-detail-card-head";
+    const title = document.createElement("h4");
+    title.textContent = definition.label;
+    head.appendChild(title);
+    const note = document.createElement("span");
+    note.textContent = definition.note || "イベント・セッション・匿名ID";
+    head.appendChild(note);
+    card.appendChild(head);
+
+    const rows = normalizeBreakdownRows(collection);
+    if (rows.length === 0) {
+      const empty = document.createElement("p");
+      empty.className = "pd-behavior-detail-empty";
+      empty.textContent = "データがありません";
+      card.appendChild(empty);
+      return card;
+    }
+
+    const list = document.createElement("div");
+    list.className = "pd-behavior-detail-list";
+    list.setAttribute("role", "list");
+    list.setAttribute("aria-label", definition.label + "の集計");
+    const maxEvents = Math.max(1, ...rows.map((row) => row.events || 0));
+    rows.forEach((row) => {
+      const item = document.createElement("div");
+      item.className = "pd-behavior-detail-row";
+      item.setAttribute("role", "listitem");
+      const top = document.createElement("div");
+      top.className = "pd-behavior-list-head";
+      const label = document.createElement("span");
+      label.textContent = detailRowLabel(row, definition.kind);
+      top.appendChild(label);
+      const eventTotal = document.createElement("strong");
+      eventTotal.textContent = row.events === null ? "-" : format(row.events) + "件";
+      top.appendChild(eventTotal);
+      item.appendChild(top);
+      const meter = document.createElement("div");
+      meter.className = "pd-behavior-list-meter";
+      const fill = document.createElement("i");
+      fill.style.width = Math.max(0, Math.min(100, ((row.events || 0) / maxEvents) * 100)) + "%";
+      fill.setAttribute("aria-hidden", "true");
+      meter.appendChild(fill);
+      item.appendChild(meter);
+      const metrics = document.createElement("div");
+      metrics.className = "pd-behavior-row-metrics";
+      metrics.appendChild(appendMetric("イベント", row.events));
+      metrics.appendChild(appendMetric("セッション", row.sessions));
+      metrics.appendChild(appendMetric("匿名ID", row.players));
+      if (row.share !== null) metrics.appendChild(appendMetric("構成比", row.share, "%"));
+      item.appendChild(metrics);
+      list.appendChild(item);
+    });
+    card.appendChild(list);
+    return card;
+  }
+
+  function renderBehaviorDetailGroup(behavior, today, groupKey, gridId, emptyId) {
+    const grid = byId(gridId);
+    const empty = byId(emptyId);
+    grid.replaceChildren();
+    let rendered = 0;
+    BEHAVIOR_DETAIL_GROUPS[groupKey].forEach((definition) => {
+      const collection = behaviorCollections(behavior, today, definition.aliases);
+      if (!Array.isArray(collection) && !isRecord(collection)) return;
+      rendered += 1;
+      grid.appendChild(renderBehaviorDetailCard(definition, collection));
+    });
+    empty.classList.toggle("pd-hidden", rendered > 0);
+  }
+
+  function renderBehaviorDetails(behavior, today) {
+    renderBehaviorDetailGroup(behavior, today, "performance", "pd-behavior-performance-grid", "pd-behavior-performance-empty");
+    renderBehaviorDetailGroup(behavior, today, "operations", "pd-behavior-operations-grid", "pd-behavior-operations-empty");
   }
 
   function renderBehaviorRetention(behavior) {
@@ -677,6 +902,7 @@
       behaviorCollections(behavior, today, ["resultActions", "resultAction", "byResultAction", "actions"]),
       "action",
     );
+    renderBehaviorDetails(behavior, today);
     renderBehaviorRetention(behavior);
   }
 

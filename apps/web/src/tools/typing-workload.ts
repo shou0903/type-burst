@@ -1,4 +1,5 @@
 import { dailySavings, estimateTasks, formatMinutes } from "./workloadEstimate";
+import { trackBehaviorEvent } from "../behaviorTelemetry";
 
 /** タイピング速度から実務の所要時間を計算する(D-092)。計算は workloadEstimate.ts に分離する。 */
 
@@ -100,6 +101,7 @@ function run(): void {
     savingsNode.textContent = "";
   }
   result.hidden = false;
+  trackBehaviorEvent("tool_action", { tool: "workload", action: "run" });
 }
 
 runButton.addEventListener("click", run);

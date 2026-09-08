@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { TypingAnalysis } from "@type-burst/game-core";
+import type { SurvivalDifficulty, TypingAnalysis } from "@type-burst/game-core";
 import { SoundEngine } from "./audio/SoundEngine";
 import type { GameMode, GameResult } from "./game/GameController";
 import { LandingScreen } from "./screens/LandingScreen";
@@ -26,13 +26,16 @@ import {
 } from "./storage";
 import type { LifetimeProgress } from "@type-burst/progression";
 import {
+  dailyChallengeId,
   isDailyRankedAttempt,
   loadDailyProgress,
   recordDailyResult,
   type DailyProgress,
   type DailyRecordResult,
 } from "./daily";
+import { reserveDailyAttempt } from "./dailyRanking";
 import { queueSnapshotUpload } from "./playerData";
+import { retryPendingRankingSubmissions } from "./rankingOutbox";
 import {
   trackAttributedGameStart,
   trackFunnelEvent,
@@ -74,8 +77,10 @@ type Screen =
       analysis: TypingAnalysis | null;
       recentHistory: StoredResult[];
       back: AnalysisBack;
+      /** ホームの成長記録から開いたときに引き継ぐ比較難易度。 */
+      growthDifficulty?: SurvivalDifficulty;
     }
-  | { name: "ranking" };
+  | { name: "ranking"; difficulty: SurvivalDifficulty };
 
 type GameEntryPoint =
   | "home"
@@ -96,7 +101,9 @@ export function App(): JSX.Element {
   // 変えず、余分な値として保持するため daily/duel/tutorial へ漏れない。
   const [selectedFocusGoal, setSelectedFocusGoal] = useState<FocusGoalId>(DEFAULT_FOCUS_GOAL);
   const [screen, setScreen] = useState<Screen>({ name: "landing" });
+  const [preferredSurvivalDifficulty, setPreferredSurvivalDifficulty] = useState<SurvivalDifficulty>("normal");
   const lastTrackedScreenRef = useRef<Screen | null>(null);
+  const dailyStartInFlightRef = useRef(false);
   // tutorial完了直後に同じGameScreenを再利用しないためのマウント世代。
   const [gameSession, setGameSession] = useState(0);
 
@@ -118,6 +125,25 @@ export function App(): JSX.Element {
     // OS側の prefers-reduced-motion とは独立に、ユーザーが明示的に切れるようにする。
     document.documentElement.classList.toggle("reduced-motion", settings.reducedMotion);
   }, [settings.fontScale, settings.highContrast, settings.reducedMotion]);
+
+  useEffect(() => {
+    // 通信断で結果画面を閉じた場合も、次回のタイトル表示・復帰時に
+    // 保留中の世界ランキングを1件ずつ静かに再送する。結果表示やゲーム開始
+    // を待たせず、失敗はキューに残したまま次の機会へ回す。
+    const retry = (): void => {
+      if (document.visibilityState !== "visible") return;
+      void retryPendingRankingSubmissions();
+    };
+    retry();
+    window.addEventListener("focus", retry);
+    document.addEventListener("visibilitychange", retry);
+    const timer = window.setInterval(retry, 30_000);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", retry);
+      document.removeEventListener("visibilitychange", retry);
+    };
+  }, []);
 
   const updateSettings = (patch: Partial<Settings>): void => {
     // 設定の初期読み込みでは発火させず、画面上の明示的な変更だけを記録する。
@@ -205,21 +231,39 @@ export function App(): JSX.Element {
     }
   }, [screen]);
 
-  const startGame = (
+  const startGame = async (
     mode: GameMode,
     focusGoal?: FocusGoalId,
     entryPoint?: GameEntryPoint,
-  ): void => {
+  ): Promise<void> => {
     sound.unlock();
+    let resolvedMode: GameMode = mode;
+    if (mode.type === "daily") {
+      // カードや結果画面を日付境界をまたいで開いていても、開始時点の
+      // challengeIdで予約する。予約できない場合は静かな練習へ切り替える。
+      const challengeId = dailyChallengeId();
+      const wantsRanked = isDailyRankedAttempt(loadDailyProgress(), challengeId);
+      if (wantsRanked) {
+        if (dailyStartInFlightRef.current) return;
+        dailyStartInFlightRef.current = true;
+        let attemptToken: string | null = null;
+        try {
+          attemptToken = await reserveDailyAttempt(challengeId);
+        } finally {
+          dailyStartInFlightRef.current = false;
+        }
+        resolvedMode = {
+          ...mode,
+          challengeId,
+          ranked: attemptToken !== null,
+          ...(attemptToken ? { attemptToken } : {}),
+        };
+      } else {
+        resolvedMode = { ...mode, challengeId, ranked: false, attemptToken: undefined };
+      }
+    }
     const firstPlay = !hasPlayed;
-    trackAttributedGameStart(mode.type, firstPlay);
-    const resolvedMode =
-      mode.type === "daily"
-        ? {
-            ...mode,
-            ranked: isDailyRankedAttempt(loadDailyProgress(), mode.challengeId),
-          }
-        : mode;
+    trackAttributedGameStart(resolvedMode.type, firstPlay);
     const modeWithFocus =
       resolvedMode.type === "survival"
         ? {
@@ -344,19 +388,25 @@ export function App(): JSX.Element {
           progress={progress}
           dailyProgress={dailyProgress}
           firstRun={firstRun}
+          initialDifficulty={preferredSurvivalDifficulty}
           onUpdateSettings={updateSettings}
-          onStart={(mode) =>
+          onStart={(mode) => {
+            if (mode.type === "survival") setPreferredSurvivalDifficulty(mode.difficulty);
             startGame(
               mode,
               undefined,
               mode.type === "daily" ? "daily" : mode.type === "tutorial" ? "tutorial" : "home",
-            )
-          }
-          onStartWithFocus={(mode, focusGoal) => startGame(mode, focusGoal, "home")}
-          onShowRanking={() => {
-            setScreen({ name: "ranking" });
+            );
           }}
-          onShowGrowth={() =>
+          onStartWithFocus={(mode, focusGoal) => {
+            if (mode.type === "survival") setPreferredSurvivalDifficulty(mode.difficulty);
+            startGame(mode, focusGoal, "home");
+          }}
+          onShowRanking={(difficulty) => {
+            setPreferredSurvivalDifficulty(difficulty);
+            setScreen({ name: "ranking", difficulty });
+          }}
+          onShowGrowth={(difficulty) =>
             setScreen({
               name: "analysis",
               analysis: null,
@@ -366,6 +416,7 @@ export function App(): JSX.Element {
                 (entry) => getStoredResultRuleset(entry) === SURVIVAL_RULESET,
               ),
               back: { name: "landing" },
+              growthDifficulty: difficulty,
             })
           }
         />
@@ -413,17 +464,55 @@ export function App(): JSX.Element {
         />
       );
     }
-    case "analysis":
+    case "analysis": {
+      const restartFromAnalysis = (): void => {
+        const previous = screen.back;
+        if (previous.name !== "result") {
+          startGame(
+            { type: "survival", difficulty: screen.growthDifficulty ?? preferredSurvivalDifficulty },
+            undefined,
+            "analysis",
+          );
+          return;
+        }
+        if (previous.result.mode === "survival") {
+          startGame(
+            { type: "survival", difficulty: previous.result.summary.difficulty },
+            undefined,
+            "analysis",
+          );
+        } else if (previous.result.mode === "daily") {
+          // 日付が変わっていても、分析画面からは開いた時点の今日へ案内する。
+          // startGame側で現在のランキング枠を再判定するため、ここでは仮値を渡す。
+          startGame({ type: "daily", challengeId: dailyChallengeId(), ranked: true }, undefined, "analysis");
+        } else {
+          startGame(
+            { type: "duel", difficulty: previous.result.summary.difficulty },
+            undefined,
+            "analysis",
+          );
+        }
+      };
       return (
         <AnalysisScreen
           analysis={screen.analysis}
           recentHistory={screen.recentHistory}
           progress={progress}
+          initialDifficulty={screen.growthDifficulty}
           onBack={() => setScreen(screen.back)}
-          onStart={() => startGame({ type: "survival", difficulty: "easy" }, undefined, "analysis")}
+          onStart={restartFromAnalysis}
         />
       );
+    }
     case "ranking":
-      return <RankingScreen onBack={() => setScreen({ name: "landing" })} />;
+      return (
+        <RankingScreen
+          initialDifficulty={screen.difficulty}
+          onBack={(difficulty) => {
+            if (difficulty) setPreferredSurvivalDifficulty(difficulty);
+            setScreen({ name: "landing" });
+          }}
+        />
+      );
   }
 }

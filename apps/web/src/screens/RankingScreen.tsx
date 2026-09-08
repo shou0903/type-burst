@@ -22,7 +22,8 @@ const DIFFICULTY_GLYPHS: Record<SurvivalDifficulty, string> = {
 const DIFFICULTY_ORDER: readonly SurvivalDifficulty[] = ["easy", "normal", "hard", "god"];
 
 interface Props {
-  onBack: () => void;
+  onBack: (difficulty?: SurvivalDifficulty) => void;
+  initialDifficulty?: SurvivalDifficulty;
 }
 
 type LoadState =
@@ -42,10 +43,12 @@ function formatTime(ms: number): string {
  * 従来は順位の表を並べるだけだったため、上位3名を表彰台として立体的に見せ、
  * 4位以降は読みやすい行リストに分けた。自分の記録は強調表示する。
  */
-export function RankingScreen({ onBack }: Props): JSX.Element {
+export function RankingScreen({ onBack, initialDifficulty = "normal" }: Props): JSX.Element {
   const { ref, style } = useFitToViewport<HTMLDivElement>();
-  const [difficulty, setDifficulty] = useState<SurvivalDifficulty>("normal");
+  const [difficulty, setDifficulty] = useState<SurvivalDifficulty>(initialDifficulty);
   const [retryNonce, setRetryNonce] = useState(0);
+  const [refreshNonce, setRefreshNonce] = useState(0);
+  const [lastUpdated, setLastUpdated] = useState<number | null>(null);
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const pendingLoadActionRef = useRef<
     "open" | "difficulty_easy" | "difficulty_normal" | "difficulty_hard" | "difficulty_god" | "retry"
@@ -54,10 +57,28 @@ export function RankingScreen({ onBack }: Props): JSX.Element {
   const activeLoadActionRef = useRef<
     "open" | "difficulty_easy" | "difficulty_normal" | "difficulty_hard" | "difficulty_god" | "retry"
   >("open");
+  const lastRequestAtRef = useRef(0);
+
+  useEffect(() => {
+    const refreshIfStale = (): void => {
+      if (document.visibilityState !== "visible") return;
+      if (Date.now() - lastRequestAtRef.current < 15_000) return;
+      pendingLoadActionRef.current = "retry";
+      setRefreshNonce((value) => value + 1);
+    };
+    window.addEventListener("focus", refreshIfStale);
+    document.addEventListener("visibilitychange", refreshIfStale);
+    const timer = window.setInterval(refreshIfStale, 30_000);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refreshIfStale);
+      document.removeEventListener("visibilitychange", refreshIfStale);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
-    const requestKey = `${difficulty}:${retryNonce}`;
+    const requestKey = `${difficulty}:${retryNonce}:${refreshNonce}`;
     const isNewRequest = lastRequestKeyRef.current !== requestKey;
     const action = isNewRequest ? pendingLoadActionRef.current : activeLoadActionRef.current;
     if (isNewRequest) {
@@ -70,12 +91,14 @@ export function RankingScreen({ onBack }: Props): JSX.Element {
       lastRequestKeyRef.current = requestKey;
       activeLoadActionRef.current = action;
       pendingLoadActionRef.current = "open";
+      lastRequestAtRef.current = Date.now();
     }
     setState({ status: "loading" });
     fetchRanking(difficulty, 100)
       .then((response) => {
         if (!cancelled) {
           setState({ status: "loaded", entries: response.entries, viewer: response.viewer });
+          setLastUpdated(Date.now());
           trackBehaviorEvent("ranking_action", {
             surface: "world",
             action,
@@ -98,20 +121,27 @@ export function RankingScreen({ onBack }: Props): JSX.Element {
     return () => {
       cancelled = true;
     };
-  }, [difficulty, retryNonce]);
+  }, [difficulty, refreshNonce, retryNonce]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent): void => {
-      if (e.key === "Escape") onBack();
+      if (e.key === "Escape") onBack(difficulty);
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [onBack]);
+  }, [difficulty, onBack]);
 
-  const entries = state.status === "loaded" ? state.entries : [];
+  const entries =
+    state.status === "loaded"
+      ? state.entries.map((entry, index) => ({ ...entry, rank: entry.rank ?? index + 1 }))
+      : [];
   const viewer = state.status === "loaded" ? state.viewer : null;
-  const podium = entries.slice(0, 3);
-  const rest = entries.slice(3);
+  const podiumByRank = new Map(
+    entries
+      .filter((entry) => (entry.rank ?? 0) <= 3)
+      .map((entry) => [entry.rank, entry] as const),
+  );
+  const rest = entries.filter((entry) => (entry.rank ?? 0) > 3);
 
   return (
     <div ref={ref} style={style} className="screen ranking rk">
@@ -120,7 +150,7 @@ export function RankingScreen({ onBack }: Props): JSX.Element {
           <span className="rk-kicker">WORLD RANKING・全期間</span>
           <h1 className="rk-title">世界ランキング</h1>
         </div>
-        <button className="rk-back" onClick={onBack} autoFocus>
+        <button className="rk-back" onClick={() => onBack(difficulty)} autoFocus>
           タイトルへ <span className="rk-key">Esc</span>
         </button>
       </header>
@@ -172,10 +202,33 @@ export function RankingScreen({ onBack }: Props): JSX.Element {
         <p className="rk-status" role="status">まだ記録がありません。最初のランカーになろう！</p>
       )}
 
+      <div className="rk-toolbar">
+        <button
+          type="button"
+          className="btn-secondary rk-refresh"
+          disabled={state.status === "loading"}
+          onClick={() => {
+            pendingLoadActionRef.current = "retry";
+            setRefreshNonce((value) => value + 1);
+          }}
+        >
+          {state.status === "loading" ? "更新中…" : "最新の順位に更新"}
+        </button>
+        {lastUpdated !== null && (
+          <span className="rk-updated" role="status" aria-live="polite">
+            最終更新 {new Intl.DateTimeFormat("ja-JP", {
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+            }).format(lastUpdated)}
+          </span>
+        )}
+      </div>
+
       {viewer && (
         <p className="rk-mine">
           あなたのベストは <strong>{viewer.rank}位</strong> ／ 全
-          {viewer.total.toLocaleString()}人中
+          {viewer.total.toLocaleString()}件の登録記録中
           <span className="rk-mine-detail">
             上位 {viewer.percentile.toFixed(1)}% ・ {viewer.score.toLocaleString()}点
             {viewer.scoreToNext === null
@@ -185,14 +238,17 @@ export function RankingScreen({ onBack }: Props): JSX.Element {
         </p>
       )}
 
-      {podium.length > 0 && (
+      <p className="rk-scope-note" role="status">
+        上位100件を表示しています。順位は他のプレイヤーの記録更新に合わせて自動更新されます。
+      </p>
+
+      {podiumByRank.size > 0 && (
         <>
           {/* 表彰台: 2位・1位・3位の順に並べ、1位を高くする */}
           <div className="rk-podium">
-            {[1, 0, 2].map((idx) => {
-              const e = podium[idx];
-              if (!e) return <div key={idx} className="rk-plinth rk-plinth-empty" />;
-              const place = idx + 1;
+            {[2, 1, 3].map((place) => {
+              const e = podiumByRank.get(place);
+              if (!e) return <div key={place} className="rk-plinth rk-plinth-empty" />;
               return (
                 <div
                   key={e.id}
@@ -226,7 +282,7 @@ export function RankingScreen({ onBack }: Props): JSX.Element {
                     key={e.id}
                     className="rk-row"
                   >
-                    <span className="rk-rank">{i + 4}</span>
+                    <span className="rk-rank">{e.rank ?? i + 4}</span>
                     <span className="rk-name">{e.nickname}</span>
                     <span className="rk-score">{e.score.toLocaleString()}</span>
                     <span className="rk-chain">{e.maxChain}</span>

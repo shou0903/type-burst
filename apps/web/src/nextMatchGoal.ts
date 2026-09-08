@@ -10,6 +10,9 @@ export type MatchGoalKind = "accuracy" | "chain" | "score";
 
 /** 次の目標を作るのに必要な、サバイバル結果の共通部分。 */
 export type GoalSource = Pick<StoredResult, "score" | "maxChain" | "accuracy" | "difficulty"> & {
+  /** 集計の信頼度を表示文に反映するための任意の今回データ。 */
+  phraseCount?: number;
+  correctKeyCount?: number;
   /** 現在結果は省略時に現行サバイバル(v2)として扱う。 */
   ruleset?: ResultRuleset;
 };
@@ -55,12 +58,16 @@ export function deriveMatchGoal(source: GoalSource): MatchGoal {
   const maxChain = Math.max(0, Math.floor(finiteOrZero(source.maxChain)));
   if (maxChain < 5) {
     const target = maxChain + 1;
+    const enoughAccuracyData =
+      (source.phraseCount ?? 0) >= 3 || (source.correctKeyCount ?? 0) >= 80;
     return {
       kind: "chain",
       target,
       currentValue: maxChain,
       targetText: `最大連鎖 ${target} 以上`,
-      reason: "正確率が安定しているので、次は盤面の消す順番を意識して連鎖を1つ伸ばします。",
+      reason: enoughAccuracyData
+        ? "正確率が安定しているので、次は盤面の消す順番を意識して連鎖を1つ伸ばします。"
+        : "今回はミスが少なかったので、もう少し打鍵を重ねながら盤面の消す順番を意識して連鎖を伸ばします。",
     };
   }
 
@@ -71,7 +78,10 @@ export function deriveMatchGoal(source: GoalSource): MatchGoal {
     target,
     currentValue: score,
     targetText: `スコア ${target.toLocaleString()}点以上`,
-    reason: "正確率と連鎖が安定しているので、次は全体のスコアを少なくとも5%伸ばします。",
+    reason:
+      (source.phraseCount ?? 0) >= 3 || (source.correctKeyCount ?? 0) >= 80
+        ? "正確率と連鎖が安定しているので、次は全体のスコアを少なくとも5%伸ばします。"
+        : "今回は正確に打てたので、まずは打鍵を重ねてから全体のスコアを5%伸ばします。",
   };
 }
 

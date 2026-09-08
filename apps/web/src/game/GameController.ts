@@ -23,13 +23,21 @@ import {
 
 export type GameMode =
   | { type: "survival"; difficulty: SurvivalDifficulty; focusGoal?: FocusGoalId }
-  | { type: "daily"; challengeId: string; ranked: boolean }
+  | { type: "daily"; challengeId: string; ranked: boolean; attemptToken?: string }
   | { type: "duel"; difficulty: CpuDifficulty }
   | { type: "tutorial" };
 
 export type GameResult =
   | { mode: "survival"; summary: SurvivalSummary; focus?: FocusProgress }
-  | { mode: "daily"; summary: SurvivalSummary; challengeId: string; ranked: boolean }
+  | {
+      mode: "daily";
+      summary: SurvivalSummary;
+      challengeId: string;
+      ranked: boolean;
+      submissionId?: string;
+      startedAt?: number;
+      attemptToken?: string;
+    }
   | { mode: "duel"; summary: DuelSummary };
 
 export type AnySnapshot = SurvivalSnapshot | DuelSnapshot | TutorialSnapshot;
@@ -56,6 +64,16 @@ export interface GameControllerOptions {
   onImeDetected: () => void;
 }
 
+function createRunId(): string {
+  try {
+    const randomUUID = globalThis.crypto?.randomUUID;
+    if (randomUUID) return randomUUID.call(globalThis.crypto);
+  } catch {
+    // cryptoが利用できない環境でもゲームは継続する。
+  }
+  return `run-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 14)}`;
+}
+
 /**
  * ゲームロジックと描画・音・キーボードをつなぐ。ゲームルールはここに書かない。
  */
@@ -72,9 +90,15 @@ export class GameController {
   private paused = false;
   private finishTimeoutId: number | null = null;
   private focusProgress: FocusProgress | null = null;
+  /** デイリー結果の同一プレイ再送をサーバで冪等化するための一時ID。分析には送らない。 */
+  private readonly dailySubmissionId: string | null;
+  /** 旧クライアント互換の表示用値。ランキング受理時刻はサーバーチケットを正とする。 */
+  private readonly dailyStartedAt: number | null;
 
   constructor(options: GameControllerOptions) {
     this.options = options;
+    this.dailySubmissionId = options.mode.type === "daily" ? createRunId() : null;
+    this.dailyStartedAt = options.mode.type === "daily" ? Date.now() : null;
     this.sound = options.sound;
     if (options.mode.type === "survival") {
       this.focusProgress = createFocusProgress(options.mode.focusGoal ?? "perfect-streak");
@@ -400,6 +424,11 @@ export class GameController {
             summary: event.summary,
             challengeId: this.options.mode.challengeId,
             ranked: this.options.mode.ranked,
+            ...(this.dailySubmissionId ? { submissionId: this.dailySubmissionId } : {}),
+            ...(this.dailyStartedAt ? { startedAt: this.dailyStartedAt } : {}),
+            ...(this.options.mode.attemptToken
+              ? { attemptToken: this.options.mode.attemptToken }
+              : {}),
           });
         } else {
           this.finish({

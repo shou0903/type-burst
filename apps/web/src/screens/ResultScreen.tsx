@@ -13,9 +13,14 @@ import {
 } from "../storage";
 import { submitScore } from "../ranking";
 import {
+  enqueueRankingSubmission,
+  removePendingRankingSubmission,
+} from "../rankingOutbox";
+import {
   DAILY_RANKED_ATTEMPTS,
   dailyAttempts,
   dailyBestScore,
+  dailyChallengeId,
   type DailyProgress,
   type DailyRecordResult,
 } from "../daily";
@@ -90,7 +95,14 @@ export function ResultScreen({
     result.mode === "survival"
       ? { type: "survival", difficulty: result.summary.difficulty }
       : result.mode === "daily"
-        ? { type: "daily", challengeId: result.challengeId, ranked: result.ranked }
+        ? {
+            type: "daily",
+            // 結果画面を日付境界をまたいで開いたままでも、再戦は常に
+            // 開始時点の今日のチャレンジへ進める。古いchallengeIdを
+            // 引き継ぐと、開始時刻と日付が一致せず送信時に拒否される。
+            challengeId: dailyChallengeId(),
+            ranked: result.ranked,
+          }
         : { type: "duel", difficulty: result.summary.difficulty };
   const motionReduced =
     reducedMotion ||
@@ -380,6 +392,12 @@ function DailyResultScreen({
   const summary = result.summary;
   const attempts = dailyAttempts(progress, result.challengeId);
   const remaining = Math.max(0, DAILY_RANKED_ATTEMPTS - attempts);
+  const currentChallengeId = dailyChallengeId();
+  const challengeRolledOver = currentChallengeId !== result.challengeId;
+  const retryAttempts = challengeRolledOver
+    ? dailyAttempts(progress, currentChallengeId)
+    : attempts;
+  const retryRemaining = Math.max(0, DAILY_RANKED_ATTEMPTS - retryAttempts);
   const best = dailyBestScore(progress, result.challengeId);
   const sameDifficultyHistory = history.filter(
     (item) => item.mode === "daily" && (item.difficulty ?? "normal") === summary.difficulty,
@@ -426,16 +444,21 @@ function DailyResultScreen({
         challengeId={result.challengeId}
         summary={summary}
         ranked={result.ranked}
+        submissionId={result.submissionId}
+        startedAt={result.startedAt}
+        attemptToken={result.attemptToken}
         onViewer={setViewer}
       />
 
       <p className="daily-attempt-note">
-        {remaining > 0
+        {challengeRolledOver
+          ? `日付が変わりました。${currentChallengeId}のチャレンジとして再挑戦できます（残り${retryRemaining}回）`
+          : remaining > 0
           ? `今日の記録挑戦は残り${remaining}回です`
           : "今日の記録挑戦3回は終了。以降はランキング対象外の練習です"}
       </p>
       <button className="btn-daily" onClick={() => onRetry(retryMode)} autoFocus>
-        {remaining > 0 ? "今日のベストを更新する" : "同じステージを練習する"}
+        {challengeRolledOver || retryRemaining > 0 ? "今日のチャレンジに挑戦する" : "同じステージを練習する"}
       </button>
       <ShareAction
         score={summary.score}
@@ -465,16 +488,23 @@ function DailyRankingBox({
   challengeId,
   summary,
   ranked,
+  submissionId,
+  startedAt,
+  attemptToken,
   onViewer,
 }: {
   challengeId: string;
   summary: SurvivalSummary;
   ranked: boolean;
+  submissionId?: string;
+  startedAt?: number;
+  attemptToken?: string;
   onViewer: (viewer: DailyLeaderboardResponse["viewer"]) => void;
 }): JSX.Element {
   const [savedNickname, setSavedNickname] = useState(loadNickname());
   const [nickname, setNickname] = useState(savedNickname ?? "");
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [ranking, setRanking] = useState<DailyLeaderboardResponse | null>(null);
   const [retryNonce, setRetryNonce] = useState(0);
   const pendingRankingActionRef = useRef<"open" | "retry" | "submit">("open");
@@ -506,7 +536,13 @@ function DailyRankingBox({
     }
     if (shouldSubmit && savedNickname) {
       setStatus("loading");
-      submitDailyScore(savedNickname, challengeId, summary)
+      setErrorMessage(null);
+      submitDailyScore(savedNickname, challengeId, summary, {
+        ranked,
+        submissionId: resultSubmissionId(challengeId, summary, submissionId),
+        startedAt,
+        attemptToken,
+      })
         .then((response) => {
           if (!active) return;
           setRanking(response);
@@ -519,9 +555,14 @@ function DailyRankingBox({
             status: "success",
           });
         })
-        .catch(() => {
+        .catch((error: unknown) => {
           if (!active) return;
           setStatus("error");
+          setErrorMessage(
+            error instanceof Error && error.message.includes("429")
+              ? "本日のランキング挑戦枠（3回）を使い切っています。練習は続けられます。"
+              : "ランキングを取得できませんでした。記録は端末に保存されています。",
+          );
           trackBehaviorEvent("ranking_action", {
             surface: "daily",
             action: shouldSubmit ? "submit_error" : action === "submit" ? "open" : action,
@@ -547,6 +588,7 @@ function DailyRankingBox({
         .catch(() => {
           if (!active) return;
           setStatus("error");
+          setErrorMessage("ランキングを取得できませんでした。記録は端末に保存されています。");
           trackBehaviorEvent("ranking_action", {
             surface: "daily",
             action: fetchAction,
@@ -558,7 +600,7 @@ function DailyRankingBox({
     return () => {
       active = false;
     };
-  }, [challengeId, ranked, retryNonce, savedNickname, summary, onViewer]);
+  }, [challengeId, ranked, retryNonce, savedNickname, summary, submissionId, startedAt, attemptToken, onViewer]);
 
   const submit = (): void => {
     const trimmed = nickname.trim();
@@ -595,12 +637,13 @@ function DailyRankingBox({
       {status === "loading" && <p className="ranking-status">ランキングへ反映中…</p>}
       {status === "error" && (
         <div className="ranking-status ranking-error" role="alert">
-          <p>ランキングを取得できませんでした。記録は端末に保存されています。</p>
+          <p>{errorMessage ?? "ランキングを取得できませんでした。記録は端末に保存されています。"}</p>
           <button
             type="button"
             className="btn-ranking-submit"
             onClick={() => {
               setStatus("loading");
+              setErrorMessage(null);
               pendingRankingActionRef.current = "retry";
               setRetryNonce((value) => value + 1);
             }}
@@ -613,7 +656,7 @@ function DailyRankingBox({
         <div className="daily-viewer-rank">
           <strong>{ranking.viewer.rank}位</strong>
           <span>
-            ／{ranking.viewer.total.toLocaleString()}人・上位{ranking.viewer.percentile.toFixed(1)}%
+            ／{ranking.viewer.total.toLocaleString()}件の登録記録・上位{ranking.viewer.percentile.toFixed(1)}%
           </span>
           {ranking.viewer.scoreToNext !== null && (
             <small>ひとつ上まであと{ranking.viewer.scoreToNext.toLocaleString()}点</small>
@@ -633,6 +676,30 @@ function DailyRankingBox({
       {!ranked && <p className="ranking-status">今回の練習スコアはランキング対象外です。</p>}
     </section>
   );
+}
+
+/**
+ * GameControllerが発行したrun IDを優先する。古い/テスト用結果にはIDがないため、
+ * その場合も同じ結果画面を再表示したときに同じIDになる短期フォールバックを使う。
+ */
+function resultSubmissionId(
+  challengeId: string,
+  summary: SurvivalSummary,
+  runId?: string,
+): string {
+  if (runId) return runId;
+  const key = `typeblast.daily-submission.v1:${challengeId}:${summary.seed}`;
+  try {
+    const existing = sessionStorage.getItem(key);
+    if (existing) return existing;
+    const value = typeof globalThis.crypto?.randomUUID === "function"
+      ? globalThis.crypto.randomUUID()
+      : `run-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 14)}`;
+    sessionStorage.setItem(key, value);
+    return value;
+  } catch {
+    return `run-${challengeId}-${summary.seed}`.replace(/[^A-Za-z0-9-]/g, "").slice(0, 80);
+  }
 }
 
 type SubmitStatus = "idle" | "submitting" | "done" | "error";
@@ -677,7 +744,10 @@ function RankingSubmitBox({ summary }: { summary: SurvivalSummary }): JSX.Elemen
       .then((result) => {
         if (result.ok) {
           markRankingSubmitted(summary);
+          removePendingRankingSubmission(summary.seed);
           setRankingUpdated(result.updated);
+        } else {
+          enqueueRankingSubmission(summary.seed, name, summary);
         }
         setStatus(result.ok ? "done" : "error");
         trackBehaviorEvent("ranking_action", {
@@ -688,6 +758,7 @@ function RankingSubmitBox({ summary }: { summary: SurvivalSummary }): JSX.Elemen
         });
       })
       .catch(() => {
+        enqueueRankingSubmission(summary.seed, name, summary);
         setStatus("error");
         trackBehaviorEvent("ranking_action", {
           surface: "world",
@@ -806,7 +877,10 @@ function RankingSubmitBox({ summary }: { summary: SurvivalSummary }): JSX.Elemen
       .then((result) => {
         if (result.ok) {
           markRankingSubmitted(summary);
+          removePendingRankingSubmission(summary.seed);
           setRankingUpdated(result.updated);
+        } else {
+          enqueueRankingSubmission(summary.seed, trimmed, summary);
         }
         setStatus(result.ok ? "done" : "error");
         trackBehaviorEvent("ranking_action", {
@@ -817,6 +891,7 @@ function RankingSubmitBox({ summary }: { summary: SurvivalSummary }): JSX.Elemen
         });
       })
       .catch(() => {
+        enqueueRankingSubmission(summary.seed, trimmed, summary);
         setStatus("error");
         trackBehaviorEvent("ranking_action", {
           surface: "world",

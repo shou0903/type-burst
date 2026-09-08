@@ -89,10 +89,14 @@ export function DataTransferSection(): JSX.Element {
       const first = focusable[0]!;
       const last = focusable[focusable.length - 1]!;
       const active = document.activeElement;
-      if (event.shiftKey && (active === first || !modal.contains(active))) {
+      // 開く直後は見出し(tabIndex=-1)にフォーカスしている。そこから
+      // Shift+Tabを押しても背面へ抜けないよう「操作可能要素でない」状態も
+      // ループ対象として扱う。
+      const activeIsFocusable = active instanceof HTMLElement && focusable.includes(active);
+      if (event.shiftKey && (!activeIsFocusable || active === first)) {
         event.preventDefault();
         last.focus();
-      } else if (!event.shiftKey && (active === last || !modal.contains(active))) {
+      } else if (!event.shiftKey && (!activeIsFocusable || active === last)) {
         event.preventDefault();
         first.focus();
       }

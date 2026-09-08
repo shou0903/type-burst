@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { SurvivalDifficulty } from "@type-burst/game-core";
 import type { LifetimeProgress } from "@type-burst/progression";
 import { fetchTopScores, type RankingEntry } from "../ranking";
@@ -31,13 +31,19 @@ export function RankingDeck({
     { s: "loading" } | { s: "error" } | { s: "ok"; entries: RankingEntry[] }
   >({ s: "loading" });
   const [retryNonce, setRetryNonce] = useState(0);
+  const [lastUpdated, setLastUpdated] = useState<number | null>(null);
+  const lastRequestAtRef = useRef(0);
 
   useEffect(() => {
     let cancelled = false;
+    lastRequestAtRef.current = Date.now();
     setState({ s: "loading" });
     fetchTopScores(difficulty, 3)
       .then((entries) => {
-        if (!cancelled) setState({ s: "ok", entries });
+        if (!cancelled) {
+          setState({ s: "ok", entries });
+          setLastUpdated(Date.now());
+        }
       })
       .catch(() => {
         if (!cancelled) setState({ s: "error" });
@@ -47,10 +53,27 @@ export function RankingDeck({
     };
   }, [difficulty, retryNonce]);
 
+  useEffect(() => {
+    const refreshIfStale = (): void => {
+      if (document.visibilityState !== "visible") return;
+      if (Date.now() - lastRequestAtRef.current < 15_000) return;
+      setRetryNonce((value) => value + 1);
+    };
+    window.addEventListener("focus", refreshIfStale);
+    document.addEventListener("visibilitychange", refreshIfStale);
+    const timer = window.setInterval(refreshIfStale, 30_000);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refreshIfStale);
+      document.removeEventListener("visibilitychange", refreshIfStale);
+    };
+  }, []);
+
   return (
     <button
       className="lp-deck lp-deck-rich"
       type="button"
+      disabled={state.s === "loading"}
       aria-label={state.s === "error" ? "世界ランキングの取得を再試行" : "世界ランキングを開く"}
       onClick={() => {
         if (state.s === "error") {
@@ -94,7 +117,13 @@ export function RankingDeck({
         </span>
       )}
 
-      <span className="lp-deck-foot">{state.s === "error" ? "クリックして再試行 →" : "全順位を見る →"}</span>
+      <span className="lp-deck-foot">
+        {state.s === "error"
+          ? "クリックして再試行 →"
+          : lastUpdated === null
+            ? "上位100件を見る →"
+            : `上位100件を見る → ・${new Intl.DateTimeFormat("ja-JP", { hour: "2-digit", minute: "2-digit" }).format(lastUpdated)}`}
+      </span>
     </button>
   );
 }
@@ -103,18 +132,28 @@ export function RankingDeck({
 export function GrowthDeck({
   progress,
   results,
+  difficulty,
   onOpen,
 }: {
   progress: LifetimeProgress;
   results: StoredResult[];
+  difficulty: SurvivalDifficulty;
   onOpen: () => void;
 }): JSX.Element {
+  // 同じ難易度だけを比較する。初級と神級を一本の線に混ぜると、
+  // 難易度差を「上達・停滞」と誤認させてしまう。
+  const comparableResults = results.filter(
+    (entry) => (entry.difficulty ?? "normal") === difficulty,
+  );
   // 直近12件を古い→新しい順に。1件しかない場合は線を描かない
-  const points = results
+  const points = comparableResults
     .slice(0, 12)
     .map((r) => r.score)
     .reverse();
-  const hasPlayed = progress.totalGames > 0;
+  const comparableGames = comparableResults.length;
+  // グラフは2点以上で初めて「推移」として読める。1戦だけの線を成長と
+  // 誤解させず、必要な追加プレイ数も実際の残数に合わせて案内する。
+  const hasComparableHistory = comparableGames >= 2;
 
   return (
     <button className="lp-deck lp-deck-rich" onClick={onOpen}>
@@ -123,10 +162,11 @@ export function GrowthDeck({
           ◆
         </span>
         <span className="lp-deck-title">成長記録</span>
-        {hasPlayed && <span className="lp-deck-tag">{progress.totalGames}戦</span>}
+        <span className="lp-deck-tag">{DIFFICULTY_LABELS[difficulty]}</span>
+        {progress.totalGames > 0 && <span className="lp-deck-tag">累計{progress.totalGames}戦</span>}
       </span>
 
-      {hasPlayed ? (
+      {hasComparableHistory ? (
         <>
           <span className="lp-spark-wrap">
             <Sparkline values={points} />
@@ -144,7 +184,9 @@ export function GrowthDeck({
         </>
       ) : (
         <span className="lp-deck-empty">
-          プレイすると、KPM・正確率の伸びがここに記録されます
+          {progress.totalGames > 0
+            ? `${DIFFICULTY_LABELS[difficulty]}の比較記録は${comparableGames}件。あと${Math.max(1, 2 - comparableGames)}回で推移が表示されます`
+            : "プレイすると、KPM・正確率の伸びがここに記録されます"}
         </span>
       )}
 

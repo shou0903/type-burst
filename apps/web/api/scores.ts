@@ -83,6 +83,7 @@ export function entryKeyForMember(
 
 interface ScoreEntry {
   id: string;
+  rank?: number;
   nickname: string;
   score: number;
   difficulty: SurvivalDifficulty;
@@ -90,6 +91,19 @@ interface ScoreEntry {
   survivedMs: number;
   level: number;
   submittedAt: string;
+}
+
+interface RankingViewer {
+  rank: number;
+  total: number;
+  score: number;
+  scoreToNext: number | null;
+  percentile: number;
+}
+
+interface RankingSnapshot {
+  entries: ScoreEntry[];
+  viewer: RankingViewer | null;
 }
 
 function isSurvivalDifficulty(value: unknown): value is SurvivalDifficulty {
@@ -153,67 +167,124 @@ async function handleGet(req: VercelRequest, res: VercelResponse): Promise<void>
   const viewerId = sanitizePlayerId(req.query.playerId);
 
   const key = leaderboardKey(ruleset, difficulty);
-  const ids = await redis.zrevrange(key, 0, limit - 1);
-
-  const pipeline = redis.pipeline();
-  for (const member of ids) pipeline.hgetall(entryKeyForMember(ruleset, difficulty, member));
-  const results = await pipeline.exec();
-
-  const entries: ScoreEntry[] = [];
-  if (results) {
-    for (const [err, raw] of results) {
-      if (err || !raw || Object.keys(raw).length === 0) continue;
-      const h = raw as Record<string, string>;
-      entries.push({
-        id: h.id ?? "",
-        nickname: h.nickname ?? "",
-        score: Number(h.score) || 0,
-        difficulty: isSurvivalDifficulty(h.difficulty) ? h.difficulty : "normal",
-        maxChain: Number(h.maxChain) || 0,
-        survivedMs: Number(h.survivedMs) || 0,
-        level: Number(h.level) || 1,
-        submittedAt: h.submittedAt ?? "",
-      });
-    }
-  }
-
-  let viewer: {
-    rank: number;
-    total: number;
-    score: number;
-    scoreToNext: number | null;
-    percentile: number;
-  } | null = null;
-  if (viewerId) {
-    const [rankIndex, rawScore, total] = await Promise.all([
-      redis.zrevrank(key, playerMember(viewerId)),
-      redis.zscore(key, playerMember(viewerId)),
-      redis.zcard(key),
-    ]);
-    const score = Number(rawScore) || 0;
-    if (rankIndex !== null && score > 0) {
-      const next =
-        rankIndex > 0
-          ? await redis.zrevrange(key, rankIndex - 1, rankIndex - 1, "WITHSCORES")
-          : [];
-      const nextScore = next.length >= 2 ? Number(next[1]) : null;
-      viewer = {
-        rank: rankIndex + 1,
-        total,
-        score,
-        scoreToNext: nextScore === null ? null : Math.max(1, nextScore - score + 1),
-        percentile: total > 0 ? Math.max(0.1, Math.round(((rankIndex + 1) / total) * 1000) / 10) : 100,
-      };
-    }
-  }
+  // 順位・スコア・本人情報を同じRedis実行で読む。個別コマンドを順番に
+  // 発行すると、読取中の投稿で「順位とスコアが逆転した表」が返り得る。
+  const { entries, viewer } = await readRankingSnapshot(
+    redis,
+    key,
+    ruleset,
+    difficulty,
+    limit,
+    viewerId,
+  );
 
   res.setHeader(
     "Cache-Control",
-    viewerId ? "private, no-store" : "s-maxage=30, stale-while-revalidate=60",
+    // 公開ランキングは投稿直後の全員表示を優先する。画面側もno-storeで取得し、
+    // CDNの古い上位表が残らないようにする。
+    viewerId ? "private, no-store" : "public, no-store, must-revalidate",
   );
   // クライアントはこの印を確認してからv2スコアを送る。旧APIへロールバックした
   // 直後にキャッシュ済みの新クライアントが残っても、v2記録をv1へ誤送信しない。
   res.status(200).json({ entries, viewer, ruleset });
+}
+
+/** sorted setと詳細ハッシュを1回のLua実行でスナップショット化する。 */
+async function readRankingSnapshot(
+  redis: Redis,
+  key: string,
+  ruleset: SurvivalRuleset,
+  difficulty: SurvivalDifficulty,
+  limit: number,
+  viewerId: string | null,
+): Promise<RankingSnapshot> {
+  const raw = await redis.eval(
+    `
+      local function detail_key(member)
+        if string.sub(member, 1, 7) == "player:" then
+          local player_id = string.sub(member, 8)
+          if ARGV[2] == "survival-v1" then
+            return "score:survival:" .. ARGV[3] .. ":player:" .. player_id
+          end
+          return "score:survival:" .. ARGV[2] .. ":" .. ARGV[3] .. ":player:" .. player_id
+        end
+        if ARGV[2] == "survival-v1" then
+          return "score:" .. member
+        end
+        return "score:survival:" .. ARGV[2] .. ":" .. member
+      end
+
+      local function hash_object(key_name)
+        local values = redis.call("HGETALL", key_name)
+        local object = {}
+        for i = 1, #values, 2 do
+          object[values[i]] = values[i + 1]
+        end
+        return object
+      end
+
+      local ids = redis.call("ZREVRANGE", KEYS[1], 0, tonumber(ARGV[1]) - 1)
+      local entries = {}
+      for index, member in ipairs(ids) do
+        local h = hash_object(detail_key(member))
+        if next(h) ~= nil then
+          local entry_difficulty = h["difficulty"]
+          if entry_difficulty ~= "easy" and entry_difficulty ~= "normal" and entry_difficulty ~= "hard" and entry_difficulty ~= "god" then
+            entry_difficulty = "normal"
+          end
+          entries[#entries + 1] = {
+            id = h["id"] or "",
+            rank = index,
+            nickname = h["nickname"] or "",
+            score = tonumber(h["score"]) or 0,
+            difficulty = entry_difficulty,
+            maxChain = tonumber(h["maxChain"]) or 0,
+            survivedMs = tonumber(h["survivedMs"]) or 0,
+            level = tonumber(h["level"]) or 1,
+            submittedAt = h["submittedAt"] or ""
+          }
+        end
+      end
+
+      local total = redis.call("ZCARD", KEYS[1])
+      local viewer = cjson.null
+      if ARGV[4] ~= "" then
+        local viewer_member = "player:" .. ARGV[4]
+        local rank_index = redis.call("ZREVRANK", KEYS[1], viewer_member)
+        local raw_score = redis.call("ZSCORE", KEYS[1], viewer_member)
+        local score = tonumber(raw_score) or 0
+        if rank_index and score > 0 then
+          local next_score = nil
+          if rank_index > 0 then
+            local next_row = redis.call("ZREVRANGE", KEYS[1], rank_index - 1, rank_index - 1, "WITHSCORES")
+            if #next_row >= 2 then next_score = tonumber(next_row[2]) end
+          end
+          local percentile = 100
+          if total > 0 then
+            percentile = math.max(0.1, math.floor(((rank_index + 1) / total) * 1000 + 0.5) / 10)
+          end
+          local gap = cjson.null
+          if next_score then gap = math.max(1, next_score - score + 1) end
+          viewer = {
+            rank = rank_index + 1,
+            total = total,
+            score = score,
+            scoreToNext = gap,
+            percentile = percentile
+          }
+        end
+      end
+      return cjson.encode({ entries = entries, viewer = viewer })
+    `,
+    1,
+    key,
+    String(limit),
+    ruleset,
+    difficulty,
+    viewerId ?? "",
+  );
+  if (typeof raw !== "string") throw new Error("Invalid ranking snapshot");
+  return JSON.parse(raw) as RankingSnapshot;
 }
 
 async function handlePost(req: VercelRequest, res: VercelResponse): Promise<void> {
@@ -226,12 +297,12 @@ async function handlePost(req: VercelRequest, res: VercelResponse): Promise<void
   const redis = getRedis();
   const ip = getClientIp(req);
   const rateLimitKey = `ratelimit:scores:${ip}`;
-  const recent = await redis.get(rateLimitKey);
-  if (recent) {
+  // GET→SETでは同時送信がすり抜けるため、RedisのNXを使って原子的に予約する。
+  const accepted = await redis.set(rateLimitKey, "1", "EX", RATE_LIMIT_WINDOW_SEC, "NX");
+  if (accepted !== "OK") {
     res.status(429).json({ error: "Too many requests" });
     return;
   }
-  await redis.set(rateLimitKey, "1", "EX", RATE_LIMIT_WINDOW_SEC);
 
   const playerId = sanitizePlayerId(body.playerId);
   const nickname = sanitizeNickname(body.nickname);
@@ -340,15 +411,45 @@ async function pruneOldEntries(
   ruleset: SurvivalRuleset,
   difficulty: SurvivalDifficulty,
 ): Promise<void> {
-  const total = await redis.zcard(key);
-  if (total <= MAX_RETAINED_ENTRIES) return;
-  const excess = total - MAX_RETAINED_ENTRIES;
-  const toRemove = await redis.zrange(key, 0, excess - 1);
-  if (toRemove.length === 0) return;
-  const pipeline = redis.pipeline();
-  pipeline.zrem(key, ...toRemove);
-  for (const member of toRemove) pipeline.del(entryKeyForMember(ruleset, difficulty, member));
-  await pipeline.exec();
+  // 候補の取得と削除を分けると、候補取得後に高得点へ更新されたプレイヤーを
+  // 消してしまう競合が起きる。順位を再確認しながら同一Lua実行で整理する。
+  await redis.eval(
+    `
+      local total = redis.call("ZCARD", KEYS[1])
+      local maxEntries = tonumber(ARGV[1])
+      if total <= maxEntries then return 0 end
+      local excess = total - maxEntries
+      local members = redis.call("ZRANGE", KEYS[1], 0, excess - 1)
+      local removed = 0
+      for _, member in ipairs(members) do
+        local rank = redis.call("ZRANK", KEYS[1], member)
+        if rank and rank < excess then
+          redis.call("ZREM", KEYS[1], member)
+          local detail
+          if string.sub(member, 1, 7) == "player:" then
+            local playerId = string.sub(member, 8)
+            if ARGV[2] == "survival-v1" then
+              detail = "score:survival:" .. ARGV[3] .. ":player:" .. playerId
+            else
+              detail = "score:survival:" .. ARGV[2] .. ":" .. ARGV[3] .. ":player:" .. playerId
+            end
+          elseif ARGV[2] == "survival-v1" then
+            detail = "score:" .. member
+          else
+            detail = "score:survival:" .. ARGV[2] .. ":" .. member
+          end
+          redis.call("DEL", detail)
+          removed = removed + 1
+        end
+      end
+      return removed
+    `,
+    1,
+    key,
+    String(MAX_RETAINED_ENTRIES),
+    ruleset,
+    difficulty,
+  );
 }
 
 function sanitizeNickname(input: unknown): string | null {

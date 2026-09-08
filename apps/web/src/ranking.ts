@@ -6,9 +6,12 @@ import { loadPlayerId } from "./playerId";
  * 比較を分けるが、公開ランキングまで空の別世代へ切り替えない。
  */
 const RANKING_RULESET = "survival-v1" as const;
+const REQUEST_TIMEOUT_MS = 8_000;
 
 export interface RankingEntry {
   id: string;
+  /** Redis sorted set上の順位。詳細ハッシュ欠落時も順位を詰めない。 */
+  rank?: number;
   nickname: string;
   score: number;
   difficulty: SurvivalDifficulty;
@@ -31,6 +34,12 @@ export interface RankingResponse {
   viewer: RankingViewer | null;
 }
 
+/** ランキング送信に必要な結果だけを表す型。分析データ全体は保持・再送しない。 */
+export type RankingSummary = Pick<
+  SurvivalSummary,
+  "score" | "difficulty" | "maxChain" | "survivedMs" | "level"
+>;
+
 export type SubmitScoreResult =
   | { ok: true; updated: boolean }
   | { ok: false; reason: string };
@@ -45,7 +54,7 @@ function isCompatibleRankingRuleset(value: unknown): boolean {
 }
 
 async function supportsCurrentRuleset(difficulty: SurvivalDifficulty): Promise<boolean> {
-  const res = await fetch(
+  const res = await fetchWithTimeout(
     `/api/scores?difficulty=${encodeURIComponent(difficulty)}&limit=1&ruleset=${encodeURIComponent(RANKING_RULESET)}`,
     { cache: "no-store" },
   );
@@ -57,13 +66,13 @@ async function supportsCurrentRuleset(difficulty: SurvivalDifficulty): Promise<b
 /** サバイバル結果をランキングへ送信する。失敗してもゲーム進行には影響させない */
 export async function submitScore(
   nickname: string,
-  summary: SurvivalSummary,
+  summary: RankingSummary,
 ): Promise<SubmitScoreResult> {
   try {
     if (!(await supportsCurrentRuleset(summary.difficulty))) {
       return { ok: false, reason: "ruleset_unsupported" };
     }
-    const res = await fetch("/api/scores", {
+    const res = await fetchWithTimeout("/api/scores", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -94,8 +103,9 @@ export async function fetchTopScores(
   difficulty: SurvivalDifficulty,
   limit = 100,
 ): Promise<RankingEntry[]> {
-  const res = await fetch(
+  const res = await fetchWithTimeout(
     `/api/scores?difficulty=${encodeURIComponent(difficulty)}&limit=${limit}&ruleset=${encodeURIComponent(RANKING_RULESET)}`,
+    { cache: "no-store" },
   );
   if (!res.ok) throw new Error(`ランキング取得に失敗しました(${res.status})`);
   const data = (await res.json()) as { entries: RankingEntry[]; ruleset?: unknown };
@@ -109,8 +119,9 @@ export async function fetchRanking(
   limit = 100,
 ): Promise<RankingResponse> {
   const playerId = loadPlayerId();
-  const res = await fetch(
+  const res = await fetchWithTimeout(
     `/api/scores?difficulty=${encodeURIComponent(difficulty)}&limit=${limit}&ruleset=${encodeURIComponent(RANKING_RULESET)}&playerId=${encodeURIComponent(playerId)}`,
+    { cache: "no-store" },
   );
   if (!res.ok) throw new Error(`ランキング取得に失敗しました(${res.status})`);
   const data = (await res.json()) as {
@@ -120,4 +131,15 @@ export async function fetchRanking(
   };
   if (!isCompatibleRankingRuleset(data.ruleset)) throw new Error("ランキングのルール世代が一致しません");
   return { entries: data.entries ?? [], viewer: data.viewer ?? null };
+}
+
+/** ランキング表示が通信待ちのまま固定されないよう、UI向け取得に上限を設ける。 */
+async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+  const controller = new AbortController();
+  const timer = globalThis.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } finally {
+    globalThis.clearTimeout(timer);
+  }
 }

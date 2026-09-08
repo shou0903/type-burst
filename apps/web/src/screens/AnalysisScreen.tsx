@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
-import type { FingerStat, KeyStat, TypingAnalysis } from "@type-burst/game-core";
+import { useEffect, useRef, useState } from "react";
+import type { FingerStat, KeyStat, SurvivalDifficulty, TypingAnalysis } from "@type-burst/game-core";
 import { titleProgressForScore, type LifetimeProgress } from "@type-burst/progression";
 import type { StoredResult } from "../storage";
 import {
@@ -20,8 +20,10 @@ interface Props {
   recentHistory: StoredResult[];
   progress: LifetimeProgress;
   onBack: () => void;
-  /** 未プレイの成長記録から、そのまま初級を始めるための導線(任意)。 */
+  /** 空の成長記録から、選択中の難易度でそのまま始めるための導線(任意)。 */
   onStart?: () => void;
+  /** ホームの成長記録から開いた場合に、選択中の難易度を維持する。 */
+  initialDifficulty?: SurvivalDifficulty;
 }
 
 /** 成長グラフに表示する最大プレイ数(古すぎる記録まで詰め込むと見づらいため) */
@@ -67,6 +69,12 @@ const FINGER_LABEL_OF_KEY: Record<string, string> = {
 
 const MIN_FINGER_ATTEMPTS = 3;
 const MIN_SEGMENT_KEYSTROKES = 10;
+const SURVIVAL_DIFFICULTY_LABELS: Record<SurvivalDifficulty, string> = {
+  easy: "初級",
+  normal: "中級",
+  hard: "上級",
+  god: "神級",
+};
 
 /**
  * 成長記録・タイピング分析画面(D-090で全面改修)。
@@ -79,13 +87,30 @@ const MIN_SEGMENT_KEYSTROKES = 10;
  * という順で組み直した。プレイ単位の詳細分析はその下に置く。
  * 集計ロジック・文言生成は一切変更していない(見せ方だけの変更)。
  */
-export function AnalysisScreen({ analysis, recentHistory, progress, onBack, onStart }: Props): JSX.Element {
+export function AnalysisScreen({
+  analysis,
+  recentHistory,
+  progress,
+  onBack,
+  onStart,
+  initialDifficulty,
+}: Props): JSX.Element {
   const showingDailyHistory = recentHistory.some(
     (entry) => entry.mode === "daily" || entry.ruleset === "daily-v2",
   );
   const analysisScope =
     analysis === null ? "growth" : showingDailyHistory ? "daily" : recentHistory.length === 0 ? "duel" : "result";
   const analysisOpenTrackedRef = useRef(false);
+  const availableDifficulties = Array.from(
+    new Set(recentHistory.map((entry) => normalizeDifficulty(entry.difficulty))),
+  );
+  const [growthDifficulty, setGrowthDifficulty] = useState<SurvivalDifficulty>(
+    () => initialDifficulty ?? availableDifficulties[0] ?? "normal",
+  );
+  const scopedHistory =
+    analysis === null
+      ? recentHistory.filter((entry) => normalizeDifficulty(entry.difficulty) === growthDifficulty)
+      : recentHistory;
 
   useEffect(() => {
     if (!analysisOpenTrackedRef.current) {
@@ -115,11 +140,11 @@ export function AnalysisScreen({ analysis, recentHistory, progress, onBack, onSt
 
   const focus = analysis ? buildNextFocus(analysis, weakestFinger) : null;
   const paceInsight = analysis ? buildPaceInsight(analysis) : null;
-  const trendInsight = buildTrendInsight(recentHistory);
+  const trendInsight = buildTrendInsight(scopedHistory);
   // デイリー結果から開いた分析画面にはデイリー履歴しか渡されないため、
   // ここで「サバイバル記録なし」と誤表示しない。週次サマリーはホームの
   // 成長記録またはサバイバル結果から開いた時だけ表示する。
-  const weeklyGrowth = showingDailyHistory ? null : buildWeeklyGrowth(recentHistory);
+  const weeklyGrowth = showingDailyHistory ? null : buildWeeklyGrowth(scopedHistory);
   const historyScope = showingDailyHistory
     ? "デイリーチャレンジ"
     : "サバイバル";
@@ -136,7 +161,7 @@ export function AnalysisScreen({ analysis, recentHistory, progress, onBack, onSt
   };
 
   return (
-    <div className="screen analysis an">
+    <div className={`screen analysis an${hasPlayData ? " an-with-detail" : ""}`}>
       <header className="an-head">
         <div>
           <span className="an-kicker">{analysis ? "TYPING ANALYSIS" : "GROWTH RECORD"}</span>
@@ -206,34 +231,49 @@ export function AnalysisScreen({ analysis, recentHistory, progress, onBack, onSt
       <section className="an-growth" aria-label="成長の推移">
         <div className="an-section-head">
           <h2>成長の推移</h2>
-          {recentHistory.length >= 2 && (
+          {scopedHistory.length >= 2 && (
             <span className="an-section-note">
-              {historyScope}・直近{Math.min(recentHistory.length, MAX_GROWTH_POINTS)}戦・古い→新しい
+              {historyScope}{analysis === null ? `・${SURVIVAL_DIFFICULTY_LABELS[growthDifficulty]}` : ""}・直近{Math.min(scopedHistory.length, MAX_GROWTH_POINTS)}戦・古い→新しい
             </span>
           )}
         </div>
+        {analysis === null && availableDifficulties.length > 1 && (
+          <div className="an-difficulty-filter" role="group" aria-label="成長グラフの難易度">
+            <span>比較する難易度</span>
+            {availableDifficulties.map((difficulty) => (
+              <button
+                type="button"
+                key={difficulty}
+                aria-pressed={difficulty === growthDifficulty}
+                onClick={() => setGrowthDifficulty(difficulty)}
+              >
+                {SURVIVAL_DIFFICULTY_LABELS[difficulty]}
+              </button>
+            ))}
+          </div>
+        )}
         <p className="an-data-note">
-          {historyScope}の記録だけを集計しています。デイリーとサバイバルのルール差で、成長の見え方が混ざらないようにしています。
+          {historyScope}{analysis === null ? `・${SURVIVAL_DIFFICULTY_LABELS[growthDifficulty]}` : ""}の記録だけを集計しています。難易度やデイリーとサバイバルの条件を混ぜずに比較します。
         </p>
 
-        {recentHistory.length >= 2 ? (
+        {scopedHistory.length >= 2 ? (
           <>
             <div className="an-charts">
               <GrowthChart
                 label="スコア"
-                values={chronological(recentHistory, (r) => r.score)}
+                values={chronological(scopedHistory, (r) => r.score)}
                 tone="light"
                 format={(v) => Math.round(v).toLocaleString()}
               />
               <GrowthChart
                 label="KPM"
-                values={chronological(recentHistory, (r) => r.kpm)}
+                values={chronological(scopedHistory, (r) => r.kpm)}
                 tone="water"
                 format={(v) => String(Math.round(v))}
               />
               <GrowthChart
                 label="正確率"
-                values={chronological(recentHistory, (r) => r.accuracy * 100)}
+                values={chronological(scopedHistory, (r) => r.accuracy * 100)}
                 tone="wind"
                 format={(v) => `${v.toFixed(1)}%`}
                 pointDelta
@@ -244,15 +284,19 @@ export function AnalysisScreen({ analysis, recentHistory, progress, onBack, onSt
         ) : (
           <div className="an-empty">
             <p>
-              {played
-                ? "あと1回プレイすると、スコア・KPM・正確率の推移がここに描かれます。"
-                : "プレイすると、ここに上達の記録が積み上がっていきます。"}
+              {played && recentHistory.length === 0
+                ? `累計${progress.totalGames}戦の記録がありますが、現在のルール世代で比較できる記録はまだありません。`
+                : played
+                  ? `この難易度の記録は${scopedHistory.length}件です。あと${Math.max(0, 2 - scopedHistory.length)}回で推移が表示されます。`
+                  : "プレイすると、ここに上達の記録が積み上がっていきます。"}
             </p>
-            {!played && (
+            {scopedHistory.length < 2 && (
               <div className="an-empty-actions">
                 {onStart ? (
                   <button type="button" className="btn-secondary" onClick={handleStart}>
-                    初級を始める
+                    {played
+                      ? `${SURVIVAL_DIFFICULTY_LABELS[growthDifficulty]}でもう1回プレイする`
+                      : `${SURVIVAL_DIFFICULTY_LABELS[growthDifficulty]}を始める`}
                   </button>
                 ) : (
                   <a className="btn-secondary" href="/">
@@ -584,6 +628,12 @@ function buildTrendInsight(recentHistory: StoredResult[]): string | null {
   if (diff >= 0.05) return "直近の記録と比べて正確率が上がってきています。";
   if (diff <= -0.05) return "直近の記録と比べて正確率がやや下がっています。";
   return "直近の記録と比べて正確率は安定しています。";
+}
+
+function normalizeDifficulty(value: SurvivalDifficulty | undefined): SurvivalDifficulty {
+  return value === "easy" || value === "normal" || value === "hard" || value === "god"
+    ? value
+    : "normal";
 }
 
 /**

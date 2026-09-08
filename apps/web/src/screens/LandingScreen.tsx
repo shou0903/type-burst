@@ -22,6 +22,7 @@ import { AdSlots } from "../components/AdSlots";
 import { AttractBoard } from "../components/AttractBoard";
 import { RomajiTicker } from "../components/RomajiTicker";
 import { GrowthDeck, RankingDeck, TutorialDeck } from "../components/HomeDecks";
+import { RankingRecoveryNotice } from "../components/RankingRecoveryNotice";
 import { HERO_RENDERER_OPTIONS } from "../render/BoardRenderer";
 import {
   parseDailyEntryIntent,
@@ -46,12 +47,13 @@ interface Props {
   progress: LifetimeProgress;
   dailyProgress: DailyProgress;
   firstRun: boolean;
+  initialDifficulty?: SurvivalDifficulty;
   onUpdateSettings: (patch: Partial<Settings>) => void;
-  onStart: (mode: GameMode) => void;
+  onStart: (mode: GameMode) => void | Promise<void>;
   /** 通常サバイバル開始時だけ、今回の目標をゲームへ渡す。 */
   onStartWithFocus?: (mode: GameMode, goal: FocusGoalId) => void;
-  onShowRanking: () => void;
-  onShowGrowth: () => void;
+  onShowRanking: (difficulty: SurvivalDifficulty) => void;
+  onShowGrowth: (difficulty: SurvivalDifficulty) => void;
 }
 
 const DIFFICULTY_LABELS: Record<CpuDifficulty, string> = {
@@ -101,6 +103,7 @@ export function LandingScreen({
   progress,
   dailyProgress,
   firstRun,
+  initialDifficulty = "normal",
   onUpdateSettings,
   onStart,
   onStartWithFocus,
@@ -116,10 +119,11 @@ export function LandingScreen({
   // サバイバルへ案内する。一般の初回訪問だけをチュートリアルへ送る。
   const onboardingActive = firstRun && guideDifficulty === null && dailyEntry === null;
   const [survivalDifficulty, setSurvivalDifficulty] = useState<SurvivalDifficulty>(
-    () => guideDifficulty ?? (firstRun ? "easy" : "normal"),
+    () => guideDifficulty ?? (firstRun ? "easy" : initialDifficulty),
   );
   const [howtoOpen, setHowtoOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [dailyStarting, setDailyStarting] = useState(false);
   // デフォルトを一つ選んだ状態にして、キーボードのEnterでも迷わず始められる。
   // 3択は開始前に常に見えており、選び直した内容だけを通常サバイバルへ渡す。
   const [focusGoal, setFocusGoal] = useState<FocusGoalId>(DEFAULT_FOCUS_GOAL);
@@ -137,16 +141,32 @@ export function LandingScreen({
     window.history.replaceState(null, "", regularModeUrl(window.location.href));
   };
 
-  const startDailyEntry = (): void => {
+  const runDailyStart = async (mode: GameMode, clearUrl: boolean): Promise<void> => {
+    if (dailyStarting) return;
+    if (clearUrl) {
+      // URLの入口指定は一度だけ消費する。ゲーム後にタイトルへ戻った時まで
+      // 共有専用CTAを復活させず、source自体はsessionStorageの匿名計測に残す。
+      window.history.replaceState(null, "", regularModeUrl(window.location.href));
+    }
+    setDailyStarting(true);
+    try {
+      await onStart(mode);
+    } finally {
+      setDailyStarting(false);
+    }
+  };
+
+  const startDailyEntry = (): Promise<void> => {
     const challengeId = dailyChallengeId();
-    // URLの入口指定は一度だけ消費する。ゲーム後にタイトルへ戻った時まで
-    // 共有専用CTAを復活させず、source自体はsessionStorageの匿名計測に残す。
-    window.history.replaceState(null, "", regularModeUrl(window.location.href));
-    onStart({
-      type: "daily",
-      challengeId,
-      ranked: isDailyRankedAttempt(dailyProgress, challengeId),
-    });
+    return runDailyStart(
+      { type: "daily", challengeId, ranked: isDailyRankedAttempt(dailyProgress, challengeId) },
+      true,
+    );
+  };
+
+  const startDailyCard = (mode: GameMode): void | Promise<void> => {
+    if (mode.type !== "daily") return onStart(mode);
+    return runDailyStart(mode, false);
   };
 
   const startSelectedSurvival = (): void => {
@@ -175,7 +195,7 @@ export function LandingScreen({
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
         if (dailyEntry !== null) {
-          startDailyEntry();
+          void startDailyEntry();
         } else if (onboardingActive) {
           onStart({ type: "tutorial" });
         } else {
@@ -185,7 +205,7 @@ export function LandingScreen({
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [dailyEntry, dailyProgress, focusGoal, onStart, onStartWithFocus, onboardingActive, survivalDifficulty]);
+  }, [dailyEntry, dailyProgress, dailyStarting, focusGoal, onStart, onStartWithFocus, onboardingActive, survivalDifficulty]);
 
   useEffect(() => {
     if (guideDifficulty === null && dailyEntry === null) return;
@@ -201,7 +221,7 @@ export function LandingScreen({
           TYPE<span>BURST</span>
         </div>
 
-        <button className="lp-rank" onClick={onShowGrowth} title="成長記録を見る">
+        <button className="lp-rank" onClick={() => onShowGrowth(survivalDifficulty)} title="成長記録を見る">
           <span className="lp-rank-label">称号</span>
           <span className="lp-rank-name">{titleProgress.current.label}</span>
           <span className="lp-rank-track">
@@ -313,9 +333,10 @@ export function LandingScreen({
             className={`lp-play${onboardingActive ? " lp-play-onboarding" : ""}${
               dailyEntry !== null ? " lp-play-daily" : ""
             }`}
+            disabled={dailyEntry !== null && dailyStarting}
             onClick={() => {
               if (dailyEntry !== null) {
-                startDailyEntry();
+                void startDailyEntry();
                 return;
               }
               if (onboardingActive) {
@@ -331,7 +352,9 @@ export function LandingScreen({
               </span>
               <span className="lp-play-label">
                 {dailyEntry !== null
-                  ? "今日の2分勝負に挑戦"
+                  ? dailyStarting
+                    ? "チャレンジを準備中…"
+                    : "今日の2分勝負に挑戦"
                   : onboardingActive
                     ? "チュートリアルから始める"
                     : "サバイバルを始める"}
@@ -358,7 +381,7 @@ export function LandingScreen({
             </section>
           ) : (
             <>
-              <div className="lp-tiers" role="group" aria-label="サバイバルの難易度">
+              {!onboardingActive && <div className="lp-tiers" role="group" aria-label="サバイバルの難易度">
                 {SURVIVAL_TIERS.map((tier, i) => (
                   <button
                     key={tier.id}
@@ -374,9 +397,9 @@ export function LandingScreen({
                     <span className="lp-tier-label">{tier.label}</span>
                   </button>
                 ))}
-              </div>
+              </div>}
 
-              <p className="lp-tier-hint" data-lv={SURVIVAL_TIERS.indexOf(activeTier) + 1}>
+              {!onboardingActive && <p className="lp-tier-hint" data-lv={SURVIVAL_TIERS.indexOf(activeTier) + 1}>
                 {activeTier.hint}
                 {best > 0 && (
                   <>
@@ -384,8 +407,9 @@ export function LandingScreen({
                     自己ベスト <strong>{best.toLocaleString()}</strong>
                   </>
                 )}
-              </p>
+              </p>}
 
+              {!onboardingActive && (
               <section className="lp-focus" aria-labelledby="lp-focus-title">
                 <div className="lp-focus-head">
                   <div>
@@ -410,6 +434,7 @@ export function LandingScreen({
                   ))}
                 </div>
               </section>
+              )}
             </>
           )}
 
@@ -478,12 +503,19 @@ export function LandingScreen({
           </button>
         </div>
 
-        <RankingDeck difficulty={survivalDifficulty} onOpen={onShowRanking} />
-        <GrowthDeck progress={progress} results={survivalResults} onOpen={onShowGrowth} />
+        <RankingDeck difficulty={survivalDifficulty} onOpen={() => onShowRanking(survivalDifficulty)} />
+        <GrowthDeck
+          progress={progress}
+          results={survivalResults}
+          difficulty={survivalDifficulty}
+          onOpen={() => onShowGrowth(survivalDifficulty)}
+        />
         <TutorialDeck onOpen={() => onStart({ type: "tutorial" })} />
       </section>
 
-      <DailyChallengeCard progress={dailyProgress} onStart={onStart} />
+      <RankingRecoveryNotice />
+
+      <DailyChallengeCard progress={dailyProgress} onStart={startDailyCard} starting={dailyStarting} />
 
       <section className="lp-content" aria-labelledby="lp-content-title">
         <div className="lp-content-lead">

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { fetchTopScores, type RankingEntry } from "../ranking";
 
 type LoadState =
@@ -20,10 +20,13 @@ interface Props {
  */
 export function MobileRankingPreview({ expanded }: Props): JSX.Element {
   const [state, setState] = useState<LoadState>({ status: "loading" });
+  const [retryNonce, setRetryNonce] = useState(0);
+  const lastRequestAtRef = useRef(0);
   const visibleLimit = expanded ? PREVIEW_LIMIT : 3;
 
   useEffect(() => {
     let cancelled = false;
+    lastRequestAtRef.current = Date.now();
     fetchTopScores("normal", PREVIEW_LIMIT)
       .then((entries) => {
         if (!cancelled) setState({ status: "loaded", entries });
@@ -34,6 +37,22 @@ export function MobileRankingPreview({ expanded }: Props): JSX.Element {
     return () => {
       cancelled = true;
     };
+  }, [retryNonce]);
+
+  useEffect(() => {
+    const refreshIfStale = (): void => {
+      if (document.visibilityState !== "visible") return;
+      if (Date.now() - lastRequestAtRef.current < 15_000) return;
+      setRetryNonce((value) => value + 1);
+    };
+    window.addEventListener("focus", refreshIfStale);
+    document.addEventListener("visibilitychange", refreshIfStale);
+    const timer = window.setInterval(refreshIfStale, 30_000);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refreshIfStale);
+      document.removeEventListener("visibilitychange", refreshIfStale);
+    };
   }, []);
 
   return (
@@ -42,9 +61,24 @@ export function MobileRankingPreview({ expanded }: Props): JSX.Element {
         <p className="mobile-landing-ranking-caption">🏆 みんなのベスト</p>
         <span>世界ランキング・中級 TOP{visibleLimit}</span>
       </div>
-      {state.status === "loading" && <p className="mobile-landing-ranking-status">読み込み中…</p>}
+      {state.status === "loading" && (
+        <p className="mobile-landing-ranking-status" role="status" aria-live="polite">
+          読み込み中…
+        </p>
+      )}
       {state.status === "error" && (
-        <p className="mobile-landing-ranking-status">取得できませんでした。</p>
+        <div className="mobile-landing-ranking-status" role="alert" aria-live="polite">
+          <p>取得できませんでした。</p>
+          <button
+            type="button"
+            onClick={() => {
+              setState({ status: "loading" });
+              setRetryNonce((value) => value + 1);
+            }}
+          >
+            再読み込み
+          </button>
+        </div>
       )}
       {state.status === "loaded" && state.entries.length === 0 && (
         <p className="mobile-landing-ranking-status">まだ記録がありません。</p>

@@ -1185,9 +1185,11 @@ export class PlayerCore {
     for (const block of this.blocks) {
       if (block.kind === "garbage") continue;
       const preview = this.predictChain(block, rows);
-      // Chain Visionは「次に作れる連鎖」を示すための機能なので、単独消去
-      // (predictedDepth=0)は候補に含めない。特殊ブロックは既存ルール上
-      // 1段目の消去として扱われるため、通常どおり候補に残る。
+      // Chain Visionは「次に作れる連鎖」を示すための機能なので、通常ブロックの
+      // 単独消去(predictedDepth=0)は候補に含めない。3個以上の直接消去は
+      // predictedDepth=1、ボム／プリズムも最初の特殊効果を1段目として
+      // predictedDepth=1になる。特殊ブロックを候補から外すと、見どころである
+      // 一手の判断を隠してしまうため、ここでは通常どおり残す。
       if (preview.predictedDepth >= 1) previews.push(preview);
     }
 

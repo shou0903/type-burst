@@ -16,17 +16,30 @@ import { trackBehaviorEvent } from "../behaviorTelemetry";
 
 interface Props {
   progress: DailyProgress;
-  onStart: (mode: GameMode) => void;
+  onStart: (mode: GameMode) => void | Promise<void>;
+  starting?: boolean;
 }
 
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
 
-export function DailyChallengeCard({ progress, onStart }: Props): JSX.Element {
-  const challengeId = dailyChallengeId();
+export function DailyChallengeCard({ progress, onStart, starting = false }: Props): JSX.Element {
+  const [challengeId, setChallengeId] = useState(dailyChallengeId);
   const attempts = dailyAttempts(progress, challengeId);
   const remaining = Math.max(0, DAILY_RANKED_ATTEMPTS - attempts);
   const best = dailyBestScore(progress, challengeId);
   const ranked = isDailyRankedAttempt(progress, challengeId);
+
+  useEffect(() => {
+    const refreshDate = (): void => setChallengeId(dailyChallengeId());
+    const timer = window.setInterval(refreshDate, 60_000);
+    window.addEventListener("focus", refreshDate);
+    document.addEventListener("visibilitychange", refreshDate);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refreshDate);
+      document.removeEventListener("visibilitychange", refreshDate);
+    };
+  }, []);
 
   return (
     <section className="daily-card">
@@ -60,9 +73,10 @@ export function DailyChallengeCard({ progress, onStart }: Props): JSX.Element {
 
           <button
             className="btn-daily"
+            disabled={starting}
             onClick={() => onStart({ type: "daily", challengeId, ranked })}
           >
-            <span>{ranked ? "今日のランキングに挑戦" : "同じステージを練習"}</span>
+            <span>{starting ? "チャレンジを準備中…" : ranked ? "今日のランキングに挑戦" : "同じステージを練習"}</span>
             <span className="btn-sub">2:00</span>
           </button>
           <p className="daily-attempt-help">
@@ -107,8 +121,14 @@ function DailyLeaderboardPreview({ challengeId }: { challengeId: string }): JSX.
   const pendingActionRef = useRef<"open" | "retry">("open");
   const didInitialLoadRef = useRef(false);
   const requestIdRef = useRef(0);
+  const lastLoadedAtRef = useRef(0);
 
-  const load = useCallback((): void => {
+  const load = useCallback((force = false): void => {
+    const now = Date.now();
+    // ホームを表示したままの過剰な再取得を避けつつ、タブ復帰時には
+    // 他のプレイヤーの結果を取り込む。手動再試行は常に許可する。
+    if (!force && now - lastLoadedAtRef.current < 15_000) return;
+    lastLoadedAtRef.current = now;
     const requestId = ++requestIdRef.current;
     const action = pendingActionRef.current;
     const shouldTrack = action === "retry" || !didInitialLoadRef.current;
@@ -137,7 +157,18 @@ function DailyLeaderboardPreview({ challengeId }: { challengeId: string }): JSX.
   }, [challengeId]);
 
   useEffect(() => {
-    load();
+    load(true);
+    const refresh = (): void => {
+      if (document.visibilityState === "visible") load();
+    };
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    const timer = window.setInterval(refresh, 30_000);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
   }, [load]);
 
   return (
@@ -145,21 +176,23 @@ function DailyLeaderboardPreview({ challengeId }: { challengeId: string }): JSX.
       <div className="daily-leaderboard-head">
         <div>
           <span>本日のランキング</span>
-          <strong>{ranking ? `${ranking.total.toLocaleString()}人が参加` : "集計中"}</strong>
+          <strong>{ranking ? `${ranking.total.toLocaleString()}件の登録記録` : "集計中"}</strong>
         </div>
         <span className="daily-live-label">TODAY</span>
       </div>
 
       {status === "loading" && (
-        <div className="daily-ranking-loading">ランキングを読み込んでいます…</div>
+        <div className="daily-ranking-loading" role="status" aria-live="polite">
+          ランキングを読み込んでいます…
+        </div>
       )}
       {status === "error" && (
-        <div className="daily-ranking-error">
+        <div className="daily-ranking-error" role="alert" aria-live="polite">
           <p>ランキングを取得できませんでした。</p>
           <button
             onClick={() => {
               pendingActionRef.current = "retry";
-              load();
+              load(true);
             }}
           >
             再読み込み
@@ -171,7 +204,7 @@ function DailyLeaderboardPreview({ challengeId }: { challengeId: string }): JSX.
           <span>あなたの今日の順位</span>
           <div>
             <strong>{ranking.viewer.rank}位</strong>
-            <small>／ {ranking.viewer.total.toLocaleString()}人</small>
+            <small>／ {ranking.viewer.total.toLocaleString()}件の登録記録</small>
           </div>
           <div className="daily-my-rank-details">
             <span>上位 {ranking.viewer.percentile.toFixed(1)}%</span>
@@ -208,7 +241,9 @@ function DailyLeaderboardPreview({ challengeId }: { challengeId: string }): JSX.
           onClick={() => setExpanded((current) => !current)}
           aria-expanded={expanded}
         >
-          {expanded ? "ランキングを閉じる" : `ランキングをもっと見る（全${ranking.total.toLocaleString()}人）`}
+          {expanded
+            ? "ランキングを閉じる"
+            : `ランキングをもっと見る（上位100件中・全${ranking.total.toLocaleString()}件）`}
         </button>
       )}
     </aside>

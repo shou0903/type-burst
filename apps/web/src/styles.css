@@ -4,6 +4,16 @@
   box-sizing: border-box;
 }
 
+/* キーボード操作時の現在位置を、暗い盤面上でも常に確認できるようにする。 */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #8bd5ff;
+  outline-offset: 3px;
+}
+
 :root {
   color-scheme: dark;
   --font-scale: 1;
@@ -353,6 +363,14 @@ textarea:focus-visible,
 .btn-daily:hover {
   transform: translateY(-2px);
   filter: brightness(1.05);
+}
+
+.btn-daily:disabled {
+  opacity: 0.62;
+  cursor: wait;
+  transform: none;
+  filter: none;
+  box-shadow: none;
 }
 
 .daily-attempt-help {
@@ -2788,6 +2806,12 @@ textarea:focus-visible,
   color: rgba(237, 244, 255, 0.7);
 }
 
+/* AdSenseが「未配信」と返したときだけ空の白枠を残さない。配信中・審査中の
+   ins要素はそのままにし、広告のクリック領域やラベルを自作しない。 */
+.ad-slot:has(.adsbygoogle[data-ad-status="unfilled"]) {
+  display: none;
+}
+
 /* ---------- Analysis screen ---------- */
 
 .screen.analysis {
@@ -3685,6 +3709,16 @@ textarea:focus-visible,
   color: #7d84a3;
 }
 
+.mobile-landing-ranking-status button {
+  margin-top: 7px;
+  border: 1px solid rgba(111, 192, 255, 0.42);
+  border-radius: 7px;
+  padding: 5px 10px;
+  color: #cfe8ff;
+  background: rgba(111, 192, 255, 0.09);
+  cursor: pointer;
+}
+
 .mobile-landing-ranking-list {
   list-style: none;
   display: flex;
@@ -4281,6 +4315,15 @@ textarea:focus-visible,
   box-shadow:
     0 9px 0 var(--fire-dk),
     0 14px 30px rgba(0, 0, 0, 0.55);
+}
+
+.lp-play:disabled,
+.lp-play:disabled:hover,
+.lp-play:disabled:active {
+  opacity: 0.65;
+  cursor: wait;
+  transform: none;
+  box-shadow: 0 3px 0 var(--fire-dk);
 }
 
 /* 押すと沈む = ブロックが潰れて爆発する感触 */
@@ -4977,6 +5020,12 @@ textarea:focus-visible,
 .landing.lp .btn-daily:active {
   transform: translateY(5px);
   box-shadow: 0 0 0 var(--light-dk);
+}
+
+.landing.lp .btn-daily:disabled {
+  transform: none;
+  box-shadow: none;
+  cursor: wait;
 }
 
 /* ---------- 上達コンテンツ ---------- */
@@ -5802,9 +5851,61 @@ textarea:focus-visible,
   border-color: var(--line-hi);
 }
 
+.lp-deck-rich:disabled,
+.lp-deck-rich:disabled:hover {
+  cursor: wait;
+  opacity: 0.72;
+  transform: none;
+}
+
 .lp-deck-rich:focus-visible {
   outline: 2px solid var(--text);
   outline-offset: 2px;
+}
+
+/* 通信断で保留したランキング送信の回復導線。普段は表示せず、
+   タイトル画面の主要CTAを押しのけない控えめな通知として扱う。 */
+.ranking-recovery {
+  width: min(1120px, 100%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 215, 94, 0.34);
+  border-radius: 10px;
+  background: rgba(255, 215, 94, 0.08);
+  color: #f3edc9;
+}
+
+.ranking-recovery strong {
+  display: block;
+  color: #ffdf70;
+  font-size: 13px;
+}
+
+.ranking-recovery p {
+  margin-top: 3px;
+  color: #c6cbe0;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.ranking-recovery .btn-secondary {
+  flex: none;
+  padding: 8px 14px;
+  font-size: 12px;
+}
+
+@media (max-width: 640px) {
+  .ranking-recovery {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .ranking-recovery .btn-secondary {
+    width: 100%;
+  }
 }
 
 .lp-deck-top {
@@ -6195,6 +6296,35 @@ textarea:focus-visible,
   color: var(--fire-lit);
 }
 
+.rk-toolbar {
+  width: min(940px, 100%);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  min-height: 34px;
+}
+
+.rk-refresh {
+  padding: 7px 12px;
+  font-size: 12px;
+}
+
+.rk-updated {
+  color: var(--faint);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.rk-scope-note {
+  width: min(940px, 100%);
+  margin: 0;
+  color: var(--faint);
+  font-size: 11px;
+  line-height: 1.5;
+  text-align: right;
+}
+
 .rk-mine {
   width: min(940px, 100%);
   padding: 10px 14px;
@@ -6565,6 +6695,26 @@ textarea:focus-visible,
   padding: 22px 20px 48px;
 }
 
+/* 結果から開いた場合は、今回のキー分析を最初に見せる。成長記録入口では
+   これまで通り称号・累計・グラフを先に置く。 */
+.screen.analysis.an.an-with-detail .an-head {
+  order: 0;
+}
+
+.screen.analysis.an.an-with-detail .an-focus,
+.screen.analysis.an.an-with-detail .an-detail {
+  order: 1;
+}
+
+.screen.analysis.an.an-with-detail .an-rank,
+.screen.analysis.an.an-with-detail .an-records,
+.screen.analysis.an.an-with-detail .an-totals,
+.screen.analysis.an.an-with-detail .an-weekly,
+.screen.analysis.an.an-with-detail .an-growth,
+.screen.analysis.an.an-with-detail .an-empty-note {
+  order: 2;
+}
+
 /* 属性ごとの色。トーンだけを差し替えて使い回す */
 .an-tone-fire {
   --tone: var(--fire-lit);
@@ -6787,6 +6937,36 @@ textarea:focus-visible,
   color: var(--faint);
   font-size: 11px;
   line-height: 1.6;
+}
+
+.an-difficulty-filter {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 2px 0 0;
+  color: var(--dim);
+  font-size: 11px;
+}
+
+.an-difficulty-filter button {
+  border: 1px solid var(--line-hi);
+  border-radius: 999px;
+  padding: 4px 10px;
+  color: var(--dim);
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+}
+
+.an-difficulty-filter button[aria-pressed="true"] {
+  color: var(--text);
+  border-color: var(--light-lit);
+  background: rgba(255, 223, 112, 0.16);
+}
+
+.an-difficulty-filter button:focus-visible {
+  outline: 2px solid var(--water-lit);
+  outline-offset: 2px;
 }
 
 .an-empty-actions {
@@ -7869,3 +8049,52 @@ textarea:focus-visible,
 :root.reduced-motion .sh-sheet { animation: none; }
 :root.reduced-motion .sh-btn:hover,
 :root.reduced-motion .btn-share:hover { transform: none; }
+
+/* 低いデスクトップ画面ではHUDの補助余白だけを圧縮し、盤面と主要数値を
+   55%前後まで縮小しない。通常のゲーム定義より後ろに置いて、同じ詳細度の
+   宣言が後続CSSに上書きされないようにする(D-108)。 */
+@media (min-width: 1024px) and (max-height: 820px) {
+  .screen.game {
+    gap: 10px;
+    padding: 12px 18px 22px;
+  }
+
+  .game-layout {
+    gap: 16px;
+  }
+
+  .hud {
+    gap: 7px;
+    padding-top: 0;
+  }
+
+  .hud-block {
+    padding: 7px 11px;
+  }
+
+  .hud-row {
+    gap: 8px;
+  }
+
+  .hud-mini {
+    padding: 6px 10px;
+    font-size: 17px;
+  }
+
+  .hud-typing {
+    height: max(178px, calc(190px * var(--font-scale))) !important;
+    min-height: max(178px, calc(190px * var(--font-scale)));
+  }
+
+  .typing-target {
+    font-size: calc(22px * var(--font-scale));
+  }
+
+  .typing-romaji {
+    font-size: calc(19px * var(--font-scale));
+  }
+
+  .game-event-cue {
+    height: 30px;
+  }
+}

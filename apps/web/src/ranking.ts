@@ -108,9 +108,9 @@ export async function fetchTopScores(
     { cache: "no-store" },
   );
   if (!res.ok) throw new Error(`ランキング取得に失敗しました(${res.status})`);
-  const data = (await res.json()) as { entries: RankingEntry[]; ruleset?: unknown };
+  const data = (await res.json()) as { entries?: unknown; ruleset?: unknown };
   if (!isCompatibleRankingRuleset(data.ruleset)) throw new Error("ランキングのルール世代が一致しません");
-  return data.entries ?? [];
+  return Array.isArray(data.entries) ? (data.entries as RankingEntry[]) : [];
 }
 
 /** 上位表と、匿名playerIdに紐づく本人の順位を同時に取得する。 */
@@ -125,12 +125,15 @@ export async function fetchRanking(
   );
   if (!res.ok) throw new Error(`ランキング取得に失敗しました(${res.status})`);
   const data = (await res.json()) as {
-    entries: RankingEntry[];
+    entries?: unknown;
     viewer?: RankingViewer | null;
     ruleset?: unknown;
   };
   if (!isCompatibleRankingRuleset(data.ruleset)) throw new Error("ランキングのルール世代が一致しません");
-  return { entries: data.entries ?? [], viewer: data.viewer ?? null };
+  return {
+    entries: Array.isArray(data.entries) ? (data.entries as RankingEntry[]) : [],
+    viewer: data.viewer ?? null,
+  };
 }
 
 /** ランキング表示が通信待ちのまま固定されないよう、UI向け取得に上限を設ける。 */

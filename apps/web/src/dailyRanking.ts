@@ -35,7 +35,12 @@ export async function fetchDailyLeaderboard(
     `/api/daily-scores?challengeId=${encodeURIComponent(challengeId)}&playerId=${encodeURIComponent(playerId)}`,
   );
   if (!response.ok) throw new Error(`daily leaderboard: ${response.status}`);
-  return (await response.json()) as DailyLeaderboardResponse;
+  const data = (await response.json()) as Partial<DailyLeaderboardResponse>;
+  return {
+    entries: Array.isArray(data.entries) ? data.entries : [],
+    total: typeof data.total === "number" ? data.total : 0,
+    viewer: data.viewer ?? null,
+  };
 }
 
 export async function submitDailyScore(

@@ -274,7 +274,11 @@ async function readRankingSnapshot(
           }
         end
       end
-      return cjson.encode({ entries = entries, viewer = viewer })
+      -- Keep the public JSON shape stable: an empty Lua table would otherwise
+      -- become an object instead of the promised empty array.
+      local entries_json = cjson.encode(entries)
+      if #entries == 0 then entries_json = "[]" end
+      return '{"entries":' .. entries_json .. ',"viewer":' .. cjson.encode(viewer) .. '}'
     `,
     1,
     key,

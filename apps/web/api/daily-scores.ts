@@ -434,7 +434,12 @@ async function buildResponse(
           }
         end
       end
-      return cjson.encode({ entries = entries, total = total, viewer = viewer })
+      -- Lua tables with no numeric members are encoded as JSON objects by
+      -- cjson.  The API contract is always an array, including on a brand
+      -- new day with zero submissions.
+      local entries_json = cjson.encode(entries)
+      if #entries == 0 then entries_json = "[]" end
+      return '{"entries":' .. entries_json .. ',"total":' .. tostring(total) .. ',"viewer":' .. cjson.encode(viewer) .. '}'
     `,
     1,
     key,

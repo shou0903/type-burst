@@ -2,11 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import type { GameEvent } from "@type-burst/game-core";
 import { GameController, type AnySnapshot, type GameMode, type GameResult } from "../game/GameController";
 import { SoundEngine } from "../audio/SoundEngine";
+import { chainOpportunityHint } from "../chainOpportunity";
 import { useFitToViewport } from "../hooks/useFitToViewport";
 import {
   createFocusProgress,
-  focusGoalDefinition,
-  focusProgressText,
+  focusChallenge,
   type FocusProgress,
 } from "../focusContract";
 import { bandDuration, trackBehaviorEvent } from "../behaviorTelemetry";
@@ -113,7 +113,7 @@ export function GameScreen({
       ? createFocusProgress(mode.focusGoal ?? "perfect-streak")
       : null,
   );
-  const focusAchievedRef = useRef(false);
+  const focusAchievedRef = useRef(0);
   const cueTimerRef = useRef<number | null>(null);
   const featureUsedRef = useRef<Set<string>>(new Set());
   const gameExitTrackedRef = useRef(false);
@@ -243,9 +243,10 @@ export function GameScreen({
       },
       onFocusProgress: (progress) => {
         setFocusProgress(progress);
-        if (progress.achieved && !focusAchievedRef.current) {
-          focusAchievedRef.current = true;
-          announceCue("FOCUS COMPLETE！ 今回の目標を達成");
+        const challenge = focusChallenge(progress);
+        if (challenge.level > focusAchievedRef.current) {
+          focusAchievedRef.current = challenge.level;
+          announceCue(`${challenge.medal}獲得！ ${challenge.level === 3 ? "3段階すべて達成" : challenge.next}`);
         }
       },
       onPauseChange: setPaused,
@@ -355,7 +356,9 @@ export function GameScreen({
   const feverWarning = Boolean(player?.feverActive && feverSeconds <= 3);
   const showFeverPrimer = mode.type === "survival";
   const candidateCount = player?.candidateBlockIds.length ?? 0;
-  const showChainVision = Boolean(player && player.chainPreviews.length > 0);
+  const opportunity = chainOpportunityHint(player ?? null);
+  const showChainVision = opportunity !== null;
+  const challenge = focusProgress ? focusChallenge(focusProgress) : null;
 
   return (
     <div ref={ref} style={style} className="screen game">
@@ -442,7 +445,7 @@ export function GameScreen({
                   <span>
                     {bestScore > 0
                       ? currentScore >= bestScore
-                        ? "自己ベスト更新ペース"
+                        ? currentScore > bestScore ? "自己ベスト更新中！" : "あと1点で自己ベスト更新"
                         : `自己ベストまで ${(bestScore - currentScore).toLocaleString()}点`
                       : "まずは自己ベストを作ろう"}
                   </span>
@@ -495,18 +498,19 @@ export function GameScreen({
             )}
           </div>
 
-          {focusProgress && (
+          {focusProgress && challenge && (
             <section
               className={`focus-hud${focusProgress.achieved ? " focus-hud-achieved" : ""}`}
-              aria-label={`今回の目標 ${focusGoalDefinition(focusProgress.goal).title}。${focusProgressText(focusProgress)}`}
+              aria-label={`3段階チャレンジ ${challenge.medal}。${challenge.text}`}
+              data-medal={challenge.level}
             >
               <div className="focus-hud-head">
-                <span>FOCUS</span>
-                <strong>{focusProgress.achieved ? "✓ COMPLETE" : focusProgressText(focusProgress)}</strong>
+                <span>CHALLENGE · {challenge.next}</span>
+                <strong>{[1, 2, 3].map((level) => <span key={level} className={challenge.level >= level ? "medal-earned" : "medal-pending"} aria-hidden="true">◆</span>)}</strong>
               </div>
-              <p>{focusGoalDefinition(focusProgress.goal).title}</p>
+              <p>{challenge.text}</p>
               <span className="focus-hud-track" aria-hidden="true">
-                <span style={{ width: `${Math.round(focusProgress.ratio * 100)}%` }} />
+                <span style={{ width: `${Math.round(challenge.ratio * 100)}%` }} />
               </span>
             </section>
           )}
@@ -549,8 +553,8 @@ export function GameScreen({
               aria-label={showChainVision ? "連鎖候補の表示" : undefined}
             >
               <span className="chain-vision-mark" aria-hidden="true">›</span>
-              <span>連鎖候補を表示中</span>
-              <small>数字が大きいほど連鎖予測が長い</small>
+              <span>{opportunity?.title ?? "連鎖チャンス"}</span>
+              <small title={opportunity?.detail}>{opportunity?.detail ?? "盤面の数字が連鎖の目安"}</small>
             </div>
           )}
 

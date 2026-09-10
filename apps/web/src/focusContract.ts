@@ -52,6 +52,32 @@ export interface FocusProgress {
   achieved: boolean;
   /** 精度目標の表示用。未達成時は現在の連続PERFECT数。 */
   perfectStreak: number;
+  /** 3段階チャレンジ。省略された過去のリザルトも読み込める。 */
+  challengeBest?: number;
+  challengeStreak?: number;
+}
+
+export const FOCUS_STAGES: Record<FocusGoalId, readonly [number, number, number]> = {
+  "perfect-streak": [3, 6, 10],
+  "chain-4": [4, 6, 8],
+  "power-burst": [1, 3, 5],
+};
+
+export function focusChallenge(progress: FocusProgress, result = false) {
+  const stages = FOCUS_STAGES[progress.goal];
+  const best = progress.challengeBest ?? progress.current;
+  const level = stages.filter((target) => best >= target).length;
+  const target = stages[Math.min(level, 2)]!;
+  const current = result || progress.goal !== "perfect-streak"
+    ? best : progress.challengeStreak ?? progress.perfectStreak;
+  const unit = progress.goal === "perfect-streak" ? "連続PERFECT" : progress.goal === "chain-4" ? "CHAIN" : "回発動";
+  return {
+    level, best, current, target,
+    ratio: level === 3 ? 1 : Math.min(1, current / target),
+    medal: ["挑戦中", "BRONZE", "SILVER", "GOLD"][level]!,
+    text: level === 3 ? "3段階すべて達成！" : `${current} / ${target} ${unit}`,
+    next: level === 3 ? "GOLD COMPLETE" : `次は${["ブロンズ", "シルバー", "ゴールド"][level]}`,
+  };
 }
 
 function definitionFor(goal: FocusGoalId): FocusGoalDefinition {
@@ -82,6 +108,8 @@ export function createFocusProgress(goal: FocusGoalId): FocusProgress {
     ratio: 0,
     achieved: false,
     perfectStreak: 0,
+    challengeBest: 0,
+    challengeStreak: 0,
   };
 }
 
@@ -98,7 +126,22 @@ export function advanceFocusProgress(
   progress: FocusProgress,
   event: GameEvent,
 ): FocusProgress {
-  if (progress.achieved) return progress;
+  let challengeBest = progress.challengeBest ?? progress.current;
+  let challengeStreak = progress.challengeStreak ?? progress.perfectStreak;
+  const ceiling = FOCUS_STAGES[progress.goal][2];
+  if (progress.goal === "perfect-streak" && event.type === "phraseCompleted") {
+    challengeStreak = event.perfect ? Math.min(ceiling, challengeStreak + 1) : 0;
+    challengeBest = Math.max(challengeBest, challengeStreak);
+  } else if (progress.goal === "chain-4" && event.type === "chainFinished") {
+    challengeBest = Math.max(challengeBest, Math.min(ceiling, event.depth));
+  } else if (progress.goal === "power-burst" && event.type === "burstFired" && isPowerTier(event.tier)) {
+    challengeBest = Math.min(ceiling, challengeBest + 1);
+  } else {
+    return progress;
+  }
+  const advanced = { ...progress, challengeBest, challengeStreak };
+  // 最初の目標は従来通り達成を保持。続けて上位メダルを狙える。
+  if (progress.achieved) return advanced;
 
   let current = progress.current;
   let perfectStreak = progress.perfectStreak;
@@ -112,7 +155,7 @@ export function advanceFocusProgress(
       achieved = perfectStreak >= progress.target;
       break;
     case "chain-4":
-      if (event.type !== "chainFinished" || event.depth < progress.target) return progress;
+      if (event.type !== "chainFinished" || event.depth < progress.target) return advanced;
       current = progress.target;
       achieved = true;
       break;
@@ -124,7 +167,7 @@ export function advanceFocusProgress(
   }
 
   return {
-    ...progress,
+    ...advanced,
     current,
     ratio: Math.min(1, current / progress.target),
     achieved,
@@ -169,6 +212,9 @@ export function focusProgressFromResult(value: unknown): FocusProgress | null {
     return null;
   }
   const definition = definitionFor(progress.goal);
+  for (const value of [progress.challengeBest, progress.challengeStreak]) {
+    if (value !== undefined && (!Number.isInteger(value) || value < 0 || value > FOCUS_STAGES[progress.goal][2])) return null;
+  }
   if (
     progress.target !== definition.target ||
     !Number.isFinite(progress.current) ||
@@ -189,5 +235,7 @@ export function focusProgressFromResult(value: unknown): FocusProgress | null {
     ratio: progress.ratio,
     achieved: progress.achieved,
     perfectStreak: progress.perfectStreak,
+    ...(progress.challengeBest === undefined ? {} : { challengeBest: progress.challengeBest }),
+    ...(progress.challengeStreak === undefined ? {} : { challengeStreak: progress.challengeStreak }),
   };
 }

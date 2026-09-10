@@ -131,6 +131,15 @@ describe("通常ランキングの自己ベスト送信", () => {
     );
   });
 
+  it("旧記録は明示的に選んだときだけ取得する", async () => {
+    const fetchMock = vi.fn().mockImplementation(() => new Response(JSON.stringify({ entries: [], viewer: null, ruleset: "survival-v1" }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    await fetchRanking("hard");
+    await fetchRanking("hard", 100, "legacy");
+    expect(fetchMock.mock.calls[0]?.[0]).toContain("view=players");
+    expect(fetchMock.mock.calls[1]?.[0]).toContain("view=legacy");
+  });
+
   it("明示的に異なるrulesetのAPIへは送信しない", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ entries: [], viewer: null, ruleset: "survival-v2" }), {

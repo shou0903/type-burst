@@ -46,6 +46,7 @@ function formatTime(ms: number): string {
 export function RankingScreen({ onBack, initialDifficulty = "normal" }: Props): JSX.Element {
   const { ref, style } = useFitToViewport<HTMLDivElement>();
   const [difficulty, setDifficulty] = useState<SurvivalDifficulty>(initialDifficulty);
+  const [view, setView] = useState<"players" | "legacy">("players");
   const [retryNonce, setRetryNonce] = useState(0);
   const [refreshNonce, setRefreshNonce] = useState(0);
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
@@ -78,7 +79,7 @@ export function RankingScreen({ onBack, initialDifficulty = "normal" }: Props): 
 
   useEffect(() => {
     let cancelled = false;
-    const requestKey = `${difficulty}:${retryNonce}:${refreshNonce}`;
+    const requestKey = `${difficulty}:${view}:${retryNonce}:${refreshNonce}`;
     const isNewRequest = lastRequestKeyRef.current !== requestKey;
     const action = isNewRequest ? pendingLoadActionRef.current : activeLoadActionRef.current;
     if (isNewRequest) {
@@ -94,7 +95,7 @@ export function RankingScreen({ onBack, initialDifficulty = "normal" }: Props): 
       lastRequestAtRef.current = Date.now();
     }
     setState({ status: "loading" });
-    fetchRanking(difficulty, 100)
+    fetchRanking(difficulty, 100, view)
       .then((response) => {
         if (!cancelled) {
           setState({ status: "loaded", entries: response.entries, viewer: response.viewer });
@@ -121,7 +122,7 @@ export function RankingScreen({ onBack, initialDifficulty = "normal" }: Props): 
     return () => {
       cancelled = true;
     };
-  }, [difficulty, refreshNonce, retryNonce]);
+  }, [difficulty, view, refreshNonce, retryNonce]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent): void => {
@@ -155,6 +156,15 @@ export function RankingScreen({ onBack, initialDifficulty = "normal" }: Props): 
         </button>
       </header>
 
+      <div className="rk-record-views" role="group" aria-label="記録の種類">
+        <button type="button" aria-pressed={view === "players"} onClick={() => setView("players")}>プレイヤーベスト</button>
+        <button type="button" aria-pressed={view === "legacy"} onClick={() => setView("legacy")}>以前の記録</button>
+      </div>
+      <p className="rk-record-explainer">
+        {view === "players"
+          ? "各難易度につき、1プレイヤーの最高得点だけを掲載。再挑戦でベストを更新しよう。"
+          : "プレイヤー識別導入前の記録です。同じ人の複数の記録が含まれる場合があります。"}
+      </p>
       <div className="rk-tabs" role="group" aria-label="難易度">
         {DIFFICULTY_ORDER.map((d, i) => (
           <button
@@ -228,7 +238,7 @@ export function RankingScreen({ onBack, initialDifficulty = "normal" }: Props): 
       {viewer && (
         <p className="rk-mine">
           あなたのベストは <strong>{viewer.rank}位</strong> ／ 全
-          {viewer.total.toLocaleString()}件の登録記録中
+          {viewer.total.toLocaleString()}プレイヤー中
           <span className="rk-mine-detail">
             上位 {viewer.percentile.toFixed(1)}% ・ {viewer.score.toLocaleString()}点
             {viewer.scoreToNext === null
@@ -240,6 +250,7 @@ export function RankingScreen({ onBack, initialDifficulty = "normal" }: Props): 
 
       <p className="rk-scope-note" role="status">
         上位100件を表示しています。順位は他のプレイヤーの記録更新に合わせて自動更新されます。
+        {view === "players" && " 別の端末でも同じ記録を使うには、設定の「データの引き継ぎ」を利用してください。同名でも別プレイヤーの場合があります。"}
       </p>
 
       {podiumByRank.size > 0 && (

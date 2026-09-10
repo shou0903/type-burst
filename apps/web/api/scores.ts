@@ -20,7 +20,6 @@ import Redis from "ioredis";
 
 const LEADERBOARD_KEY_PREFIX = "leaderboard:survival:alltime";
 const DEFAULT_RULESET: SurvivalRuleset = "survival-v1";
-const MAX_RETAINED_ENTRIES = 500;
 const TOP_LIMIT_DEFAULT = 100;
 const TOP_LIMIT_MAX = 100;
 const MAX_PLAUSIBLE_SCORE = 1_000_000;
@@ -42,6 +41,33 @@ export function leaderboardKey(ruleset: SurvivalRuleset, difficulty: SurvivalDif
   return ruleset === "survival-v1"
     ? `${LEADERBOARD_KEY_PREFIX}:${difficulty}`
     : `${LEADERBOARD_KEY_PREFIX}:${ruleset}:${difficulty}`;
+}
+
+export function playerLeaderboardKey(ruleset: SurvivalRuleset, difficulty: SurvivalDifficulty): string {
+  return `${leaderboardKey(ruleset, difficulty)}:players`;
+}
+
+/** Copy indexes, then reconcile once after old in-flight requests drain. Never delete records. */
+export async function ensureRankingIndexes(redis: Redis, ruleset: SurvivalRuleset, difficulty: SurvivalDifficulty): Promise<void> {
+  const source = leaderboardKey(ruleset, difficulty);
+  await redis.eval(`
+    local marker = redis.call("GET", KEYS[4])
+    if marker == "done" then return 0 end
+    local now = tonumber(redis.call("TIME")[1])
+    if marker and tonumber(marker) and now - tonumber(marker) < 120 then return 0 end
+    local rows = redis.call("ZRANGE", KEYS[1], 0, -1, "WITHSCORES")
+    for i = 1, #rows, 2 do
+      local destination = KEYS[3]
+      if string.sub(rows[i], 1, 7) == "player:" then destination = KEYS[2] end
+      local previous = redis.call("ZSCORE", destination, rows[i])
+      if not previous or tonumber(rows[i + 1]) > tonumber(previous) then
+        redis.call("ZADD", destination, rows[i + 1], rows[i])
+      end
+    end
+    if marker then redis.call("SET", KEYS[4], "done")
+    else redis.call("SET", KEYS[4], tostring(now)) end
+    return #rows / 2
+  `, 4, source, playerLeaderboardKey(ruleset, difficulty), `${source}:legacy`, `${source}:split-v1`);
 }
 
 /**
@@ -166,7 +192,9 @@ async function handleGet(req: VercelRequest, res: VercelResponse): Promise<void>
   );
   const viewerId = sanitizePlayerId(req.query.playerId);
 
-  const key = leaderboardKey(ruleset, difficulty);
+  const legacy = req.query.view === "legacy";
+  await ensureRankingIndexes(redis, ruleset, difficulty);
+  const key = legacy ? `${leaderboardKey(ruleset, difficulty)}:legacy` : playerLeaderboardKey(ruleset, difficulty);
   // 順位・スコア・本人情報を同じRedis実行で読む。個別コマンドを順番に
   // 発行すると、読取中の投稿で「順位とスコアが逆転した表」が返り得る。
   const { entries, viewer } = await readRankingSnapshot(
@@ -175,7 +203,7 @@ async function handleGet(req: VercelRequest, res: VercelResponse): Promise<void>
     ruleset,
     difficulty,
     limit,
-    viewerId,
+    legacy ? null : viewerId,
   );
 
   res.setHeader(
@@ -190,7 +218,7 @@ async function handleGet(req: VercelRequest, res: VercelResponse): Promise<void>
 }
 
 /** sorted setと詳細ハッシュを1回のLua実行でスナップショット化する。 */
-async function readRankingSnapshot(
+export async function readRankingSnapshot(
   redis: Redis,
   key: string,
   ruleset: SurvivalRuleset,
@@ -348,7 +376,8 @@ async function handlePost(req: VercelRequest, res: VercelResponse): Promise<void
     submittedAt: new Date().toISOString(),
   };
 
-  const key = leaderboardKey(ruleset, difficulty);
+  await ensureRankingIndexes(redis, ruleset, difficulty);
+  const key = playerLeaderboardKey(ruleset, difficulty);
   const member = playerMember(playerId);
   const updated = await upsertBestScore(
     redis,
@@ -356,8 +385,8 @@ async function handlePost(req: VercelRequest, res: VercelResponse): Promise<void
     playerEntryKey(ruleset, difficulty, playerId),
     member,
     entry,
+    leaderboardKey(ruleset, difficulty),
   );
-  await pruneOldEntries(redis, key, ruleset, difficulty);
 
   res.status(200).json({ ok: true, updated, ruleset });
 }
@@ -366,18 +395,27 @@ async function handlePost(req: VercelRequest, res: VercelResponse): Promise<void
  * scoreと詳細レコードを同時に扱い、遅い通信が高得点の詳細を低得点で上書きしないよう
  * Luaで原子的に更新する。同点では先に達成した記録を維持し、ニックネームだけ最新化する。
  */
-async function upsertBestScore(
+export async function upsertBestScore(
   redis: Redis,
   leaderboard: string,
   entryKey: string,
   member: string,
   entry: ScoreEntry,
+  compatibilityLeaderboard = "",
 ): Promise<boolean> {
   const result = await redis.eval(
     `
       local previous = redis.call("ZSCORE", KEYS[1], ARGV[1])
+      if KEYS[3] ~= "" then
+        local compatible = redis.call("ZSCORE", KEYS[3], ARGV[1])
+        if compatible and (not previous or tonumber(compatible) > tonumber(previous)) then
+          previous = compatible
+          redis.call("ZADD", KEYS[1], compatible, ARGV[1])
+        end
+      end
       if not previous or tonumber(ARGV[2]) > tonumber(previous) then
         redis.call("ZADD", KEYS[1], ARGV[2], ARGV[1])
+        if KEYS[3] ~= "" then redis.call("ZADD", KEYS[3], ARGV[2], ARGV[1]) end
         redis.call("HSET", KEYS[2],
           "id", ARGV[3],
           "nickname", ARGV[4],
@@ -392,9 +430,10 @@ async function upsertBestScore(
       redis.call("HSET", KEYS[2], "nickname", ARGV[4])
       return 0
     `,
-    2,
+    3,
     leaderboard,
     entryKey,
+    compatibilityLeaderboard,
     member,
     String(entry.score),
     entry.id,
@@ -406,54 +445,6 @@ async function upsertBestScore(
     entry.submittedAt,
   );
   return Number(result) === 1;
-}
-
-/** ランキング圏外のエントリが無限に溜まらないよう定期的に間引く */
-async function pruneOldEntries(
-  redis: Redis,
-  key: string,
-  ruleset: SurvivalRuleset,
-  difficulty: SurvivalDifficulty,
-): Promise<void> {
-  // 候補の取得と削除を分けると、候補取得後に高得点へ更新されたプレイヤーを
-  // 消してしまう競合が起きる。順位を再確認しながら同一Lua実行で整理する。
-  await redis.eval(
-    `
-      local total = redis.call("ZCARD", KEYS[1])
-      local maxEntries = tonumber(ARGV[1])
-      if total <= maxEntries then return 0 end
-      local excess = total - maxEntries
-      local members = redis.call("ZRANGE", KEYS[1], 0, excess - 1)
-      local removed = 0
-      for _, member in ipairs(members) do
-        local rank = redis.call("ZRANK", KEYS[1], member)
-        if rank and rank < excess then
-          redis.call("ZREM", KEYS[1], member)
-          local detail
-          if string.sub(member, 1, 7) == "player:" then
-            local playerId = string.sub(member, 8)
-            if ARGV[2] == "survival-v1" then
-              detail = "score:survival:" .. ARGV[3] .. ":player:" .. playerId
-            else
-              detail = "score:survival:" .. ARGV[2] .. ":" .. ARGV[3] .. ":player:" .. playerId
-            end
-          elseif ARGV[2] == "survival-v1" then
-            detail = "score:" .. member
-          else
-            detail = "score:survival:" .. ARGV[2] .. ":" .. member
-          end
-          redis.call("DEL", detail)
-          removed = removed + 1
-        end
-      end
-      return removed
-    `,
-    1,
-    key,
-    String(MAX_RETAINED_ENTRIES),
-    ruleset,
-    difficulty,
-  );
 }
 
 function sanitizeNickname(input: unknown): string | null {

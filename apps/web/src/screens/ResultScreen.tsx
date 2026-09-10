@@ -45,7 +45,7 @@ import {
 import {
   focusGoalDefinition,
   focusProgressFromResult,
-  focusProgressText,
+  focusChallenge,
   type FocusProgress,
 } from "../focusContract";
 
@@ -262,7 +262,7 @@ export function ResultScreen({
         </section>
 
         <div className="result-title-badge">
-          <span>獲得称号</span>
+          <span>現在の称号</span>
           <strong>{titleLabel}</strong>
         </div>
 
@@ -1083,26 +1083,34 @@ function survivalRunHighlight(summary: SurvivalSummary): SurvivalRunHighlight {
 
 function FocusResultCard({ progress }: { progress: FocusProgress }): JSX.Element {
   const goal = focusGoalDefinition(progress.goal);
+  const challenge = focusChallenge(progress, true);
   return (
     <section
       className={`result-focus${progress.achieved ? " result-focus-achieved" : ""}`}
       aria-label="今回の目標"
+      data-medal={challenge.level}
     >
       <div className="result-focus-head">
         <div>
-          <span className="result-focus-kicker">FOCUS / 今回の目標</span>
-          <strong>{goal.title}</strong>
+          <span className="result-focus-kicker">CHALLENGE / この一戦の勲章</span>
+          <strong>{goal.label}チャレンジ</strong>
         </div>
         <span className="result-focus-status">
-          {progress.achieved ? "✓ 達成" : "未達成"}
+          {challenge.medal}
         </span>
       </div>
-      <p>{goal.description}</p>
-      <div className="result-focus-progress" aria-label={`進捗 ${focusProgressText(progress)}`}>
+      <div className="challenge-medals" aria-label={`${challenge.level}段階達成`}>
+        {["BRONZE", "SILVER", "GOLD"].map((medal, index) => (
+          <span key={medal} className={challenge.level > index ? "is-earned" : ""}>
+            <b aria-hidden="true">◆</b>{medal}{challenge.level > index ? " ✓" : ""}
+          </span>
+        ))}
+      </div>
+      <div className="result-focus-progress" aria-label={`進捗 ${challenge.text}`}>
         <span aria-hidden="true">
-          <span style={{ width: `${Math.round(progress.ratio * 100)}%` }} />
+          <span style={{ width: `${Math.round(challenge.ratio * 100)}%` }} />
         </span>
-        <strong>{focusProgressText(progress)}</strong>
+        <strong>{challenge.text}</strong>
       </div>
     </section>
   );

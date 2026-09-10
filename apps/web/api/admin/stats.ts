@@ -3,6 +3,7 @@ import Redis from "ioredis";
 import { isAuthorizedAdmin } from "../_shared/adminAuth.js";
 import { histogram, summarize } from "../_shared/statsMath.js";
 import { readTelemetryStats, telemetryHashSecretConfigured } from "../_shared/telemetryStore.js";
+import { ensureRankingIndexes, playerLeaderboardKey } from "../scores.js";
 
 /**
  * 管理者専用プレイデータ統計(D-094, D-095で拡張)。
@@ -19,7 +20,6 @@ import { readTelemetryStats, telemetryHashSecretConfigured } from "../_shared/te
 const SURVIVAL_DIFFICULTIES = ["easy", "normal", "hard", "god"] as const;
 type SurvivalDifficulty = (typeof SURVIVAL_DIFFICULTIES)[number];
 
-const SURVIVAL_KEY_PREFIX = "leaderboard:survival:alltime";
 /** scores.ts の自己ベスト制(D-093)導入時に加わった、プレイヤー別記録の接頭辞 */
 const PLAYER_MEMBER_PREFIX = "player:";
 const DAILY_RULESET_VERSION = 2;
@@ -27,7 +27,7 @@ const DAILY_RULESET_VERSION = 2;
 const RECENT_DAILY_DAYS = 30;
 /** KPM・正確率・スコアの平均推移として見せる日数(1日ごとにhgetallするため長すぎない範囲) */
 const DAILY_TREND_DAYS = 14;
-/** サバイバル側の MAX_RETAINED_ENTRIES(scores.ts)と同じ上限に合わせる */
+/** 管理画面の統計サンプル上限。圏外プレイヤーのベスト記録自体は削除しない。 */
 const MAX_SAMPLE = 500;
 /** 頻出ニックネームの上位何件を見せるか */
 const TOP_NICKNAME_LIMIT = 15;
@@ -125,7 +125,7 @@ function entryKeyForMember(difficulty: SurvivalDifficulty, member: string): stri
 }
 
 function survivalLeaderboardKey(difficulty: SurvivalDifficulty): string {
-  return `${SURVIVAL_KEY_PREFIX}:${difficulty}`;
+  return playerLeaderboardKey("survival-v1", difficulty);
 }
 
 async function buildSurvivalStats(redis: Redis): Promise<{
@@ -139,6 +139,7 @@ async function buildSurvivalStats(redis: Redis): Promise<{
   let totalSubmissionsAcrossDifficulties = 0;
 
   for (const difficulty of SURVIVAL_DIFFICULTIES) {
+    await ensureRankingIndexes(redis, "survival-v1", difficulty);
     const key = survivalLeaderboardKey(difficulty);
     const [total, members] = await Promise.all([
       redis.zcard(key),

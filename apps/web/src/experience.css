@@ -1,0 +1,64 @@
+/* Arcade hierarchy: gameplay first, goals second. No board scale/shake effects. */
+.lp .lp-hero {
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: clamp(32px, 3.5vw, 54px);
+  padding-top: 24px;
+  padding-bottom: 24px;
+}
+.lp .lp-hero-copy { min-width: 0; gap: 12px; }
+.lp .lp-logo { font-size: clamp(64px, 5.6vw, 88px); line-height: .86; margin-bottom: 4px; }
+.lp .lp-logo-ja { margin-top: 15px; font-size: 15px; letter-spacing: .22em; color: #c8cce0; }
+.lp-hook { margin: 0; font-size: clamp(24px, 2.35vw, 36px); font-weight: 900; line-height: 1.4; letter-spacing: -.055em; white-space: nowrap; }
+.lp-hook span { color: #75ceff; }
+.lp-hook strong { color: #ff946e; }
+.lp .lp-lede { margin: 0; font-size: 14px; line-height: 1.85; color: #b9c1d9; max-width: 39em; }
+.lp .lp-facts { margin: 0 0 4px; }
+.lp .lp-play, .lp .lp-tiers, .lp .lp-focus { width: 100%; max-width: none; }
+.lp .lp-play { box-shadow: 0 7px 0 #742c20, 0 14px 35px #ff74452b; }
+.lp .lp-play-face { min-height: 72px; }
+.lp .lp-tier { border-color: #606c884d; }
+.lp .lp-tier[aria-pressed="true"] { box-shadow: 0 0 0 2px #c2ebff70, 0 5px 0 #17384b; }
+.lp .lp-focus { border: 1px solid #69779260; background: #111827b3; border-radius: 14px; padding: 14px; }
+.lp .lp-focus-option { border-radius: 10px; background: #1a2233; }
+.lp .lp-focus-option small { color: #b8c0d3; font-size: 11px; }
+.lp .lp-focus-option.is-selected { border-color: #7cd9ff; background: linear-gradient(145deg, #173249, #172439); }
+.lp-challenge-stages { font-size: 11px; color: #ffdb83; font-weight: 750; font-variant-numeric: tabular-nums; }
+.lp-stage-heading { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.lp-stage-heading span { color: #7bd6ff; font-size: 10px; letter-spacing: .2em; font-weight: 800; }
+.lp-stage-heading strong { font-size: 21px; letter-spacing: .04em; }
+.lp .lp-stage-frame { border-color: #8093b64d; box-shadow: 0 28px 85px #0008, 0 0 55px #68beff10; }
+.lp .lp-decks { gap: 12px; }
+.lp .lp-deck { border-color: #64739066; background: linear-gradient(145deg, #202737, #131825); }
+.lp .lp-deck:focus-visible, .lp button:focus-visible, .rk button:focus-visible { outline: 3px solid #a6e9ff; outline-offset: 4px; }
+.lp .lp-deck-ranking { border-color: #e5bb6480; background: linear-gradient(135deg, #343025, #1a202f); }
+.lp .lp-deck-kicker { color: #c5d4ed; }
+.game .focus-hud { min-height: 79px; border-color: #5a718f; background: linear-gradient(110deg, #192c40, #182130); }
+.game .focus-hud-head { font-size: 10px; letter-spacing: .04em; }
+.game .focus-hud-head strong { display: flex; gap: 5px; }
+.medal-earned { color: #ffda82; text-shadow: 0 0 10px #ffc34a66; }
+.medal-pending { color: #65718b; }
+.game .focus-hud p { font-size: 14px; color: #eef4ff; font-variant-numeric: tabular-nums; }
+.game .focus-hud[data-medal="3"] { border-color: #e6bd68; background: linear-gradient(110deg, #3c3020, #1d2531); }
+.game .chain-vision-hint { height: 46px; min-height: 46px; overflow: hidden; border: 1px solid #57bffb50; border-radius: 8px; background: #11304770; padding: 5px 9px; box-sizing: border-box; }
+.game .chain-vision-hint small { display: block; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #c3e5fb; }
+.result-focus .challenge-medals { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 10px 0; }
+.challenge-medals > span { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 4px; border: 1px solid #606b804d; border-radius: 8px; font-size: 10px; color: #a1abc0; }
+.challenge-medals b { font-size: 19px; }
+.challenge-medals > .is-earned { color: #ffd293; border-color: #cb965c80; background: #c68b2420; }
+.challenge-medals > .is-earned:nth-child(2) { color: #d9eaff; border-color: #b4cfee80; background: #96b9db20; }
+.challenge-medals > .is-earned:nth-child(3) { color: #ffe79b; border-color: #ffda7780; background: #ffd45b25; }
+.rk-record-views { display: flex; gap: 8px; flex-wrap: wrap; }
+.rk-record-views button { padding: 10px 18px; border-radius: 9px; border: 1px solid #6b7890; background: #182235; color: #c7d2e8; font: inherit; cursor: pointer; }
+.rk-record-views button[aria-pressed="true"] { background: #ccecff; color: #092434; border-color: #ccecff; font-weight: 800; }
+.rk-record-explainer { color: #c2cce0; font-size: 13px; line-height: 1.7; margin: 10px 0 18px; max-width: 64em; }
+@media (max-width: 1200px) {
+  .lp .lp-logo { font-size: 70px; }
+  .lp-hook { font-size: 25px; }
+  .lp .lp-hero { gap: 28px; }
+  .lp .lp-focus { padding: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp .lp-play, .lp .lp-tier, .lp .lp-focus-option { transition: none; }
+}
+:root.reduced-motion .lp .lp-play, :root.reduced-motion .lp .lp-tier, :root.reduced-motion .lp .lp-focus-option { transition: none; }
+:root.high-contrast .lp .lp-lede, :root.high-contrast .lp .lp-focus-option small, :root.high-contrast .rk-record-explainer { color: #f0f5ff; }

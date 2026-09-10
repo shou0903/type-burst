@@ -316,6 +316,7 @@ export function LandingScreen({
             <span className="lp-logo-ja">タイプバースト</span>
           </h1>
 
+          <p className="lp-hook">打つ。<span>つながる。</span><strong>爆発する。</strong></p>
           <p className="lp-lede">
             TYPE BURST（タイプバースト）は、日本語を打ってブロックを爆破する無料タイピングゲーム。
             <strong>速さだけでなく「どこを消すか」</strong>で盤面が変わる、連鎖パズルです。
@@ -416,7 +417,7 @@ export function LandingScreen({
                     <span className="lp-focus-kicker">FOCUS / 今回の目標</span>
                     <h2 id="lp-focus-title">一つだけ目標を選んで挑戦</h2>
                   </div>
-                  <span className="lp-focus-note">通常サバイバル限定・罰則なし</span>
+                  <span className="lp-focus-note">3段階達成でGOLD・罰則なし</span>
                 </div>
                 <div className="lp-focus-options" role="group" aria-label="今回の目標">
                   {FOCUS_GOALS.map((goal) => (
@@ -430,6 +431,7 @@ export function LandingScreen({
                       <span className="lp-focus-option-label">{goal.label}</span>
                       <strong>{goal.title}</strong>
                       <small>{goal.description}</small>
+                      <span className="lp-challenge-stages">{goal.id === "perfect-streak" ? "3 → 6 → 10連続" : goal.id === "chain-4" ? "4 → 6 → 8 CHAIN" : "1 → 3 → 5回発動"}</span>
                     </button>
                   ))}
                 </div>
@@ -463,6 +465,7 @@ export function LandingScreen({
         </div>
 
         <div className="lp-hero-stage">
+          <div className="lp-stage-heading"><span>TYPE × CHAIN PUZZLE</span><strong>一文字から、盤面を変えろ。</strong></div>
           <div className="lp-stage-frame">
             {/* 実エンジン(PlayerCore)の自動プレイ。動画やモックではなく本物(D-074) */}
             <AttractBoard reducedMotion={settings.reducedMotion} options={HERO_RENDERER_OPTIONS} />

@@ -117,10 +117,11 @@ export async function fetchTopScores(
 export async function fetchRanking(
   difficulty: SurvivalDifficulty,
   limit = 100,
+  view: "players" | "legacy" = "players",
 ): Promise<RankingResponse> {
   const playerId = loadPlayerId();
   const res = await fetchWithTimeout(
-    `/api/scores?difficulty=${encodeURIComponent(difficulty)}&limit=${limit}&ruleset=${encodeURIComponent(RANKING_RULESET)}&playerId=${encodeURIComponent(playerId)}`,
+    `/api/scores?difficulty=${encodeURIComponent(difficulty)}&limit=${limit}&ruleset=${encodeURIComponent(RANKING_RULESET)}&playerId=${encodeURIComponent(playerId)}&view=${view}`,
     { cache: "no-store" },
   );
   if (!res.ok) throw new Error(`ランキング取得に失敗しました(${res.status})`);

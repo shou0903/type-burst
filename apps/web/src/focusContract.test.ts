@@ -6,6 +6,7 @@ import {
   DEFAULT_FOCUS_GOAL,
   focusProgressFromResult,
   focusProgressText,
+  focusChallenge,
   isFocusEligibleMode,
   resetFocusProgress,
 } from "./focusContract";
@@ -61,7 +62,7 @@ describe("FOCUS progress", () => {
         progress,
         event({ type: "phraseCompleted", blockId: 7, perfect: false }),
       ),
-    ).toEqual(progress);
+    ).toMatchObject({ achieved: true, challengeBest: 3, challengeStreak: 0 });
   });
 
   it("achieves the chain goal only at four or more chain depth", () => {
@@ -117,5 +118,39 @@ describe("FOCUS progress", () => {
     expect(focusProgressFromResult({ mode: "survival", focus: progress })).toEqual(progress);
     expect(focusProgressFromResult({ focus: { goal: "chain-4" } })).toBeNull();
     expect(focusProgressFromResult({ focus: { ...progress, ratio: 3 } })).toBeNull();
+    expect(focusProgressFromResult({ focus: { ...progress, challengeBest: Infinity } })).toBeNull();
+    expect(focusProgressFromResult({ focus: { ...progress, challengeStreak: -1 } })).toBeNull();
+  });
+
+  it("earns three medals without changing the original bronze goal contract", () => {
+    let progress = createFocusProgress("perfect-streak");
+    for (let i = 1; i <= 10; i++) {
+      progress = advanceFocusProgress(progress, { type: "phraseCompleted", blockId: i, perfect: true });
+      if (i === 3) expect(focusChallenge(progress)).toMatchObject({ level: 1, target: 6, medal: "BRONZE" });
+      if (i === 6) expect(focusChallenge(progress)).toMatchObject({ level: 2, target: 10, medal: "SILVER" });
+    }
+    expect(focusChallenge(progress)).toMatchObject({ level: 3, ratio: 1, medal: "GOLD" });
+    expect(progress).toMatchObject({ current: 3, target: 3, achieved: true });
+    const missed = advanceFocusProgress(progress, { type: "phraseCompleted", blockId: 11, perfect: false });
+    expect(focusChallenge(missed)).toMatchObject({ level: 3, best: 10, current: 0, ratio: 1 });
+    expect(focusProgressFromResult({ mode: "survival", focus: missed })).toEqual(missed);
+  });
+
+  it("allows a large chain to earn several stages at once and keeps the best", () => {
+    let progress = createFocusProgress("chain-4");
+    progress = advanceFocusProgress(progress, { type: "chainFinished", depth: 9, attackPower: 0, garbageCount: 0, scoreGained: 100 });
+    expect(focusChallenge(progress)).toMatchObject({ level: 3, best: 8 });
+    progress = advanceFocusProgress(progress, { type: "chainFinished", depth: 2, attackPower: 0, garbageCount: 0, scoreGained: 100 });
+    expect(focusChallenge(progress).level).toBe(3);
+  });
+
+  it("counts only actual powered bursts, not charging or regular burst", () => {
+    let progress = createFocusProgress("power-burst");
+    progress = advanceFocusProgress(progress, { type: "burstFired", tier: "ready", rows: 3, scoreGained: 100 });
+    expect(focusChallenge(progress).best).toBe(0);
+    for (let i = 0; i < 5; i++) {
+      progress = advanceFocusProgress(progress, { type: "burstFired", tier: "power", rows: 4, scoreGained: 100 });
+    }
+    expect(focusChallenge(progress)).toMatchObject({ level: 3, best: 5 });
   });
 });

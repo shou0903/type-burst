@@ -71,17 +71,10 @@ export function RankingDeck({
 
   return (
     <button
-      className="lp-deck lp-deck-rich"
+      className="lp-deck lp-deck-rich lp-deck-ranking"
       type="button"
-      disabled={state.s === "loading"}
-      aria-label={state.s === "error" ? "世界ランキングの取得を再試行" : "世界ランキングを開く"}
-      onClick={() => {
-        if (state.s === "error") {
-          setRetryNonce((value) => value + 1);
-          return;
-        }
-        onOpen();
-      }}
+      aria-label="世界ランキングを開く"
+      onClick={onOpen}
     >
       <span className="lp-deck-top">
         <span className="lp-deck-glyph lp-glyph-light" aria-hidden="true">
@@ -99,7 +92,7 @@ export function RankingDeck({
       {state.s === "error" && (
         <span className="lp-deck-empty lp-deck-error" role="alert" aria-live="polite">
           <span>いまはランキングを取得できません</span>
-          <span className="lp-deck-retry">再試行する →</span>
+          <span className="lp-deck-retry">ランキング画面で再読み込み →</span>
         </span>
       )}
       {state.s === "ok" && state.entries.length === 0 && (
@@ -109,7 +102,7 @@ export function RankingDeck({
         <span className="lp-podium">
           {state.entries.map((e, i) => (
             <span className="lp-podium-row" key={e.id}>
-              <span className={`lp-medal lp-medal-${i + 1}`}>{i + 1}</span>
+              <span className={`lp-medal lp-medal-${e.rank ?? i + 1}`}>{e.rank ?? i + 1}</span>
               <span className="lp-podium-name">{e.nickname}</span>
               <span className="lp-podium-score">{e.score.toLocaleString()}</span>
             </span>
@@ -119,7 +112,7 @@ export function RankingDeck({
 
       <span className="lp-deck-foot">
         {state.s === "error"
-          ? "クリックして再試行 →"
+          ? "世界ランキングを開く →"
           : lastUpdated === null
             ? "上位100件を見る →"
             : `上位100件を見る → ・${new Intl.DateTimeFormat("ja-JP", { hour: "2-digit", minute: "2-digit" }).format(lastUpdated)}`}
